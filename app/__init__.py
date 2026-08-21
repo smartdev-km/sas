@@ -88,18 +88,26 @@ def create_app(config_class=Config):
                     db.session.add(user)
                 db.session.commit()
 
-    # Bootstrap du tout premier compte admin sur une vraie base (Postgres) sans accès
-    # Shell (ex. plan gratuit Render) : définir ADMIN_EMAIL/ADMIN_PASSWORD en variables
-    # d'environnement. Ne fait rien si un utilisateur existe déjà.
-    admin_email = os.environ.get("ADMIN_EMAIL")
-    admin_password = os.environ.get("ADMIN_PASSWORD")
-    if admin_email and admin_password and not os.environ.get("FLASK_RUN_FROM_CLI"):
-        with app.app_context():
-            if not User.query.first():
-                admin = User(nom=os.environ.get("ADMIN_NOM", "Admin"), email=admin_email.strip().lower(), role="admin")
-                admin.set_password(admin_password)
-                db.session.add(admin)
-                db.session.commit()
+    # Bootstrap de comptes sur une vraie base (Postgres) sans accès Shell (ex. plan
+    # gratuit Render) : définir {PREFIX}_EMAIL/{PREFIX}_PASSWORD (et {PREFIX}_NOM,
+    # optionnel) en variables d'environnement. Ne crée rien si l'email existe déjà.
+    if not os.environ.get("FLASK_RUN_FROM_CLI"):
+        for prefix, role, nom_defaut in (
+            ("ADMIN", "admin", "Admin"),
+            ("RAF", "comptable", "RAF"),
+            ("SECRETAIRE", "secretaire", "Secrétaire"),
+        ):
+            email = os.environ.get(f"{prefix}_EMAIL")
+            password = os.environ.get(f"{prefix}_PASSWORD")
+            if not (email and password):
+                continue
+            with app.app_context():
+                email = email.strip().lower()
+                if not User.query.filter_by(email=email).first():
+                    user = User(nom=os.environ.get(f"{prefix}_NOM", nom_defaut), email=email, role=role)
+                    user.set_password(password)
+                    db.session.add(user)
+                    db.session.commit()
 
     app.jinja_env.filters["kmf"] = format_kmf
     app.jinja_env.filters["nombre"] = format_nombre
