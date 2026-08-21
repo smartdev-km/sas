@@ -40,7 +40,7 @@
                 </a>
             </li>
             {% endif %}
-            {% if current_user.role in ('admin', 'comptable') %}
+            {% if current_user.role in ('admin', 'secretaire') %}
             <li class="nav-item">
                 <a class="nav-link {% if request.blueprint == 'consommables' %}active{% endif %}" href="{{ url_for('consommables.liste') }}">
                     <i class="bi bi-lightning-charge"></i> Consommables
