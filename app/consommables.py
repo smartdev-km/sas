@@ -2,15 +2,30 @@ from datetime import date, datetime
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
+from sqlalchemy import func
 from app.decorators import role_required, admin_required
 
 from app import db
-from app.models import Consommable, SuiviConsommable
+from app.models import Consommable, SuiviConsommable, Depense
 from app.constants import MOIS_FR
 
 consommables_bp = Blueprint("consommables", __name__, url_prefix="/consommables")
 
 TYPES_PAR_DEFAUT = ["Internet", "Data mobile", "Encre", "Papier A4", "Eau", "Électricité"]
+
+
+def _budget():
+    """Budget Consommables : dépenses validées de catégorie « Consommables »,
+    moins tout ce qui a déjà été réparti dans le suivi des consommables."""
+    alloue = float(
+        db.session.query(func.sum(Depense.montant))
+        .filter(Depense.categorie == "Consommables", Depense.valide.is_(True))
+        .scalar() or 0
+    )
+    depense = float(
+        db.session.query(func.sum(SuiviConsommable.montant)).scalar() or 0
+    )
+    return alloue, depense, alloue - depense
 
 
 def _assurer_types_par_defaut():
@@ -55,6 +70,7 @@ def liste():
 
     total = sum(float(s.montant) for s in suivis)
     nb_payes = sum(1 for s in suivis if s.paye)
+    budget_alloue, budget_depense, budget_restant = _budget()
 
     return render_template(
         "consommables/liste.html",
@@ -65,6 +81,9 @@ def liste():
         annees=range(today.year - 2, today.year + 2),
         total=total,
         nb_payes=nb_payes,
+        budget_alloue=budget_alloue,
+        budget_depense=budget_depense,
+        budget_restant=budget_restant,
     )
 
 
@@ -84,6 +103,16 @@ def modifier(suivi_id):
             raise ValueError
     except ValueError:
         flash("Montant invalide.", "danger")
+        return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
+
+    _, budget_depense, budget_restant = _budget()
+    disponible_pour_ce_suivi = budget_restant + float(suivi.montant)
+    if montant > disponible_pour_ce_suivi:
+        flash(
+            f"Montant refusé : il dépasse le budget Consommables disponible "
+            f"({disponible_pour_ce_suivi:.0f} KMF restants).",
+            "danger",
+        )
         return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
 
     suivi.montant = montant

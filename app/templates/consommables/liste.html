@@ -26,6 +26,33 @@
     </form>
 </div>
 
+<div class="row g-3 mb-3">
+    <div class="col-sm-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Budget alloué (validé par l'admin)</div>
+                <div class="fw-semibold">{{ budget_alloue|kmf }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Déjà réparti (tous mois)</div>
+                <div class="fw-semibold">{{ budget_depense|kmf }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Budget restant</div>
+                <div class="fw-semibold {{ 'text-danger' if budget_restant < 0 else 'text-success' }}">{{ budget_restant|kmf }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card mb-3">
     <div class="card-body d-flex justify-content-between align-items-center py-2 flex-wrap gap-2">
         <span class="text-muted small">{{ nb_payes }} / {{ suivis|length }} payé(s) — {{ mois_fr[mois - 1] }} {{ annee }}</span>
