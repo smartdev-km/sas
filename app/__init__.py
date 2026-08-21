@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -69,7 +71,9 @@ def create_app(config_class=Config):
     from app import cli
     cli.register(app)
 
-    if app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite"):
+    # En mode CLI ("flask db upgrade", ...), Alembic gère lui-même les tables :
+    # on ne doit pas créer le schéma nous-mêmes, sous peine de doublon/conflit.
+    if app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite") and not os.environ.get("FLASK_RUN_FROM_CLI"):
         with app.app_context():
             db.create_all()
             if not User.query.first():
