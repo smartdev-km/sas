@@ -88,7 +88,7 @@
                         <input type="number" step="1" min="0" name="montant" value="{{ s.montant|int }}" class="form-control form-control-sm" form="form-suivi-{{ s.id }}">
                     </td>
                     <td class="text-center">
-                        <input type="checkbox" class="form-check-input" name="paye" {% if s.paye %}checked{% endif %} form="form-suivi-{{ s.id }}">
+                        {% if s.paye %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %}
                     </td>
                     <td>
                         <input type="text" name="notes" value="{{ s.notes or '' }}" class="form-control form-control-sm" placeholder="Optionnel" form="form-suivi-{{ s.id }}">
@@ -96,6 +96,9 @@
                     <td class="text-end">
                         <button type="submit" class="btn btn-sm btn-outline-primary" title="Enregistrer" form="form-suivi-{{ s.id }}">
                             <i class="bi bi-check-lg"></i>
+                        </button>
+                        <button type="submit" class="btn btn-sm {{ 'btn-outline-secondary' if s.paye else 'btn-outline-success' }}" title="{{ 'Annuler le paiement' if s.paye else 'Marquer comme payé' }}" form="form-paye-{{ s.id }}">
+                            <i class="bi bi-cash-coin"></i>
                         </button>
                         {% if current_user.role == 'admin' %}
                         <button type="submit" class="btn btn-sm btn-outline-success" title="Valider" form="form-valider-{{ s.id }}">
@@ -117,6 +120,7 @@
 
 {% for s in suivis %}
 <form id="form-suivi-{{ s.id }}" method="post" action="{{ url_for('consommables.modifier', suivi_id=s.id) }}"></form>
+<form id="form-paye-{{ s.id }}" method="post" action="{{ url_for('consommables.toggle_paye', suivi_id=s.id) }}"></form>
 {% if not s.valide and current_user.role == 'admin' %}
 <form id="form-valider-{{ s.id }}" method="post" action="{{ url_for('consommables.valider', suivi_id=s.id) }}" onsubmit="return confirm('Valider cet élément ? Il ne pourra plus être modifié ensuite.');"></form>
 {% endif %}

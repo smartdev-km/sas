@@ -116,16 +116,26 @@ def modifier(suivi_id):
         return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
 
     suivi.montant = montant
-    paye = request.form.get("paye") == "on"
-    if paye and not suivi.paye:
-        suivi.date_paiement = date.today()
-    elif not paye:
-        suivi.date_paiement = None
-    suivi.paye = paye
     suivi.notes = request.form.get("notes", "").strip() or None
 
     db.session.commit()
     flash(f"{suivi.consommable.nom} mis à jour.", "success")
+    return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
+
+
+@consommables_bp.route("/<int:suivi_id>/toggle-paye", methods=["POST"])
+@role_required("consommables")
+def toggle_paye(suivi_id):
+    suivi = db.get_or_404(SuiviConsommable, suivi_id)
+
+    if suivi.valide:
+        flash(f"{suivi.consommable.nom} est validé, il ne peut plus être modifié.", "warning")
+        return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
+
+    suivi.paye = not suivi.paye
+    suivi.date_paiement = date.today() if suivi.paye else None
+    db.session.commit()
+    flash(f"{suivi.consommable.nom} marqué comme {'payé' if suivi.paye else 'non payé'}.", "success")
     return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
 
 
