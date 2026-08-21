@@ -10,7 +10,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: flask db upgrade && gunicorn run:app
+    startCommand: sh -c 'if [ -n "$DATABASE_URL" ]; then flask db upgrade; fi; gunicorn run:app'
     envVars:
       - key: FLASK_APP
         value: run.py

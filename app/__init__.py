@@ -69,6 +69,15 @@ def create_app(config_class=Config):
     from app import cli
     cli.register(app)
 
+    if app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite"):
+        with app.app_context():
+            db.create_all()
+            if not User.query.first():
+                admin = User(nom="Admin", email="admin@sas.local", role="admin")
+                admin.set_password("admin123")
+                db.session.add(admin)
+                db.session.commit()
+
     app.jinja_env.filters["kmf"] = format_kmf
     app.jinja_env.filters["nombre"] = format_nombre
     app.jinja_env.filters["kmf2"] = format_kmf2
