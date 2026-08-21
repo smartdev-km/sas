@@ -92,6 +92,10 @@ def liste():
 def modifier(suivi_id):
     suivi = db.get_or_404(SuiviConsommable, suivi_id)
 
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas modifier un consommable, seulement le valider.", "warning")
+        return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
+
     if suivi.valide:
         flash(f"{suivi.consommable.nom} est validé, il ne peut plus être modifié.", "warning")
         return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
@@ -127,6 +131,10 @@ def modifier(suivi_id):
 @role_required("consommables")
 def toggle_paye(suivi_id):
     suivi = db.get_or_404(SuiviConsommable, suivi_id)
+
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas modifier un consommable, seulement le valider.", "warning")
+        return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
 
     if suivi.valide:
         flash(f"{suivi.consommable.nom} est validé, il ne peut plus être modifié.", "warning")

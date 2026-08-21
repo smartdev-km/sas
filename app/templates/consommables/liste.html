@@ -83,6 +83,17 @@
                     </td>
                     <td>{{ s.notes or "-" }}</td>
                     <td class="text-end"><span class="text-muted small"><i class="bi bi-lock"></i></span></td>
+                    {% elif current_user.role == 'admin' %}
+                    <td>{{ s.montant|int }}</td>
+                    <td class="text-center">
+                        {% if s.paye %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %}
+                    </td>
+                    <td>{{ s.notes or "-" }}</td>
+                    <td class="text-end">
+                        <button type="submit" class="btn btn-sm btn-outline-success" title="Valider" form="form-valider-{{ s.id }}">
+                            <i class="bi bi-shield-check"></i>
+                        </button>
+                    </td>
                     {% else %}
                     <td>
                         <input type="number" step="1" min="0" name="montant" value="{{ s.montant|int }}" class="form-control form-control-sm" form="form-suivi-{{ s.id }}">
@@ -100,11 +111,6 @@
                         <button type="submit" class="btn btn-sm {{ 'btn-outline-secondary' if s.paye else 'btn-outline-success' }}" title="{{ 'Annuler le paiement' if s.paye else 'Marquer comme payé' }}" form="form-paye-{{ s.id }}">
                             <i class="bi bi-cash-coin"></i>
                         </button>
-                        {% if current_user.role == 'admin' %}
-                        <button type="submit" class="btn btn-sm btn-outline-success" title="Valider" form="form-valider-{{ s.id }}">
-                            <i class="bi bi-shield-check"></i>
-                        </button>
-                        {% endif %}
                     </td>
                     {% endif %}
                 </tr>
