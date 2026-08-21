@@ -96,7 +96,7 @@
         <div class="sas-user">
             <div class="small text-truncate">{{ current_user.nom }}</div>
             {% if current_user.role != 'admin' %}
-                <div class="small text-white-50">{{ current_user.role|capitalize }}</div>
+                <div class="small text-white-50">{{ current_user.role|role_label }}</div>
             {% endif %}
             <a href="{{ url_for('auth.profil') }}" class="btn btn-sm btn-outline-light mt-2 w-100">
                 <i class="bi bi-person-circle"></i> Mon profil

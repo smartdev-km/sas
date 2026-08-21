@@ -79,7 +79,7 @@ def create_app(config_class=Config):
             if not User.query.first():
                 comptes_test = [
                     ("Admin", "admin@sas.local", "admin123", "admin"),
-                    ("Comptable", "comptable@sas.local", "comptable123", "comptable"),
+                    ("RAF", "comptable@sas.local", "comptable123", "comptable"),
                     ("Secrétaire", "secretaire@sas.local", "secretaire123", "secretaire"),
                 ]
                 for nom, email, password, role in comptes_test:
@@ -92,8 +92,14 @@ def create_app(config_class=Config):
     app.jinja_env.filters["nombre"] = format_nombre
     app.jinja_env.filters["kmf2"] = format_kmf2
     app.jinja_env.filters["nombre2"] = format_nombre2
+    app.jinja_env.filters["role_label"] = format_role_label
 
     return app
+
+
+def format_role_label(role):
+    from app.constants import ROLES_COMPTE
+    return ROLES_COMPTE.get(role, (role or "").capitalize())
 
 
 def format_kmf(value):

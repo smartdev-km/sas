@@ -25,7 +25,7 @@
                         <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email or '' }}">
                     </div>
                     <p class="text-muted small mt-2 mb-0">
-                        Type de compte : <strong>{{ current_user.role|capitalize }}</strong>
+                        Type de compte : <strong>{{ current_user.role|role_label }}</strong>
                     </p>
                 </div>
             </div>

@@ -104,7 +104,7 @@ def modifier(fournisseur_id):
 @role_required("fournisseurs")
 def toggle_actif(fournisseur_id):
     if current_user.role == "comptable":
-        flash("Un compte comptable ne peut pas activer/désactiver un fournisseur.", "warning")
+        flash("Un compte RAF ne peut pas activer/désactiver un fournisseur.", "warning")
         return redirect(url_for("fournisseurs.liste"))
 
     fournisseur = db.get_or_404(Fournisseur, fournisseur_id)

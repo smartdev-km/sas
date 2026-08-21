@@ -488,7 +488,7 @@ def bulletin_valider(bulletin_id):
     else:
         bulletin.statut = "valide"
         db.session.commit()
-        flash("Bulletin validé. Le comptable peut maintenant procéder au paiement.", "success")
+        flash("Bulletin validé. Le RAF peut maintenant procéder au paiement.", "success")
 
     return redirect(request.referrer or url_for("salaires.bulletins"))
 
@@ -499,7 +499,7 @@ def bulletin_ajouter_paiement(bulletin_id):
     bulletin = db.get_or_404(Salaire, bulletin_id)
 
     if current_user.role != "comptable":
-        flash("Seul un compte comptable peut finaliser le paiement d'un bulletin.", "warning")
+        flash("Seul un compte RAF peut finaliser le paiement d'un bulletin.", "warning")
         return redirect(url_for("salaires.bulletin_detail", bulletin_id=bulletin.id))
 
     if bulletin.statut != "valide":

@@ -22,7 +22,7 @@ MODES_PAIEMENT = ["Virement bancaire", "Mobile money", "Espèces"]
 
 ROLES_COMPTE = {
     "admin": "Administrateur",
-    "comptable": "Comptable",
+    "comptable": "RAF",
     "secretaire": "Secrétaire",
 }
 
