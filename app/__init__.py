@@ -77,9 +77,15 @@ def create_app(config_class=Config):
         with app.app_context():
             db.create_all()
             if not User.query.first():
-                admin = User(nom="Admin", email="admin@sas.local", role="admin")
-                admin.set_password("admin123")
-                db.session.add(admin)
+                comptes_test = [
+                    ("Admin", "admin@sas.local", "admin123", "admin"),
+                    ("Comptable", "comptable@sas.local", "comptable123", "comptable"),
+                    ("Secrétaire", "secretaire@sas.local", "secretaire123", "secretaire"),
+                ]
+                for nom, email, password, role in comptes_test:
+                    user = User(nom=nom, email=email, role=role)
+                    user.set_password(password)
+                    db.session.add(user)
                 db.session.commit()
 
     app.jinja_env.filters["kmf"] = format_kmf

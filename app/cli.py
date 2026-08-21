@@ -33,6 +33,24 @@ def register(app):
         db.session.commit()
         click.echo(f"Administrateur {email} créé avec succès.")
 
+    @app.cli.command("create-user")
+    @click.option("--nom", prompt=True)
+    @click.option("--email", prompt=True)
+    @click.option("--password", prompt=True, hide_input=True, confirmation_prompt=True)
+    @click.option("--role", prompt=True, type=click.Choice(["comptable", "secretaire"]))
+    def create_user(nom, email, password, role):
+        """Crée un utilisateur comptable ou secrétaire."""
+        email = email.strip().lower()
+        if User.query.filter_by(email=email).first():
+            click.echo(f"Un utilisateur existe déjà avec l'email {email}.")
+            return
+
+        user = User(nom=nom, email=email, role=role)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        click.echo(f"Utilisateur {role} {email} créé avec succès.")
+
     @app.cli.command("seed-demo")
     def seed_demo():
         """Génère des données de démonstration pour le dashboard."""
