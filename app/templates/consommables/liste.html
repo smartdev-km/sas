@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Consommables{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Consommables</h1>
+        <p class="text-muted mb-0">Suivi mensuel des charges récurrentes (Internet, eau, électricité, fournitures...)</p>
+    </div>
+    <form method="get" class="d-flex gap-2 align-items-end">
+        <div>
+            <label class="form-label small mb-1">Mois</label>
+            <select class="form-select form-select-sm" name="mois" onchange="this.form.submit()">
+                {% for i in range(1, 13) %}
+                    <option value="{{ i }}" {% if i == mois %}selected{% endif %}>{{ mois_fr[i - 1] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="form-label small mb-1">Année</label>
+            <select class="form-select form-select-sm" name="annee" onchange="this.form.submit()">
+                {% for a in annees %}
+                    <option value="{{ a }}" {% if a == annee %}selected{% endif %}>{{ a }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body d-flex justify-content-between align-items-center py-2 flex-wrap gap-2">
+        <span class="text-muted small">{{ nb_payes }} / {{ suivis|length }} payé(s) — {{ mois_fr[mois - 1] }} {{ annee }}</span>
+        <span class="fw-semibold">Total du mois : {{ total|kmf }}</span>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Élément</th>
+                    <th style="width: 180px;">Montant (KMF)</th>
+                    <th style="width: 100px;">Payé</th>
+                    <th>Notes</th>
+                    <th class="text-end" style="width: 130px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in suivis %}
+                <tr class="{% if s.paye %}table-success bg-opacity-25{% endif %}">
+                    <td class="fw-semibold">{{ s.consommable.nom }}</td>
+                    {% if s.valide %}
+                    <td>{{ s.montant|int }}</td>
+                    <td class="text-center">
+                        {% if s.paye %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %}
+                    </td>
+                    <td>{{ s.notes or "-" }}</td>
+                    <td class="text-end"><span class="text-muted small"><i class="bi bi-lock"></i></span></td>
+                    {% else %}
+                    <td>
+                        <input type="number" step="1" min="0" name="montant" value="{{ s.montant|int }}" class="form-control form-control-sm" form="form-suivi-{{ s.id }}">
+                    </td>
+                    <td class="text-center">
+                        <input type="checkbox" class="form-check-input" name="paye" {% if s.paye %}checked{% endif %} form="form-suivi-{{ s.id }}">
+                    </td>
+                    <td>
+                        <input type="text" name="notes" value="{{ s.notes or '' }}" class="form-control form-control-sm" placeholder="Optionnel" form="form-suivi-{{ s.id }}">
+                    </td>
+                    <td class="text-end">
+                        <button type="submit" class="btn btn-sm btn-outline-primary" title="Enregistrer" form="form-suivi-{{ s.id }}">
+                            <i class="bi bi-check-lg"></i>
+                        </button>
+                        {% if current_user.role == 'admin' %}
+                        <button type="submit" class="btn btn-sm btn-outline-success" title="Valider" form="form-valider-{{ s.id }}">
+                            <i class="bi bi-shield-check"></i>
+                        </button>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">Aucun élément à suivre.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% for s in suivis %}
+<form id="form-suivi-{{ s.id }}" method="post" action="{{ url_for('consommables.modifier', suivi_id=s.id) }}"></form>
+{% if not s.valide and current_user.role == 'admin' %}
+<form id="form-valider-{{ s.id }}" method="post" action="{{ url_for('consommables.valider', suivi_id=s.id) }}" onsubmit="return confirm('Valider cet élément ? Il ne pourra plus être modifié ensuite.');"></form>
+{% endif %}
+{% endfor %}
+
+{% if current_user.role != 'admin' %}
+<div class="card">
+    <div class="card-body">
+        <h2 class="h6 mb-3">Ajouter un autre élément</h2>
+        <form method="post" action="{{ url_for('consommables.type_nouveau') }}" class="row g-2 align-items-end">
+            <input type="hidden" name="mois" value="{{ mois }}">
+            <input type="hidden" name="annee" value="{{ annee }}">
+            <div class="col-sm-6 col-md-4">
+                <input type="text" name="nom" class="form-control form-control-sm" placeholder="Ex : Gaz, Nettoyage, Sécurité..." required>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-lg"></i> Ajouter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}{{ "Modifier" if employe else "Nouvel" }} employé{% endblock %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="h3 mb-0">{{ "Modifier l'employé" if employe else "Nouvel employé" }}</h1>
+    <p class="text-muted mb-0">
+        <a href="{{ url_for('salaires.employes') }}" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Retour à la liste</a>
+    </p>
+</div>
+
+<form method="post">
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h2 class="h6 mb-3">Poste &amp; contrat</h2>
+                    <div class="row g-3">
+                        <div class="col-sm-4">
+                            <label class="form-label" for="matricule">Matricule</label>
+                            <input type="text" class="form-control" id="matricule" name="matricule" value="{{ form.matricule or '' }}" placeholder="Généré automatiquement">
+                        </div>
+                        <div class="col-sm-8">
+                            <label class="form-label" for="nom">Nom complet *</label>
+                            <input type="text" class="form-control" id="nom" name="nom" value="{{ form.nom or '' }}" required>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="poste">Poste</label>
+                            <input type="text" class="form-control" id="poste" name="poste" value="{{ form.poste or '' }}">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="departement">Département / Service</label>
+                            <input type="text" class="form-control" id="departement" name="departement" value="{{ form.departement or '' }}">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="type_contrat">Type de contrat</label>
+                            <select class="form-select" id="type_contrat" name="type_contrat">
+                                <option value="">—</option>
+                                {% for t in types_contrat %}
+                                    <option value="{{ t }}" {% if form.type_contrat == t %}selected{% endif %}>{{ t }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="date_embauche">Date d'embauche</label>
+                            <input type="date" class="form-control" id="date_embauche" name="date_embauche" value="{{ form.date_embauche or '' }}">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="salaire_base">Salaire de base (KMF) *</label>
+                            <input type="number" step="1" min="1" class="form-control" id="salaire_base" name="salaire_base" value="{{ form.salaire_base or '' }}" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h2 class="h6 mb-3">Coordonnées</h2>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label" for="telephone">Téléphone</label>
+                            <input type="text" class="form-control" id="telephone" name="telephone" value="{{ form.telephone or '' }}">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="email">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ form.email or '' }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="adresse">Adresse</label>
+                            <input type="text" class="form-control" id="adresse" name="adresse" value="{{ form.adresse or '' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h2 class="h6 mb-3">Identité civile</h2>
+                    <div class="row g-3">
+                        <div class="col-sm-4">
+                            <label class="form-label" for="date_naissance">Date de naissance</label>
+                            <input type="date" class="form-control" id="date_naissance" name="date_naissance" value="{{ form.date_naissance or '' }}">
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label" for="sexe">Sexe</label>
+                            <select class="form-select" id="sexe" name="sexe">
+                                <option value="">—</option>
+                                {% for valeur, libelle in sexes.items() %}
+                                    <option value="{{ valeur }}" {% if form.sexe == valeur %}selected{% endif %}>{{ libelle }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label" for="numero_piece_identite">N° pièce d'identité</label>
+                            <input type="text" class="form-control" id="numero_piece_identite" name="numero_piece_identite" value="{{ form.numero_piece_identite or '' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h2 class="h6 mb-3">Informations de paiement</h2>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label" for="mode_paiement">Mode de paiement</label>
+                            <select class="form-select" id="mode_paiement" name="mode_paiement">
+                                <option value="">—</option>
+                                {% for m in modes_paiement %}
+                                    <option value="{{ m }}" {% if form.mode_paiement == m %}selected{% endif %}>{{ m }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="numero_compte">N° compte / mobile money</label>
+                            <input type="text" class="form-control" id="numero_compte" name="numero_compte" value="{{ form.numero_compte or '' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            {% if peut_gerer_compte %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h2 class="h6 mb-1">Compte système</h2>
+                    <p class="text-muted small mb-3">
+                        {% if compte %}
+                            Ce compte permet d'accéder à l'espace de gestion (admin, comptable ou secrétaire).
+                        {% else %}
+                            Optionnel — donne accès à l'espace de gestion (pas seulement à la confirmation de présence).
+                        {% endif %}
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label" for="compte_username">Nom d'utilisateur</label>
+                        <input type="text" class="form-control" id="compte_username" name="compte_username" value="{{ form.compte_username or (compte.username if compte else '') }}" placeholder="Laisser vide pour ne pas créer de compte">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="compte_role">Type de compte</label>
+                        <select class="form-select" id="compte_role" name="compte_role">
+                            {% for valeur, libelle in roles_compte.items() %}
+                                <option value="{{ valeur }}" {% if (form.compte_role or (compte.role if compte else '')) == valeur %}selected{% endif %}>{{ libelle }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="compte_password">
+                            {{ "Nouveau mot de passe" if compte else "Mot de passe" }}
+                        </label>
+                        <input type="password" class="form-control" id="compte_password" name="compte_password" minlength="6" placeholder="{{ 'Laisser vide pour ne pas changer' if compte else '' }}">
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label" for="compte_password_confirmation">Confirmer le mot de passe</label>
+                        <input type="password" class="form-control" id="compte_password_confirmation" name="compte_password_confirmation" minlength="6">
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mb-4">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg"></i> {{ "Enregistrer" if employe else "Ajouter" }}
+        </button>
+        <a href="{{ url_for('salaires.employes') }}" class="btn btn-outline-secondary">Annuler</a>
+    </div>
+</form>
+{% endblock %}

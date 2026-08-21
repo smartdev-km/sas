@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Employés{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Salaires</h1>
+        <p class="text-muted mb-0">Gestion des employés et des bulletins de salaire</p>
+    </div>
+    {% if current_user.role != 'admin' %}
+    <a href="{{ url_for('salaires.employe_nouveau') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Nouvel employé
+    </a>
+    {% endif %}
+</div>
+
+<ul class="nav nav-pills mb-4">
+    <li class="nav-item">
+        <a class="nav-link active" href="{{ url_for('salaires.employes') }}">Employés</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('salaires.bulletins') }}">Bulletins de salaire</a>
+    </li>
+</ul>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Matricule</th>
+                    <th>Nom</th>
+                    <th>Poste</th>
+                    <th>Département</th>
+                    <th class="text-end">Salaire de base</th>
+                    <th>Statut</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in employes %}
+                <tr class="{% if not e.actif %}text-muted{% endif %}">
+                    <td>{{ e.matricule or "-" }}</td>
+                    <td class="fw-semibold">
+                        <a href="{{ url_for('salaires.employe_detail', employe_id=e.id) }}" class="text-decoration-none">{{ e.nom }}</a>
+                    </td>
+                    <td>{{ e.poste or "-" }}</td>
+                    <td>{{ e.departement or "-" }}</td>
+                    <td class="text-end">{{ e.salaire_base|kmf }}</td>
+                    <td>
+                        {% if e.actif %}
+                            <span class="badge text-bg-success">Actif</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">Inactif</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{{ url_for('salaires.employe_detail', employe_id=e.id) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{{ url_for('salaires.employe_modifier', employe_id=e.id) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        {% if current_user.role != 'secretaire' %}
+                        <form method="post" action="{{ url_for('salaires.employe_toggle_actif', employe_id=e.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-warning" title="{{ 'Désactiver' if e.actif else 'Réactiver' }}">
+                                <i class="bi {{ 'bi-pause-circle' if e.actif else 'bi-play-circle' }}"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                        <form method="post" action="{{ url_for('salaires.employe_supprimer', employe_id=e.id) }}" class="d-inline" onsubmit="return confirm('Supprimer cet employé ?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">Aucun employé enregistré.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

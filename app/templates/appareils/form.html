@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}{{ "Modifier" if appareil else "Nouvel" }} appareil{% endblock %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="h3 mb-0">{{ "Modifier l'appareil" if appareil else "Nouvel appareil" }}</h1>
+    <p class="text-muted mb-0">
+        <a href="{{ url_for('appareils.liste') }}" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Retour à la liste</a>
+    </p>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label" for="type_appareil">Type d'appareil *</label>
+                            <select class="form-select" id="type_appareil" name="type_appareil" required>
+                                <option value="">—</option>
+                                {% for t in types %}
+                                    <option value="{{ t }}" {% if form.type_appareil == t %}selected{% endif %}>{{ t }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="employe_id">Attribué à</label>
+                            <select class="form-select" id="employe_id" name="employe_id">
+                                <option value="">En stock (non attribué)</option>
+                                {% for e in employes %}
+                                    <option value="{{ e.id }}" {% if form.employe_id == e.id %}selected{% endif %}>{{ e.nom }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="marque">Marque</label>
+                            <input type="text" class="form-control" id="marque" name="marque" value="{{ form.marque or '' }}">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="modele">Modèle</label>
+                            <input type="text" class="form-control" id="modele" name="modele" value="{{ form.modele or '' }}">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="numero_serie">N° de série / IMEI</label>
+                            <input type="text" class="form-control" id="numero_serie" name="numero_serie" value="{{ form.numero_serie or '' }}">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="date_attribution">Date d'attribution</label>
+                            <input type="date" class="form-control" id="date_attribution" name="date_attribution" value="{{ form.date_attribution or '' }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="notes">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3">{{ form.notes or '' }}</textarea>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> {{ "Enregistrer" if appareil else "Ajouter" }}
+                        </button>
+                        <a href="{{ url_for('appareils.liste') }}" class="btn btn-outline-secondary">Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h6 mb-3"><i class="bi bi-clock-history"></i> Historique</h2>
+                {% if historique %}
+                <ul class="list-unstyled mb-0 sas-timeline">
+                    {% for h in historique %}
+                    {% set meta = types_historique.get(h.type_evenement, {"label": h.type_evenement, "icone": "bi-dot", "couleur": "secondary"}) %}
+                    <li class="sas-timeline-item">
+                        <div class="sas-timeline-dot bg-{{ meta.couleur }}"><i class="bi {{ meta.icone }}"></i></div>
+                        <div class="sas-timeline-content">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <span class="fw-semibold small">{{ meta.label }}</span>
+                                <span class="text-muted small">{{ h.date_evenement.strftime("%d/%m/%Y %H:%M") }}</span>
+                            </div>
+                            {% if h.description %}
+                                <div class="text-muted small">{{ h.description }}</div>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                    <p class="text-muted small mb-0">
+                        {% if appareil %}Aucun mouvement enregistré pour cet appareil.{% else %}L'historique apparaîtra une fois l'appareil créé.{% endif %}
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

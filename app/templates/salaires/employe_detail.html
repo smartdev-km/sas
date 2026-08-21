@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}{{ employe.nom }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">{{ employe.nom }}</h1>
+        <p class="text-muted mb-0">
+            <a href="{{ url_for('salaires.employes') }}" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Retour à la liste</a>
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('salaires.employe_modifier', employe_id=employe.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil"></i> Modifier
+        </a>
+        {% if current_user.role != 'secretaire' %}
+        <a href="{{ url_for('salaires.employe_acces', employe_id=employe.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-key"></i> Accès
+            {% if employe.password_hash %}<span class="badge text-bg-success ms-1">actif</span>{% endif %}
+        </a>
+        {% endif %}
+        {% if current_user.role != 'secretaire' %}
+        <form method="post" action="{{ url_for('salaires.employe_toggle_actif', employe_id=employe.id) }}">
+            <button type="submit" class="btn btn-outline-warning">
+                <i class="bi {{ 'bi-pause-circle' if employe.actif else 'bi-play-circle' }}"></i>
+                {{ 'Désactiver' if employe.actif else 'Réactiver' }}
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Poste &amp; contrat</h2>
+                <dl class="row mb-0 small">
+                    <dt class="col-5 text-muted fw-normal">Matricule</dt>
+                    <dd class="col-7">{{ employe.matricule or "-" }}</dd>
+                    <dt class="col-5 text-muted fw-normal">Statut</dt>
+                    <dd class="col-7">
+                        {% if employe.actif %}<span class="badge text-bg-success">Actif</span>{% else %}<span class="badge text-bg-secondary">Inactif</span>{% endif %}
+                    </dd>
+                    <dt class="col-5 text-muted fw-normal">Poste</dt>
+                    <dd class="col-7">{{ employe.poste or "-" }}</dd>
+                    <dt class="col-5 text-muted fw-normal">Département</dt>
+                    <dd class="col-7">{{ employe.departement or "-" }}</dd>
+                    <dt class="col-5 text-muted fw-normal">Type de contrat</dt>
+                    <dd class="col-7">{{ employe.type_contrat or "-" }}</dd>
+                    <dt class="col-5 text-muted fw-normal">Date d'embauche</dt>
+                    <dd class="col-7">{{ employe.date_embauche.strftime("%d/%m/%Y") if employe.date_embauche else "-" }}</dd>
+                    <dt class="col-5 text-muted fw-normal">Salaire de base</dt>
+                    <dd class="col-7 fw-semibold">{{ employe.salaire_base|kmf }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Coordonnées</h2>
+                <dl class="row mb-0 small">
+                    <dt class="col-5 text-muted fw-normal">Téléphone</dt>
+                    <dd class="col-7">{{ employe.telephone or "-" }}</dd>
+                    <dt class="col-5 text-muted fw-normal">Email</dt>
+                    <dd class="col-7">{{ employe.email or "-" }}</dd>
+                    <dt class="col-5 text-muted fw-normal">Adresse</dt>
+                    <dd class="col-7">{{ employe.adresse or "-" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Identité civile</h2>
+                <dl class="row mb-0 small">
+                    <dt class="col-5 text-muted fw-normal">Date de naissance</dt>
+                    <dd class="col-7">{{ employe.date_naissance.strftime("%d/%m/%Y") if employe.date_naissance else "-" }}</dd>
+                    <dt class="col-5 text-muted fw-normal">Sexe</dt>
+                    <dd class="col-7">{{ sexes.get(employe.sexe, "-") }}</dd>
+                    <dt class="col-5 text-muted fw-normal">N° pièce d'identité</dt>
+                    <dd class="col-7">{{ employe.numero_piece_identite or "-" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Informations de paiement</h2>
+                <dl class="row mb-0 small">
+                    <dt class="col-5 text-muted fw-normal">Mode de paiement</dt>
+                    <dd class="col-7">{{ employe.mode_paiement or "-" }}</dd>
+                    <dt class="col-5 text-muted fw-normal">N° compte / mobile money</dt>
+                    <dd class="col-7">{{ employe.numero_compte or "-" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h2 class="h6 mb-3">Derniers bulletins de salaire</h2>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Période</th>
+                        <th class="text-end">Montant</th>
+                        <th>Statut</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in bulletins %}
+                    <tr>
+                        <td>{{ mois_fr[b.mois - 1] }} {{ b.annee }}</td>
+                        <td class="text-end">{{ b.montant|kmf }}</td>
+                        <td>
+                            {% if b.statut == 'paye' %}
+                                <span class="badge text-bg-success">{{ statuts[b.statut] }}</span>
+                            {% else %}
+                                <span class="badge text-bg-warning">{{ statuts[b.statut] }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('salaires.bulletin_detail', bulletin_id=b.id) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-file-earmark-text"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-3">Aucun bulletin pour cet employé.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

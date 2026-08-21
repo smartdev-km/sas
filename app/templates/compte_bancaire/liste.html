@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% block title %}Compte Bancaire{% endblock %}
+{% block head %}
+<style>
+    .sas-libelle-wrap {
+        white-space: normal;
+        max-width: 260px;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Compte Bancaire</h1>
+        <p class="text-muted mb-0">Suivi des mouvements du compte de la société</p>
+    </div>
+    <div class="d-flex gap-2 align-items-end">
+        <form method="get" class="d-flex gap-2 align-items-end">
+            <div>
+                <label class="form-label small mb-1">Mois</label>
+                <select class="form-select form-select-sm" name="mois" onchange="this.form.submit()">
+                    {% for i in range(1, 13) %}
+                        <option value="{{ i }}" {% if i == mois %}selected{% endif %}>{{ i }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label small mb-1">Année</label>
+                <select class="form-select form-select-sm" name="annee" onchange="this.form.submit()">
+                    {% for a in annees %}
+                        <option value="{{ a }}" {% if a == annee %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+        {% if current_user.role == 'admin' %}
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-parametres">
+            <i class="bi bi-gear"></i> Paramètres
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card sas-kpi h-100">
+            <div class="card-body">
+                <div class="sas-kpi-icon bg-success-subtle text-success"><i class="bi bi-arrow-down-circle"></i></div>
+                <div class="sas-kpi-label">Débit (entrées)</div>
+                <div class="sas-kpi-value">{{ total_debit|kmf2 }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card sas-kpi h-100">
+            <div class="card-body">
+                <div class="sas-kpi-icon bg-danger-subtle text-danger"><i class="bi bi-arrow-up-circle"></i></div>
+                <div class="sas-kpi-label">Crédit (sorties)</div>
+                <div class="sas-kpi-value">{{ total_credit|kmf2 }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card sas-kpi h-100">
+            <div class="card-body">
+                <div class="sas-kpi-icon bg-primary-subtle text-primary"><i class="bi bi-wallet2"></i></div>
+                <div class="sas-kpi-label">Solde (fin de mois)</div>
+                <div class="sas-kpi-value">{{ solde|kmf2 }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card sas-kpi h-100">
+            <div class="card-body">
+                <div class="sas-kpi-icon bg-secondary-subtle text-secondary"><i class="bi bi-clock-history"></i></div>
+                <div class="sas-kpi-label">Solde d'ouverture</div>
+                <div class="sas-kpi-value">{{ solde_ouverture|kmf2 }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if current_user.role != 'admin' %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h6 mb-3">Ajouter une transaction</h2>
+        <form method="post" action="{{ url_for('compte_bancaire.nouvelle') }}" class="row g-2 align-items-end">
+            <input type="hidden" name="mois" value="{{ mois }}">
+            <input type="hidden" name="annee" value="{{ annee }}">
+            <div class="col-sm-6 col-md-2">
+                <label class="form-label small mb-1">Date *</label>
+                <input type="date" class="form-control form-control-sm" name="date" required>
+            </div>
+            <div class="col-sm-6 col-md-2">
+                <label class="form-label small mb-1">Bénéficiaire</label>
+                <input type="text" class="form-control form-control-sm" name="beneficiaire">
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label small mb-1">Libellé</label>
+                <input type="text" class="form-control form-control-sm" name="libelle">
+            </div>
+            <div class="col-sm-6 col-md-2">
+                <label class="form-label small mb-1">Réf. paiement</label>
+                <input type="text" class="form-control form-control-sm" name="reference_paiement">
+            </div>
+            <div class="col-sm-6 col-md-1">
+                <label class="form-label small mb-1">Montant *</label>
+                <input type="number" step="0.01" min="0.01" class="form-control form-control-sm" name="montant" required>
+            </div>
+            <div class="col-sm-6 col-md-1">
+                <label class="form-label small mb-1">Sens *</label>
+                <select class="form-select form-select-sm" name="sens" required>
+                    <option value="debit">Débit</option>
+                    <option value="credit">Crédit</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="card mb-4">
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover table-sm mb-0 align-middle text-nowrap">
+            <thead class="table-light">
+                <tr>
+                    <th>N°</th>
+                    <th>Date</th>
+                    <th class="sas-libelle-wrap">Bénéficiaire</th>
+                    <th class="sas-libelle-wrap">Libellé</th>
+                    <th>Réf. paiement</th>
+                    <th class="text-center bg-success-subtle">Débit</th>
+                    <th class="text-center bg-danger-subtle">Crédit</th>
+                    <th class="text-center bg-primary-subtle">Solde</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="table-light fst-italic">
+                    <td colspan="7">Solde d'ouverture</td>
+                    <td class="text-center fw-semibold bg-primary-subtle">{{ solde_ouverture|kmf2 }}</td>
+                    <td></td>
+                </tr>
+                {% for ligne in lignes %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ ligne.transaction.date.strftime("%d/%m/%Y") }}</td>
+                    <td class="sas-libelle-wrap">{{ ligne.transaction.beneficiaire or "-" }}</td>
+                    <td class="sas-libelle-wrap">
+                        {{ ligne.transaction.libelle or "-" }}
+                        {% if ligne.origine %}
+                            <span class="badge text-bg-secondary" title="Créée automatiquement depuis {{ ligne.origine }}">
+                                <i class="bi bi-link-45deg"></i> auto
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>{{ ligne.transaction.reference_paiement or "-" }}</td>
+                    <td class="text-center text-success bg-success-subtle fw-bold">{{ ligne.transaction.montant|kmf2 if ligne.transaction.sens == "debit" else "-" }}</td>
+                    <td class="text-center text-danger bg-danger-subtle">{{ ligne.transaction.montant|kmf2 if ligne.transaction.sens == "credit" else "-" }}</td>
+                    <td class="text-center fw-semibold bg-primary-subtle">{{ ligne.solde|kmf2 }}</td>
+                    <td class="text-end">
+                        {% if ligne.origine %}
+                            <span class="text-muted small" title="Provient de {{ ligne.origine }}, non modifiable ici">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                        {% elif ligne.transaction.valide %}
+                            <span class="text-muted small"><i class="bi bi-lock"></i></span>
+                        {% else %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modifier-{{ ligne.transaction.id }}">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <form method="post" action="{{ url_for('compte_bancaire.supprimer', transaction_id=ligne.transaction.id) }}" class="d-inline" onsubmit="return confirm('Supprimer cette transaction ?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                        {% if current_user.role == 'admin' %}
+                        <form method="post" action="{{ url_for('compte_bancaire.valider', transaction_id=ligne.transaction.id) }}" class="d-inline" onsubmit="return confirm('Valider cette transaction ? Elle ne pourra plus être modifiée ni supprimée ensuite.');">
+                            <button type="submit" class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-check-lg"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-4">Aucune transaction pour cette période.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if current_user.role == 'admin' %}
+<div class="modal fade" id="modal-parametres" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('compte_bancaire.solde_initial') }}">
+                <div class="modal-header">
+                    <h3 class="modal-title h6 mb-0">Paramètres du compte</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label" for="solde_initial">Solde initial du compte</label>
+                    <input type="number" step="0.01" class="form-control" id="solde_initial" name="solde_initial" value="{{ config.solde_initial }}">
+                    <div class="form-text">Montant du compte avant la première transaction suivie (report à nouveau).</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% for ligne in lignes if not ligne.origine and not ligne.transaction.valide %}
+<div class="modal fade" id="modifier-{{ ligne.transaction.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('compte_bancaire.modifier', transaction_id=ligne.transaction.id) }}">
+                <input type="hidden" name="mois" value="{{ mois }}">
+                <input type="hidden" name="annee" value="{{ annee }}">
+                <div class="modal-header">
+                    <h3 class="modal-title h6 mb-0">Modifier la transaction</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Date *</label>
+                        <input type="date" class="form-control" name="date" value="{{ ligne.transaction.date.isoformat() }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Bénéficiaire</label>
+                        <input type="text" class="form-control" name="beneficiaire" value="{{ ligne.transaction.beneficiaire or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Libellé</label>
+                        <input type="text" class="form-control" name="libelle" value="{{ ligne.transaction.libelle or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Réf. paiement</label>
+                        <input type="text" class="form-control" name="reference_paiement" value="{{ ligne.transaction.reference_paiement or '' }}">
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label">Montant *</label>
+                            <input type="number" step="0.01" min="0.01" class="form-control" name="montant" value="{{ ligne.transaction.montant }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Sens *</label>
+                            <select class="form-select" name="sens" required>
+                                <option value="debit" {% if ligne.transaction.sens == "debit" %}selected{% endif %}>Débit</option>
+                                <option value="credit" {% if ligne.transaction.sens == "credit" %}selected{% endif %}>Crédit</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Fournisseurs{% endblock %}
+{% block head %}
+<style>
+    .sas-societe-tronquee {
+        display: inline-block;
+        max-width: 220px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: bottom;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Fournisseurs</h1>
+        <p class="text-muted mb-0">Suivi des marchés fournisseurs de l'entreprise</p>
+    </div>
+    {% if current_user.role != 'admin' %}
+    <a href="{{ url_for('fournisseurs.nouveau') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Nouveau fournisseur
+    </a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Société</th>
+                    <th>N° marché</th>
+                    <th class="text-end">Montant marché</th>
+                    <th class="text-end">Taux acompte</th>
+                    <th>Statut</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in fournisseurs %}
+                <tr class="{% if not f.actif %}text-muted{% endif %}">
+                    <td class="fw-semibold">
+                        <a href="{{ url_for('fournisseurs.mouvement', fournisseur_id=f.id) }}" class="sas-societe-tronquee text-decoration-none text-reset" title="{{ f.nom_societe }}">
+                            {{ f.nom_societe }}
+                        </a>
+                    </td>
+                    <td>{{ f.numero_marche or "-" }}</td>
+                    <td class="text-end">{{ f.montant_marche|kmf if f.montant_marche is not none else "-" }}</td>
+                    <td class="text-end">{{ f.taux_acompte ~ "%" if f.taux_acompte is not none else "-" }}</td>
+                    <td>
+                        {% if f.actif %}
+                            <span class="badge text-bg-success">Actif</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">Inactif</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{{ url_for('fournisseurs.mouvement', fournisseur_id=f.id) }}" class="btn btn-sm btn-outline-primary" title="Mouvement du fournisseur">
+                            <i class="bi bi-receipt"></i>
+                        </a>
+                        <a href="{{ url_for('fournisseurs.modifier', fournisseur_id=f.id) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        {% if current_user.role != 'comptable' %}
+                        <form method="post" action="{{ url_for('fournisseurs.toggle_actif', fournisseur_id=f.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-warning" title="{{ 'Désactiver' if f.actif else 'Réactiver' }}">
+                                <i class="bi {{ 'bi-pause-circle' if f.actif else 'bi-play-circle' }}"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                        <form method="post" action="{{ url_for('fournisseurs.supprimer', fournisseur_id=f.id) }}" class="d-inline" onsubmit="return confirm('Supprimer ce fournisseur ?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">Aucun fournisseur enregistré.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

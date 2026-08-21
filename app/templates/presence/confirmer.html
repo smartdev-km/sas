@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Ma présence{% endblock %}
+{% block content %}
+<div class="text-center mb-4">
+    <h1 class="h4 mb-1">Confirmation de présence</h1>
+    <p class="text-muted mb-0">{{ now.strftime("%A %d %B %Y")|capitalize }}</p>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body text-center p-4">
+        {% if not session %}
+            <i class="bi bi-calendar-x fs-1 text-muted"></i>
+            <p class="mt-3 mb-0">Aucun appel n'a été lancé aujourd'hui.</p>
+            <p class="text-muted small">Revenez plus tard ou contactez votre administrateur.</p>
+
+        {% elif entree_faite and sortie_faite %}
+            <i class="bi bi-check-circle-fill fs-1 text-success"></i>
+            <p class="mt-3 mb-0 fw-semibold">Journée complète</p>
+            <p class="text-muted small mb-0">
+                Entrée à {{ presence.confirme_le.strftime("%H:%M") }} · Sortie à {{ presence.heure_sortie.strftime("%H:%M") }}
+            </p>
+            <p class="text-muted small">Merci et à demain !</p>
+
+        {% elif entree_faite and fenetre_sortie_ouverte %}
+            <i class="bi bi-hourglass-split fs-1 text-primary"></i>
+            <p class="mt-3 mb-1 fw-semibold">Entrée enregistrée à {{ presence.confirme_le.strftime("%H:%M") }}</p>
+            <p class="text-muted small mb-4">
+                Fenêtre de sortie ouverte jusqu'à {{ session.heure_fin_sortie.strftime("%H:%M") }}.
+            </p>
+            <form method="post">
+                <input type="hidden" name="action" value="sortie">
+                <button type="submit" class="btn btn-primary btn-lg px-5">
+                    <i class="bi bi-box-arrow-right"></i> Je marque ma sortie
+                </button>
+            </form>
+
+        {% elif entree_faite and sortie_expiree %}
+            <i class="bi bi-exclamation-triangle-fill fs-1 text-warning"></i>
+            <p class="mt-3 mb-0 fw-semibold">Fenêtre de sortie clôturée</p>
+            <p class="text-muted small">Vous n'avez pas marqué votre sortie à temps, votre journée est incomplète.</p>
+
+        {% elif entree_faite and sortie_a_venir %}
+            <i class="bi bi-hourglass-split fs-1 text-warning"></i>
+            <p class="mt-3 mb-1 fw-semibold">Entrée enregistrée à {{ presence.confirme_le.strftime("%H:%M") }}</p>
+            <p class="text-muted small">
+                La fenêtre de sortie ouvrira de {{ session.heure_debut_sortie.strftime("%H:%M") }} à {{ session.heure_fin_sortie.strftime("%H:%M") }}.
+            </p>
+
+        {% elif entree_expiree %}
+            <i class="bi bi-x-circle-fill fs-1 text-danger"></i>
+            <p class="mt-3 mb-0 fw-semibold">Fenêtre d'entrée clôturée</p>
+            <p class="text-muted small">Vous êtes marqué(e) absent(e) pour aujourd'hui.</p>
+
+        {% elif fenetre_entree_ouverte %}
+            <i class="bi bi-calendar-check fs-1 text-primary"></i>
+            <p class="mt-3 mb-1 fw-semibold">Appel en cours</p>
+            <p class="text-muted small mb-4">
+                Fenêtre d'entrée ouverte jusqu'à {{ session.heure_fin.strftime("%H:%M") }}.
+            </p>
+            <form method="post">
+                <input type="hidden" name="action" value="entree">
+                <button type="submit" class="btn btn-primary btn-lg px-5">
+                    <i class="bi bi-box-arrow-in-right"></i> Je marque mon entrée
+                </button>
+            </form>
+
+        {% else %}
+            <i class="bi bi-hourglass-split fs-1 text-warning"></i>
+            <p class="mt-3 mb-0 fw-semibold">La fenêtre d'entrée n'est pas encore ouverte</p>
+            <p class="text-muted small">
+                Ouverture de {{ session.heure_debut.strftime("%H:%M") }} à {{ session.heure_fin.strftime("%H:%M") }}.
+            </p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card sas-kpi h-100">
+            <div class="card-body">
+                <div class="sas-kpi-icon bg-primary-subtle text-primary"><i class="bi bi-pie-chart"></i></div>
+                <div class="sas-kpi-label">Taux de présence {{ annee }}</div>
+                <div class="sas-kpi-value">
+                    {% if stats.taux_presence is not none %}
+                        {{ stats.taux_presence }}%
+                    {% else %}
+                        —
+                    {% endif %}
+                </div>
+                <div class="sas-kpi-sub">
+                    {{ stats.total_travailles }} présence(s) · {{ stats.total_absence }} absence(s)
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Évolution de ma présence — {{ annee }}</h2>
+                <canvas id="chartPresence" height="140"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    const evolution = {{ stats.evolution | tojson }};
+
+    new Chart(document.getElementById('chartPresence'), {
+        type: 'bar',
+        data: {
+            labels: evolution.map((m) => m.label),
+            datasets: [
+                {
+                    label: 'Présent',
+                    data: evolution.map((m) => m.jours_travailles),
+                    backgroundColor: '#198754',
+                    stack: 'jours',
+                },
+                {
+                    label: 'Absent',
+                    data: evolution.map((m) => m.jours_absence),
+                    backgroundColor: '#dc3545',
+                    stack: 'jours',
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } },
+            scales: {
+                x: { stacked: true },
+                y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } },
+            },
+        },
+    });
+</script>
+{% endblock %}

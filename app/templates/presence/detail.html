@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Appel du {{ session.date.strftime("%d/%m/%Y") }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Appel du {{ session.date.strftime("%d/%m/%Y") }}</h1>
+        <p class="text-muted mb-0">
+            <a href="{{ url_for('presence.index') }}" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Retour</a>
+            · Entrée {{ session.heure_debut.strftime("%H:%M") }} – {{ session.heure_fin.strftime("%H:%M") }}
+            {% if session.heure_debut_sortie and session.heure_fin_sortie %}
+                · Sortie {{ session.heure_debut_sortie.strftime("%H:%M") }} – {{ session.heure_fin_sortie.strftime("%H:%M") }}
+            {% endif %}
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        {% if session.statut == 'ouverte' %}
+            <span class="badge text-bg-success align-self-center">Ouvert</span>
+            <form method="post" action="{{ url_for('presence.cloturer', session_id=session.id) }}" onsubmit="return confirm('Clôturer cet appel ? Les employés n\'ayant pas confirmé seront comptés absents.');">
+                <button type="submit" class="btn btn-outline-danger">
+                    <i class="bi bi-lock"></i> Clôturer l'appel
+                </button>
+            </form>
+        {% else %}
+            <span class="badge text-bg-secondary align-self-center">Clôturé</span>
+        {% endif %}
+        <form method="post" action="{{ url_for('presence.supprimer', session_id=session.id) }}" onsubmit="return confirm('Supprimer cet appel et toutes ses confirmations ?');">
+            <button type="submit" class="btn btn-outline-secondary">
+                <i class="bi bi-trash"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Employé</th>
+                    <th>Poste</th>
+                    <th>Statut</th>
+                    <th class="text-end">Heure d'entrée</th>
+                    <th class="text-end">Heure de sortie</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ligne in lignes %}
+                <tr>
+                    <td class="fw-semibold">{{ ligne.employe.nom }}</td>
+                    <td>{{ ligne.employe.poste or "-" }}</td>
+                    <td>
+                        {% if ligne.heure_sortie %}
+                            <span class="badge text-bg-success">Journée complète</span>
+                        {% elif ligne.present %}
+                            <span class="badge text-bg-primary">Entrée uniquement</span>
+                        {% elif session.statut == 'ouverte' %}
+                            <span class="badge text-bg-warning">En attente</span>
+                        {% else %}
+                            <span class="badge text-bg-danger">Absent</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">{{ ligne.heure_entree.strftime("%H:%M:%S") if ligne.heure_entree else "-" }}</td>
+                    <td class="text-end">{{ ligne.heure_sortie.strftime("%H:%M:%S") if ligne.heure_sortie else "-" }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">Aucun employé actif.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

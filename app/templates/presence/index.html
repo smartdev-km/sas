@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% block title %}Présence{% endblock %}
+{% block head %}
+<style>
+    @media print {
+        .sas-content > *:not(#modal-situation-presence) {
+            display: none !important;
+        }
+
+        .modal-backdrop {
+            display: none !important;
+        }
+
+        #modal-situation-presence {
+            position: static !important;
+            display: block !important;
+        }
+
+        #modal-situation-presence .modal-dialog {
+            max-width: 100% !important;
+            margin: 0 !important;
+        }
+
+        #modal-situation-presence .modal-content {
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        #modal-situation-presence .modal-header,
+        #modal-situation-presence .modal-footer,
+        #modal-situation-presence .btn-close {
+            display: none !important;
+        }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Présence</h1>
+        <p class="text-muted mb-0">L'appel du jour est lancé automatiquement selon les horaires programmés</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-situation-presence">
+            <i class="bi bi-eye"></i> Voir le détail — Situation de présence
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-parametres">
+            <i class="bi bi-gear"></i> Paramètres
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Entrée</th>
+                    <th>Sortie</th>
+                    <th>Statut</th>
+                    <th class="text-end">Entrées</th>
+                    <th class="text-end">Journées complètes</th>
+                    <th class="text-end">Absents</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in sessions %}
+                <tr>
+                    <td class="fw-semibold">{{ session.date.strftime("%d/%m/%Y") }}</td>
+                    <td>{{ session.heure_debut.strftime("%H:%M") }} – {{ session.heure_fin.strftime("%H:%M") }}</td>
+                    <td>
+                        {% if session.heure_debut_sortie and session.heure_fin_sortie %}
+                            {{ session.heure_debut_sortie.strftime("%H:%M") }} – {{ session.heure_fin_sortie.strftime("%H:%M") }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if session.statut == 'ouverte' %}
+                            <span class="badge text-bg-success">Ouvert</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">Clôturé</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">{{ resume[session.id].entrees }} / {{ nb_employes_actifs }}</td>
+                    <td class="text-end">{{ resume[session.id].sorties }} / {{ nb_employes_actifs }}</td>
+                    <td class="text-end">{{ resume[session.id].absents if session.statut != 'ouverte' else "-" }}</td>
+                    <td class="text-end">
+                        <a href="{{ url_for('presence.detail', session_id=session.id) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">Aucun appel lancé pour le moment.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-situation-presence" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title h6 mb-0">Situation de présence des employés — {{ mois_label }}</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4 d-none d-print-block">
+                    <h2 class="h4 mb-0"><i class="bi bi-hexagon-fill text-primary"></i> SAS</h2>
+                    <p class="text-muted mb-0">Situation de présence des employés — {{ mois_label }}</p>
+                </div>
+
+                <div class="row g-3 text-center mb-3">
+                    <div class="col-4">
+                        <div class="text-muted small">Employés actifs</div>
+                        <div class="fw-semibold fs-5">{{ nb_employes_actifs }}</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-muted small">Jours d'appel clôturés</div>
+                        <div class="fw-semibold fs-5">{{ nb_jours_ouvres_mois }}</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-muted small">Taux de présence moyen</div>
+                        <div class="fw-semibold fs-5">{{ (taux_moyen ~ "%") if taux_moyen is not none else "-" }}</div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Employé</th>
+                                <th>Matricule</th>
+                                <th>Poste</th>
+                                <th class="text-end">Jours travaillés</th>
+                                <th class="text-end">Jours d'absence</th>
+                                <th class="text-end">Taux de présence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ligne in situation_presence %}
+                            <tr>
+                                <td class="fw-semibold">{{ ligne.employe.nom }}</td>
+                                <td>{{ ligne.employe.matricule or "-" }}</td>
+                                <td>{{ ligne.employe.poste or "-" }}</td>
+                                <td class="text-end">{{ ligne.jours_travailles }}</td>
+                                <td class="text-end">{{ ligne.jours_absence }}</td>
+                                <td class="text-end">{{ (ligne.taux ~ "%") if ligne.taux is not none else "-" }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-3">Aucun employé actif.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <p class="text-muted small text-center mt-4 mb-0 d-none d-print-block">
+                    Document généré le {{ now.strftime("%d/%m/%Y à %H:%M") }}
+                    {% if current_user.is_authenticated %}par {{ current_user.nom }}{% endif %}.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-primary" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Imprimer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-parametres" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title h6 mb-0">Paramètres</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-horaires" type="button" role="tab">Horaires programmés</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-lancer-appel" type="button" role="tab">Lancer un appel</button>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane fade" id="tab-lancer-appel" role="tabpanel">
+                        <form method="post" action="{{ url_for('presence.lancer') }}">
+                            <p class="text-muted small">
+                                Utile pour un jour non programmé (ex. un samedi exceptionnel) ou pour rattraper un appel manqué.
+                            </p>
+                            <div class="row g-2">
+                                <div class="col-sm-4">
+                                    <label class="form-label small mb-1">Date</label>
+                                    <input type="date" class="form-control form-control-sm" name="date" value="{{ today.isoformat() }}" required>
+                                </div>
+                                <div class="col-sm-4">
+                                    <label class="form-label small mb-1">Entrée — début</label>
+                                    <input type="time" class="form-control form-control-sm" name="heure_debut" value="{{ heure_debut_defaut }}" required>
+                                </div>
+                                <div class="col-sm-4">
+                                    <label class="form-label small mb-1">Entrée — fin</label>
+                                    <input type="time" class="form-control form-control-sm" name="heure_fin" value="{{ heure_fin_defaut }}" required>
+                                </div>
+                            </div>
+                            <p class="text-muted small mb-3 mt-2">
+                                La fenêtre de sortie appliquée sera celle des horaires programmés.
+                            </p>
+                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                <i class="bi bi-megaphone"></i> Lancer l'appel
+                            </button>
+                        </form>
+                    </div>
+                    <div class="tab-pane fade show active" id="tab-horaires" role="tabpanel">
+                        <form method="post" action="{{ url_for('presence.sauvegarder_horaire') }}">
+                            <p class="text-muted small">
+                                L'appel du jour se lance automatiquement, sans action de votre part, les jours actifs ci-dessous.
+                            </p>
+                            <div class="row g-2">
+                                <div class="col-sm-6">
+                                    <label class="form-label small mb-1">Entrée — début</label>
+                                    <input type="time" class="form-control form-control-sm" name="heure_debut_entree" value="{{ horaire.heure_debut_entree.strftime('%H:%M') }}" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label small mb-1">Entrée — fin</label>
+                                    <input type="time" class="form-control form-control-sm" name="heure_fin_entree" value="{{ horaire.heure_fin_entree.strftime('%H:%M') }}" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label small mb-1">Sortie — début</label>
+                                    <input type="time" class="form-control form-control-sm" name="heure_debut_sortie" value="{{ horaire.heure_debut_sortie.strftime('%H:%M') }}" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label small mb-1">Sortie — fin</label>
+                                    <input type="time" class="form-control form-control-sm" name="heure_fin_sortie" value="{{ horaire.heure_fin_sortie.strftime('%H:%M') }}" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small mb-1 d-block">Jours actifs</label>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        {% for jour in jours_semaine %}
+                                        <div class="form-check form-check-inline m-0">
+                                            <input class="form-check-input" type="checkbox" name="jours_actifs" value="{{ loop.index0 }}" id="jour{{ loop.index0 }}" {% if loop.index0 in horaire.jours_actifs_liste() %}checked{% endif %}>
+                                            <label class="form-check-label small" for="jour{{ loop.index0 }}">{{ jour[:3] }}</label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-outline-primary btn-sm w-100 mt-3">
+                                <i class="bi bi-save"></i> Enregistrer les horaires
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

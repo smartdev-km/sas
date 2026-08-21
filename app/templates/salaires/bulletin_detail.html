@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}Bulletin de {{ bulletin.employe.nom }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 d-print-none">
+    <div>
+        <h1 class="h3 mb-0">Bulletin de salaire</h1>
+        <p class="text-muted mb-0">
+            <a href="{{ url_for('salaires.bulletins', annee=bulletin.annee, mois=bulletin.mois) }}" class="text-decoration-none">
+                <i class="bi bi-arrow-left"></i> Retour aux bulletins
+            </a>
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        {% if current_user.role != 'comptable' %}
+        {% if bulletin.statut != 'en_attente' %}
+        <button type="button" class="btn btn-outline-secondary" disabled title="Bulletin {{ statuts[bulletin.statut]|lower }} : non modifiable">
+            <i class="bi bi-lock"></i> Modifier
+        </button>
+        {% else %}
+        <a href="{{ url_for('salaires.bulletin_modifier', bulletin_id=bulletin.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil"></i> Modifier
+        </a>
+        {% if current_user.role == 'admin' %}
+        <form method="post" action="{{ url_for('salaires.bulletin_valider', bulletin_id=bulletin.id) }}">
+            <button type="submit" class="btn btn-outline-info">
+                <i class="bi bi-check-lg"></i> Valider
+            </button>
+        </form>
+        {% endif %}
+        {% endif %}
+        {% endif %}
+        {% if bulletin.statut == 'valide' and current_user.role == 'comptable' %}
+        <a href="{{ url_for('salaires.bulletin_ajouter_paiement', bulletin_id=bulletin.id) }}" class="btn btn-outline-success">
+            <i class="bi bi-cash-coin"></i> Ajouter le mode de paiement
+        </a>
+        {% endif %}
+        {% if current_user.role != 'secretaire' %}
+        <button type="button" class="btn btn-primary" onclick="window.print()">
+            <i class="bi bi-printer"></i> Imprimer
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-3">
+<div class="col-lg-8">
+<div class="card sas-payslip">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start sas-payslip-header pb-3 mb-4">
+            <div>
+                <h2 class="h4 mb-0"><i class="bi bi-hexagon-fill text-primary"></i> SAS</h2>
+                <p class="text-muted small mb-0">Bulletin de salaire</p>
+                {% if bulletin.numero_bulletin %}<p class="text-muted small mb-0">N° {{ bulletin.numero_bulletin }}</p>{% endif %}
+            </div>
+            <div class="text-end">
+                <div class="fw-semibold">{{ mois_fr[bulletin.mois - 1] }} {{ bulletin.annee }}</div>
+                {% if bulletin.statut == 'paye' %}
+                    <span class="badge text-bg-success">{{ statuts[bulletin.statut] }}</span>
+                {% elif bulletin.statut == 'valide' %}
+                    <span class="badge text-bg-info">{{ statuts[bulletin.statut] }}</span>
+                {% else %}
+                    <span class="badge text-bg-warning">{{ statuts[bulletin.statut] }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="sas-payslip-columns">
+            <div class="sas-payslip-col">
+                <section class="sas-payslip-section">
+                    <h3 class="sas-payslip-section-title">Informations employé</h3>
+                    <div class="sas-payslip-field">
+                        <div class="text-muted small">Nom complet</div>
+                        <div class="fw-semibold">{{ bulletin.employe.nom }}</div>
+                    </div>
+                    <div class="sas-payslip-field">
+                        <div class="text-muted small">Matricule</div>
+                        <div class="fw-semibold">{{ bulletin.employe.matricule or "-" }}</div>
+                    </div>
+                    <div class="sas-payslip-field">
+                        <div class="text-muted small">Poste</div>
+                        <div class="fw-semibold">{{ bulletin.employe.poste or "-" }}</div>
+                    </div>
+                    <div class="sas-payslip-field">
+                        <div class="text-muted small">Département</div>
+                        <div class="fw-semibold">{{ bulletin.employe.departement or "-" }}</div>
+                    </div>
+                    <div class="sas-payslip-field">
+                        <div class="text-muted small">Type de contrat</div>
+                        <div class="fw-semibold">{{ bulletin.employe.type_contrat or "-" }}</div>
+                    </div>
+                    <div class="sas-payslip-field">
+                        <div class="text-muted small">Date d'embauche</div>
+                        <div class="fw-semibold">{{ bulletin.employe.date_embauche.strftime("%d/%m/%Y") if bulletin.employe.date_embauche else "-" }}</div>
+                    </div>
+                    <div class="sas-payslip-field">
+                        <div class="text-muted small">Téléphone</div>
+                        <div class="fw-semibold">{{ bulletin.employe.telephone or "-" }}</div>
+                    </div>
+                    <div class="sas-payslip-field">
+                        <div class="text-muted small">Email</div>
+                        <div class="fw-semibold">{{ bulletin.employe.email or "-" }}</div>
+                    </div>
+                    <div class="sas-payslip-field">
+                        <div class="text-muted small">Adresse</div>
+                        <div class="fw-semibold">{{ bulletin.employe.adresse or "-" }}</div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="sas-payslip-col">
+                <section class="sas-payslip-section">
+                    <h3 class="sas-payslip-section-title">Période &amp; présence</h3>
+                    <div class="sas-payslip-field">
+                        <div class="text-muted small">Période</div>
+                        <div class="fw-semibold">{{ mois_fr[bulletin.mois - 1] }} {{ bulletin.annee }}</div>
+                    </div>
+                    <div class="sas-payslip-field">
+                        <div class="text-muted small">Date de paiement</div>
+                        <div class="fw-semibold">{{ bulletin.date_paiement.strftime("%d/%m/%Y") if bulletin.date_paiement else "Non payé" }}</div>
+                    </div>
+                    {% if bulletin.mode_paiement %}
+                    <div class="sas-payslip-field">
+                        <div class="text-muted small">Mode de paiement</div>
+                        <div class="fw-semibold">{{ "Virement bancaire" if bulletin.mode_paiement == "compte_bancaire" else "Cash" }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="sas-payslip-field">
+                        <div class="text-muted small">Jours travaillés</div>
+                        <div class="fw-semibold">{{ bulletin.jours_travailles if bulletin.jours_travailles is not none else "-" }}</div>
+                    </div>
+                    <div class="sas-payslip-field">
+                        <div class="text-muted small">Jours d'absence</div>
+                        <div class="fw-semibold">{{ bulletin.jours_absence if bulletin.jours_absence is not none else "-" }}</div>
+                    </div>
+                </section>
+
+                <section class="sas-payslip-section">
+                    <h3 class="sas-payslip-section-title">Modalités de paiement</h3>
+                    <div class="sas-payslip-field">
+                        <div class="text-muted small">Mode de paiement</div>
+                        <div class="fw-semibold">{{ bulletin.employe.mode_paiement or "-" }}</div>
+                    </div>
+                    <div class="sas-payslip-field">
+                        <div class="text-muted small">N° compte / mobile money</div>
+                        <div class="fw-semibold">{{ bulletin.employe.numero_compte or "-" }}</div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <section class="sas-payslip-section">
+            <h3 class="sas-payslip-section-title">Rémunération</h3>
+            <table class="table sas-payslip-table mb-0">
+                <tbody>
+                    <tr>
+                        <td class="py-2">Salaire de base</td>
+                        <td class="py-2 text-end">{{ bulletin.salaire_base|kmf }}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2">
+                            Primes / indemnités
+                            {% if bulletin.primes_detail %}<div class="text-muted small">{{ bulletin.primes_detail }}</div>{% endif %}
+                        </td>
+                        <td class="py-2 text-end text-success">+ {{ bulletin.primes|kmf }}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2">
+                            Retenues
+                            {% if bulletin.retenues_detail %}<div class="text-muted small">{{ bulletin.retenues_detail }}</div>{% endif %}
+                        </td>
+                        <td class="py-2 text-end text-danger">− {{ bulletin.retenues|kmf }}</td>
+                    </tr>
+                    <tr class="sas-payslip-total">
+                        <td class="py-2 fw-bold">Net à payer</td>
+                        <td class="py-2 text-end fw-bold">{{ bulletin.montant|kmf }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        {% if bulletin.note %}
+        <div class="sas-payslip-field mb-3">
+            <div class="text-muted small">Note</div>
+            <div>{{ bulletin.note }}</div>
+        </div>
+        {% endif %}
+
+        <div class="sas-payslip-columns sas-payslip-signatures">
+            <div class="sas-payslip-col">
+                <div class="text-muted small">Signature de l'employeur</div>
+                <div class="sas-payslip-signature-line border-top pt-1 text-muted small">SAS</div>
+            </div>
+            <div class="sas-payslip-col">
+                <div class="text-muted small">Signature de l'employé</div>
+                <div class="sas-payslip-signature-line border-top pt-1 text-muted small">{{ bulletin.employe.nom }}</div>
+            </div>
+        </div>
+
+        <p class="text-muted small mt-3 mb-0 d-print-block sas-payslip-footer">
+            Document généré le {{ now.strftime("%d/%m/%Y à %H:%M") }}
+            {% if current_user.is_authenticated %}par {{ current_user.nom }}{% endif %}.
+        </p>
+    </div>
+</div>
+</div>
+
+<div class="col-lg-4 d-print-none">
+    <div class="card mb-3">
+        <div class="card-body">
+            <h2 class="h6 mb-1">Taux de présence {{ bulletin.annee }}</h2>
+            <div class="fs-3 fw-bold">
+                {% if stats_presence.taux_presence is not none %}{{ stats_presence.taux_presence }}%{% else %}—{% endif %}
+            </div>
+            <p class="text-muted small mb-0">
+                {{ stats_presence.total_travailles }} présence(s) · {{ stats_presence.total_absence }} absence(s) sur l'année
+            </p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h2 class="h6 mb-3">Historique des bulletins</h2>
+            {% if historique_bulletins %}
+            <ul class="list-group list-group-flush">
+                {% for h in historique_bulletins %}
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-center {% if h.id == bulletin.id %}bg-light{% endif %}">
+                    <div>
+                        <a href="{{ url_for('salaires.bulletin_detail', bulletin_id=h.id) }}" class="text-decoration-none {% if h.id == bulletin.id %}fw-bold{% endif %}">
+                            {{ mois_fr[h.mois - 1] }} {{ h.annee }}
+                        </a>
+                        <div class="text-muted small">{{ h.montant|kmf }}</div>
+                    </div>
+                    {% if h.statut == 'paye' %}
+                        <span class="badge text-bg-success">{{ statuts[h.statut] }}</span>
+                    {% elif h.statut == 'valide' %}
+                        <span class="badge text-bg-info">{{ statuts[h.statut] }}</span>
+                    {% else %}
+                        <span class="badge text-bg-warning">{{ statuts[h.statut] }}</span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+                <p class="text-muted small mb-0">Aucun autre bulletin pour cet employé.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

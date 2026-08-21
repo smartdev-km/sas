@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Réparer un appareil{% endblock %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="h3 mb-0">Marquer comme réparé</h1>
+    <p class="text-muted mb-0">
+        <a href="{{ url_for('appareils.liste') }}" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Retour à la liste</a>
+    </p>
+</div>
+
+<div class="card mb-3" style="max-width: 560px;">
+    <div class="card-body">
+        <h2 class="h6 mb-3">Appareil endommagé</h2>
+        <dl class="row mb-0 small">
+            <dt class="col-4 text-muted fw-normal">Type</dt>
+            <dd class="col-8">{{ appareil.type_appareil }}</dd>
+            <dt class="col-4 text-muted fw-normal">Marque / Modèle</dt>
+            <dd class="col-8">{{ [appareil.marque, appareil.modele] | select | join(' ') or "-" }}</dd>
+            <dt class="col-4 text-muted fw-normal">Attribué actuellement à</dt>
+            <dd class="col-8">{{ appareil.employe.nom if appareil.employe else "En stock" }}</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="card" style="max-width: 560px;">
+    <div class="card-body">
+        <form method="post">
+            <div class="mb-3">
+                <label class="form-label" for="montant_reparation">Coût de la réparation (KMF)</label>
+                <input type="number" step="1" min="0" class="form-control" id="montant_reparation" name="montant_reparation" value="{{ form.montant_reparation or '' }}" placeholder="Laisser vide si aucun coût">
+                <div class="form-text">Si renseigné, une dépense « Réparation » sera automatiquement enregistrée.</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label d-block">Une fois réparé, l'appareil sera :</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="attribution" id="attribution-stock" value="stock" {% if form.attribution != 'employe' %}checked{% endif %} onchange="document.getElementById('bloc-employe').classList.add('d-none')">
+                    <label class="form-check-label" for="attribution-stock">Remis en stock (non attribué)</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="attribution" id="attribution-employe" value="employe" {% if form.attribution == 'employe' %}checked{% endif %} onchange="document.getElementById('bloc-employe').classList.remove('d-none')">
+                    <label class="form-check-label" for="attribution-employe">Attribué à un employé</label>
+                </div>
+            </div>
+
+            <div class="mb-3 {% if form.attribution != 'employe' %}d-none{% endif %}" id="bloc-employe">
+                <label class="form-label" for="employe_id">Employé</label>
+                <select class="form-select" id="employe_id" name="employe_id">
+                    <option value="">—</option>
+                    {% for e in employes %}
+                        <option value="{{ e.id }}" {% if form.employe_id == e.id %}selected{% endif %}>{{ e.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-lg"></i> Confirmer la réparation
+                </button>
+                <a href="{{ url_for('appareils.liste') }}" class="btn btn-outline-secondary">Annuler</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

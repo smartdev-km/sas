@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}SAS{% endblock %} · SAS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    {% block head %}{% endblock %}
+</head>
+<body>
+{% set sas_layout = 'admin' if (current_user.is_authenticated and current_user.is_admin_account) else ('employe' if current_user.is_authenticated else 'public') %}
+
+{% if sas_layout == 'admin' %}
+<div class="sas-layout">
+    <nav class="sas-sidebar d-print-none">
+        <div class="sas-brand">
+            <i class="bi bi-hexagon-fill"></i> SAS
+        </div>
+        <ul class="nav flex-column sas-nav">
+            {% if current_user.role in ('admin', 'comptable', 'secretaire') %}
+            <li class="nav-item">
+                <a class="nav-link {% if request.blueprint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard.index') }}">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+            </li>
+            {% endif %}
+            {% if current_user.role in ('admin', 'comptable') %}
+            <li class="nav-item">
+                <a class="nav-link {% if request.blueprint == 'depenses' %}active{% endif %}" href="{{ url_for('depenses.liste') }}">
+                    <i class="bi bi-graph-down-arrow"></i> Dépenses
+                </a>
+            </li>
+            {% endif %}
+            {% if current_user.role in ('admin', 'comptable') %}
+            <li class="nav-item">
+                <a class="nav-link {% if request.blueprint == 'compte_bancaire' %}active{% endif %}" href="{{ url_for('compte_bancaire.liste') }}">
+                    <i class="bi bi-bank"></i> Compte Bancaire
+                </a>
+            </li>
+            {% endif %}
+            {% if current_user.role in ('admin', 'comptable') %}
+            <li class="nav-item">
+                <a class="nav-link {% if request.blueprint == 'consommables' %}active{% endif %}" href="{{ url_for('consommables.liste') }}">
+                    <i class="bi bi-lightning-charge"></i> Consommables
+                </a>
+            </li>
+            {% endif %}
+            {% if current_user.role in ('admin', 'comptable') %}
+            <li class="nav-item">
+                <a class="nav-link {% if request.blueprint == 'fournisseurs' %}active{% endif %}" href="{{ url_for('fournisseurs.liste') }}">
+                    <i class="bi bi-truck"></i> Fournisseurs
+                </a>
+            </li>
+            {% endif %}
+            {% if current_user.role in ('admin', 'secretaire') %}
+            <li class="nav-item">
+                <a class="nav-link {% if request.blueprint == 'rapports' %}active{% endif %}" href="{{ url_for('rapports.index') }}">
+                    <i class="bi bi-file-earmark-bar-graph"></i> Rapports mensuels
+                </a>
+            </li>
+            {% endif %}
+            {% if current_user.role in ('admin', 'secretaire', 'comptable') %}
+            <li class="nav-item">
+                <a class="nav-link {% if request.blueprint == 'salaires' %}active{% endif %}" href="{{ url_for('salaires.bulletins') }}">
+                    <i class="bi bi-people"></i> Salaires
+                </a>
+            </li>
+            {% endif %}
+            {% if current_user.role == 'admin' %}
+            <li class="nav-item">
+                <a class="nav-link {% if request.blueprint == 'presence' and request.endpoint != 'presence.confirmer' %}active{% endif %}" href="{{ url_for('presence.index') }}">
+                    <i class="bi bi-calendar-check"></i> Présence
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.blueprint == 'appareils' %}active{% endif %}" href="{{ url_for('appareils.liste') }}">
+                    <i class="bi bi-laptop"></i> Appareils
+                </a>
+            </li>
+            {% endif %}
+            {% if current_user.role in ('comptable', 'secretaire') %}
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'presence.confirmer' %}active{% endif %}" href="{{ url_for('presence.confirmer') }}">
+                    <i class="bi bi-calendar-check"></i> Ma présence
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'appareils.mes_appareils' %}active{% endif %}" href="{{ url_for('appareils.mes_appareils') }}">
+                    <i class="bi bi-laptop"></i> Mes appareils
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+        <div class="sas-user">
+            <div class="small text-truncate">{{ current_user.nom }}</div>
+            {% if current_user.role != 'admin' %}
+                <div class="small text-white-50">{{ current_user.role|capitalize }}</div>
+            {% endif %}
+            <a href="{{ url_for('auth.profil') }}" class="btn btn-sm btn-outline-light mt-2 w-100">
+                <i class="bi bi-person-circle"></i> Mon profil
+            </a>
+            <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline-light mt-2 w-100">
+                <i class="bi bi-box-arrow-right"></i> Déconnexion
+            </a>
+        </div>
+    </nav>
+    <main class="sas-content">
+{% elif sas_layout == 'employe' %}
+<nav class="navbar navbar-dark sas-employe-navbar">
+    <div class="container-fluid">
+        <span class="navbar-brand mb-0">
+            <i class="bi bi-hexagon-fill"></i> SAS
+        </span>
+        <div class="d-flex align-items-center gap-3">
+            <a href="{{ url_for('presence.confirmer') }}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-calendar-check"></i> Ma présence
+            </a>
+            <a href="{{ url_for('appareils.mes_appareils') }}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-laptop"></i> Mes appareils
+            </a>
+            <span class="text-white-50 small">{{ current_user.nom }}</span>
+            <a href="{{ url_for('employe_auth.profil') }}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-person-circle"></i> Mon profil
+            </a>
+            <a href="{{ url_for('employe_auth.logout') }}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-box-arrow-right"></i> Déconnexion
+            </a>
+        </div>
+    </div>
+</nav>
+<main class="sas-employe-content">
+{% endif %}
+
+{% if sas_layout != 'public' %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show d-print-none" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+{% else %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    {% block auth_content %}{% endblock %}
+{% endif %}
+
+{% if sas_layout == 'admin' %}
+    </main>
+</div>
+{% elif sas_layout == 'employe' %}
+</main>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

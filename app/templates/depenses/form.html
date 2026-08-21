@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{{ "Modifier" if depense else "Nouvelle" }} dépense{% endblock %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="h3 mb-0">{{ "Modifier la dépense" if depense else "Nouvelle dépense" }}</h1>
+    <p class="text-muted mb-0">
+        <a href="{{ url_for('depenses.liste') }}" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Retour à la liste</a>
+    </p>
+</div>
+
+<div class="card" style="max-width: 640px;">
+    <div class="card-body">
+        <form method="post">
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <label class="form-label" for="date">Date *</label>
+                    <input type="date" class="form-control" id="date" name="date" value="{{ form.date or '' }}" required>
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label" for="montant">Montant (KMF) *</label>
+                    <input type="number" step="1" min="1" class="form-control" id="montant" name="montant" value="{{ form.montant or '' }}" required>
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label" for="categorie">Catégorie</label>
+                    <select class="form-select" id="categorie" name="categorie">
+                        <option value="">—</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat }}" {% if form.categorie == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label" for="beneficiaire">Bénéficiaire</label>
+                    <input type="text" class="form-control" id="beneficiaire" name="beneficiaire" value="{{ form.beneficiaire or '' }}" placeholder="Personne ou entreprise payée">
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="description">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3">{{ form.description or '' }}</textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label d-block">Mode de paiement</label>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="mode_paiement" id="mode-cash" value="cash" {% if form.mode_paiement != 'compte_bancaire' %}checked{% endif %} onchange="document.getElementById('bloc-compte-bancaire').classList.add('d-none')">
+                        <label class="form-check-label" for="mode-cash">Cash</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="mode_paiement" id="mode-compte-bancaire" value="compte_bancaire" {% if form.mode_paiement == 'compte_bancaire' %}checked{% endif %} onchange="document.getElementById('bloc-compte-bancaire').classList.remove('d-none')">
+                        <label class="form-check-label" for="mode-compte-bancaire">Compte bancaire</label>
+                    </div>
+                </div>
+                <div class="col-12 {% if form.mode_paiement != 'compte_bancaire' %}d-none{% endif %}" id="bloc-compte-bancaire">
+                    <div class="card bg-body-secondary border-0">
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">
+                                Une fois cette dépense validée par un admin, une transaction sera automatiquement ajoutée dans Compte Bancaire.
+                            </p>
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <label class="form-label" for="libelle_bancaire">Libellé</label>
+                                    <input type="text" class="form-control" id="libelle_bancaire" name="libelle_bancaire" value="{{ form.libelle_bancaire or '' }}">
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label" for="reference_paiement">Réf. paiement</label>
+                                    <input type="text" class="form-control" id="reference_paiement" name="reference_paiement" value="{{ form.reference_paiement or '' }}">
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label mb-1">Montant *</label>
+                                    <div class="form-control-plaintext py-0">Le montant de la dépense ci-dessus</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label mb-1">Sens</label>
+                                    <div><span class="badge text-bg-danger">Crédit (sortie)</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> {{ "Enregistrer" if depense else "Ajouter" }}
+                </button>
+                <a href="{{ url_for('depenses.liste') }}" class="btn btn-outline-secondary">Annuler</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

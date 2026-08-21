@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Bulletins de salaire{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Salaires</h1>
+        <p class="text-muted mb-0">Gestion des employés et des bulletins de salaire</p>
+    </div>
+</div>
+
+<ul class="nav nav-pills mb-4">
+    {% if current_user.role != 'comptable' %}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('salaires.employes') }}">Employés</a>
+    </li>
+    {% endif %}
+    <li class="nav-item">
+        <a class="nav-link active" href="{{ url_for('salaires.bulletins') }}">Bulletins de salaire</a>
+    </li>
+</ul>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-auto">
+                <form method="get" class="d-flex gap-2 align-items-end">
+                    <div>
+                        <label class="form-label small mb-1">Mois</label>
+                        <select class="form-select form-select-sm" name="mois" onchange="this.form.submit()">
+                            {% for i in range(1, 13) %}
+                                <option value="{{ i }}" {% if i == mois %}selected{% endif %}>{{ mois_fr[i - 1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1">Année</label>
+                        <select class="form-select form-select-sm" name="annee" onchange="this.form.submit()">
+                            {% for a in annees %}
+                                <option value="{{ a }}" {% if a == annee %}selected{% endif %}>{{ a }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            {% if current_user.role == 'secretaire' %}
+            <div class="col-auto ms-auto">
+                <form method="post" action="{{ url_for('salaires.bulletins_generer') }}">
+                    <input type="hidden" name="mois" value="{{ mois }}">
+                    <input type="hidden" name="annee" value="{{ annee }}">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-magic"></i> Générer les bulletins de {{ mois_fr[mois - 1] }} {{ annee }}
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body d-flex justify-content-between align-items-center py-2 flex-wrap gap-2">
+        <span class="text-muted small">{{ bulletins|length }} bulletin(s) — {{ nb_employes_actifs }} employé(s) actif(s)</span>
+        <span class="fw-semibold">Masse salariale : {{ masse_salariale|kmf }}</span>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>N° bulletin</th>
+                    <th>Employé</th>
+                    <th>Poste</th>
+                    <th class="text-end">Net à payer</th>
+                    <th>Statut</th>
+                    <th>Date de paiement</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in bulletins %}
+                <tr>
+                    <td class="text-muted small">{{ b.numero_bulletin or "-" }}</td>
+                    <td class="fw-semibold">{{ b.employe.nom }}</td>
+                    <td>{{ b.employe.poste or "-" }}</td>
+                    <td class="text-end">{{ b.montant|kmf }}</td>
+                    <td>
+                        {% if b.statut == 'paye' %}
+                            <span class="badge text-bg-success">{{ statuts[b.statut] }}</span>
+                        {% elif b.statut == 'valide' %}
+                            <span class="badge text-bg-info">{{ statuts[b.statut] }}</span>
+                        {% else %}
+                            <span class="badge text-bg-warning">{{ statuts[b.statut] }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ b.date_paiement.strftime("%d/%m/%Y") if b.date_paiement else "-" }}</td>
+                    <td class="text-end">
+                        <a href="{{ url_for('salaires.bulletin_detail', bulletin_id=b.id) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </a>
+                        {% if b.statut == 'en_attente' %}
+                            {% if current_user.role == 'admin' %}
+                            <form method="post" action="{{ url_for('salaires.bulletin_valider', bulletin_id=b.id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-info" title="Valider">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                            {% if current_user.role != 'comptable' %}
+                            <form method="post" action="{{ url_for('salaires.bulletin_supprimer', bulletin_id=b.id) }}" class="d-inline" onsubmit="return confirm('Supprimer ce bulletin ?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        {% elif b.statut == 'valide' and current_user.role == 'comptable' %}
+                            <a href="{{ url_for('salaires.bulletin_ajouter_paiement', bulletin_id=b.id) }}" class="btn btn-sm btn-outline-success" title="Ajouter le mode de paiement">
+                                <i class="bi bi-cash-coin"></i>
+                            </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        Aucun bulletin pour cette période. Utilisez "Générer les bulletins" pour créer les bulletins des employés actifs.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

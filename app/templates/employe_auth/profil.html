@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Mon profil{% endblock %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="h4 mb-0">Mon profil</h1>
+    <p class="text-muted mb-0">{{ current_user.nom }} — {{ current_user.matricule or "" }}</p>
+</div>
+
+<form method="post">
+    <div class="card mb-3">
+        <div class="card-body">
+            <h2 class="h6 mb-3">Coordonnées</h2>
+            <div class="mb-3">
+                <label class="form-label" for="telephone">Téléphone</label>
+                <input type="text" class="form-control" id="telephone" name="telephone" value="{{ current_user.telephone or '' }}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="email">Email *</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email or '' }}" required>
+                <div class="form-text">Utilisé pour vous connecter à cet espace.</div>
+            </div>
+            <div class="mb-1">
+                <label class="form-label" for="adresse">Adresse</label>
+                <input type="text" class="form-control" id="adresse" name="adresse" value="{{ current_user.adresse or '' }}">
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h2 class="h6 mb-3">Changer le mot de passe</h2>
+            <p class="text-muted small">Laissez vide si vous ne souhaitez pas le modifier.</p>
+            <div class="mb-3">
+                <label class="form-label" for="mot_de_passe_actuel">Mot de passe actuel</label>
+                <input type="password" class="form-control" id="mot_de_passe_actuel" name="mot_de_passe_actuel">
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="nouveau_mot_de_passe">Nouveau mot de passe</label>
+                <input type="password" class="form-control" id="nouveau_mot_de_passe" name="nouveau_mot_de_passe" minlength="6">
+            </div>
+            <div class="mb-1">
+                <label class="form-label" for="confirmation_mot_de_passe">Confirmer le nouveau mot de passe</label>
+                <input type="password" class="form-control" id="confirmation_mot_de_passe" name="confirmation_mot_de_passe" minlength="6">
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-lg"></i> Enregistrer
+    </button>
+</form>
+{% endblock %}

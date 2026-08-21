@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Dashboard</h1>
+        <p class="text-muted mb-0">Vue d'ensemble de l'activité de SAS</p>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-4 col-xl">
+        <div class="card sas-kpi h-100">
+            <div class="card-body">
+                <div class="sas-kpi-icon bg-danger-subtle text-danger"><i class="bi bi-graph-down-arrow"></i></div>
+                <div class="sas-kpi-label">Dépenses (ce mois)</div>
+                <div class="sas-kpi-value">{{ kpis.depenses_mois|kmf }}</div>
+                <div class="sas-kpi-sub">Total global : {{ kpis.total_depenses|kmf }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl">
+        <div class="card sas-kpi h-100">
+            <div class="card-body">
+                <div class="sas-kpi-icon bg-warning-subtle text-warning"><i class="bi bi-people"></i></div>
+                <div class="sas-kpi-label">Masse salariale (ce mois)</div>
+                <div class="sas-kpi-value">{{ kpis.masse_salariale_mois|kmf }}</div>
+                <div class="sas-kpi-sub">{{ kpis.nb_fournisseurs }} fournisseur(s) actif(s)</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl">
+        <div class="card sas-kpi h-100">
+            <div class="card-body">
+                <div class="sas-kpi-icon bg-info-subtle text-info"><i class="bi bi-lightning-charge"></i></div>
+                <div class="sas-kpi-label">Consommables (ce mois)</div>
+                <div class="sas-kpi-value">{{ kpis.consommables_mois|kmf }}</div>
+                <div class="sas-kpi-sub">{{ kpis.nb_consommables_payes }} / {{ kpis.nb_consommables_mois }} payé(s)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-8">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Évolution mensuelle — Dépenses vs Consommables</h2>
+                <canvas id="chartEvolution" height="110"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Répartition des dépenses par catégorie</h2>
+                {% if chart_data.categories_labels %}
+                    <canvas id="chartCategories" height="220"></canvas>
+                {% else %}
+                    <p class="text-muted small mb-0">Aucune dépense enregistrée pour le moment.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mt-1">
+    <div class="col-xl-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h6 mb-0">Mouvements des fournisseurs</h2>
+                    {% if current_user.role in ('admin', 'comptable') %}
+                    <a href="{{ url_for('fournisseurs.liste') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-truck"></i> Voir tout
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Société</th>
+                                <th class="text-end">Montant net payé</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for f in dernieres_factures_fournisseurs %}
+                            <tr>
+                                <td>{{ f.date_facture.strftime("%d/%m/%Y") if f.date_facture else "-" }}</td>
+                                <td>
+                                    {% if current_user.role in ('admin', 'comptable') %}
+                                    <a href="{{ url_for('fournisseurs.mouvement', fournisseur_id=f.fournisseur_id) }}" class="text-decoration-none">
+                                        {{ f.fournisseur.nom_societe }}
+                                    </a>
+                                    {% else %}
+                                    {{ f.fournisseur.nom_societe }}
+                                    {% endif %}
+                                </td>
+                                <td class="text-end text-primary fw-semibold">{{ f.montant_net_paye|kmf }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">Aucune facture fournisseur enregistrée.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h6 mb-0">Dernières dépenses</h2>
+                    {% if current_user.role in ('admin', 'comptable') %}
+                    <a href="{{ url_for('depenses.liste') }}" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-graph-down-arrow"></i> Voir tout
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Catégorie</th>
+                                <th class="text-end">Montant</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in dernieres_depenses %}
+                            <tr>
+                                <td>{{ d.date.strftime("%d/%m/%Y") if d.date else "-" }}</td>
+                                <td>{{ d.categorie or "-" }}</td>
+                                <td class="text-end text-danger fw-semibold">{{ d.montant|kmf }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">Aucune dépense enregistrée.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    const chartData = {{ chart_data | tojson }};
+
+    function formatKmf(value) {
+        return new Intl.NumberFormat('fr-FR').format(Math.round(value)) + ' KMF';
+    }
+
+    new Chart(document.getElementById('chartEvolution'), {
+        type: 'line',
+        data: {
+            labels: chartData.labels,
+            datasets: [
+                {
+                    label: 'Dépenses',
+                    data: chartData.depenses,
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.3,
+                    fill: true,
+                },
+                {
+                    label: 'Consommables',
+                    data: chartData.consommables,
+                    borderColor: '#0dcaf0',
+                    backgroundColor: 'rgba(13, 202, 240, 0.1)',
+                    tension: 0.3,
+                    fill: true,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${formatKmf(ctx.parsed.y)}` } },
+            },
+            scales: { y: { beginAtZero: true, ticks: { callback: (value) => formatKmf(value) } } },
+        },
+    });
+
+    {% if chart_data.categories_labels %}
+    new Chart(document.getElementById('chartCategories'), {
+        type: 'doughnut',
+        data: {
+            labels: chartData.categories_labels,
+            datasets: [{
+                data: chartData.categories_valeurs,
+                backgroundColor: ['#0d6efd', '#198754', '#dc3545', '#ffc107', '#6f42c1', '#20c997', '#fd7e14', '#6c757d'],
+            }],
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${formatKmf(ctx.parsed)}` } },
+            },
+        },
+    });
+    {% endif %}
+</script>
+{% endblock %}

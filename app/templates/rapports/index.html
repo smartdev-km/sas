@@ -1,0 +1,528 @@
+{% extends "base.html" %}
+{% block title %}Rapport mensuel{% endblock %}
+{% block head %}
+<style>
+    .sas-rapport-chart {
+        position: relative;
+        height: 160px;
+    }
+
+    @media print {
+        @page {
+            size: A4 landscape;
+            margin: 1cm;
+        }
+
+        body {
+            font-size: 0.72rem;
+        }
+
+        .sas-content {
+            padding: 0.25rem;
+        }
+
+        .card {
+            box-shadow: none !important;
+            border: 1px solid #dee2e6 !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        canvas {
+            break-inside: avoid;
+        }
+
+        .sas-rapport-chart {
+            display: none !important;
+        }
+
+        .sas-rapport-repartition .col-8 {
+            width: 100% !important;
+            max-width: 100% !important;
+            flex: none !important;
+        }
+
+        .sas-rapport-repartition {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .sas-rapport-repartition > [class*="col-"] {
+            width: 100% !important;
+            max-width: 100% !important;
+            flex: none !important;
+        }
+
+        .card-body {
+            padding: 0.5rem 0.75rem !important;
+        }
+
+        .row.g-3 {
+            --bs-gutter-x: 0.5rem;
+            --bs-gutter-y: 0.5rem;
+        }
+
+        .mb-4 {
+            margin-bottom: 0.5rem !important;
+        }
+
+        .mb-3 {
+            margin-bottom: 0.35rem !important;
+        }
+
+        h2.h6 {
+            font-size: 0.72rem;
+            margin-bottom: 0.35rem !important;
+        }
+
+        .sas-kpi-icon {
+            width: 1.6rem;
+            height: 1.6rem;
+            font-size: 0.8rem;
+            margin-bottom: 0.25rem;
+            border-radius: 0.4rem;
+        }
+
+        .sas-kpi-value {
+            font-size: 1rem;
+        }
+
+        .sas-kpi-label {
+            font-size: 0.62rem;
+        }
+
+        .sas-kpi-sub {
+            font-size: 0.58rem;
+        }
+
+        .sas-rapport-chart {
+            height: 90px;
+        }
+
+        table td, table th {
+            padding-top: 0.2rem !important;
+            padding-bottom: 0.2rem !important;
+            font-size: 0.68rem;
+        }
+
+        .sas-payslip-table td {
+            padding-left: 0.6rem !important;
+            padding-right: 0.6rem !important;
+        }
+
+        .sas-rapport-kpis {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+        }
+
+        .sas-rapport-kpis > div {
+            flex: 1 1 0 !important;
+            max-width: none !important;
+            width: auto !important;
+        }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 d-print-none">
+    <div>
+        <h1 class="h3 mb-0">Rapport mensuel</h1>
+        <p class="text-muted mb-0">Synthèse de l'activité de SAS</p>
+    </div>
+    <div class="d-flex gap-2 align-items-end">
+        <form method="get" class="d-flex gap-2 align-items-end">
+            <div>
+                <label class="form-label small mb-1">Mois</label>
+                <select class="form-select form-select-sm" name="mois" onchange="this.form.submit()">
+                    {% for i in range(1, 13) %}
+                        <option value="{{ i }}" {% if i == mois %}selected{% endif %}>{{ mois_fr[i - 1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label small mb-1">Année</label>
+                <select class="form-select form-select-sm" name="annee" onchange="this.form.submit()">
+                    {% for a in annees %}
+                        <option value="{{ a }}" {% if a == annee %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+        <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
+            <i class="bi bi-printer"></i> Imprimer
+        </button>
+    </div>
+</div>
+
+<div class="sas-rapport-header text-center mb-4 d-none d-print-block">
+    <h2 class="h4 mb-0"><i class="bi bi-hexagon-fill text-primary"></i> SAS</h2>
+    <p class="text-muted mb-0">Rapport mensuel — {{ mois_fr[mois - 1] }} {{ annee }}</p>
+</div>
+
+<div class="row g-3 mb-4 sas-rapport-kpis">
+    <div class="col-sm-6 col-lg-4 col-xl">
+        <div class="card sas-kpi h-100">
+            <div class="card-body">
+                <div class="sas-kpi-icon bg-danger-subtle text-danger"><i class="bi bi-graph-down-arrow"></i></div>
+                <div class="sas-kpi-label">Dépenses</div>
+                <div class="sas-kpi-value">{{ kpis.total_depenses|kmf }}</div>
+                <div class="sas-kpi-sub">{{ kpis.nb_depenses }} dépense(s)</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl">
+        <div class="card sas-kpi h-100">
+            <div class="card-body">
+                <div class="sas-kpi-icon bg-primary-subtle text-primary"><i class="bi bi-wallet2"></i></div>
+                <div class="sas-kpi-label">Solde compte bancaire</div>
+                <div class="sas-kpi-value">{{ kpis.solde_compte|kmf2 }}</div>
+                <div class="sas-kpi-sub">Débit {{ kpis.total_debit|kmf2 }} · Crédit {{ kpis.total_credit|kmf2 }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl">
+        <div class="card sas-kpi h-100">
+            <div class="card-body">
+                <div class="sas-kpi-icon bg-warning-subtle text-warning"><i class="bi bi-people"></i></div>
+                <div class="sas-kpi-label">Masse salariale</div>
+                <div class="sas-kpi-value">{{ kpis.masse_salariale|kmf }}</div>
+                <div class="sas-kpi-sub">{{ kpis.nb_bulletins_payes }} payé(s) · {{ kpis.nb_bulletins_attente }} en attente</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl">
+        <div class="card sas-kpi h-100">
+            <div class="card-body">
+                <div class="sas-kpi-icon bg-info-subtle text-info"><i class="bi bi-lightning-charge"></i></div>
+                <div class="sas-kpi-label">Consommables</div>
+                <div class="sas-kpi-value">{{ kpis.total_consommables|kmf }}</div>
+                <div class="sas-kpi-sub">{{ kpis.nb_consommables_payes }} / {{ kpis.nb_consommables }} payé(s)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h6 mb-3">Évolution vs {{ evolution.mois_precedent_label }}</h2>
+        <div class="row g-3 text-center">
+            {% for cle, libelle in (("depenses", "Dépenses"), ("masse_salariale", "Masse salariale"), ("consommables", "Consommables"), ("solde_compte", "Solde compte bancaire")) %}
+            {% set variation = evolution[cle] %}
+            <div class="col-6 col-lg-3">
+                <div class="text-muted small">{{ libelle }}</div>
+                <div class="fw-semibold">{{ variation.actuel|kmf }}</div>
+                <div class="text-muted small">{{ evolution.mois_precedent_label }} : {{ variation.precedent|kmf }}</div>
+                {% if variation.pourcentage is none %}
+                    <div class="text-muted small">n/a</div>
+                {% else %}
+                    <div class="small {{ 'text-success' if variation.ecart >= 0 else 'text-danger' }}">
+                        <i class="bi {{ 'bi-arrow-up-right' if variation.ecart >= 0 else 'bi-arrow-down-right' }}"></i>
+                        {{ variation.pourcentage }}% ({{ variation.ecart|kmf }})
+                    </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Résumé équipe</h2>
+                <div class="row text-center g-2">
+                    <div class="col-4">
+                        <div class="fw-semibold fs-5">{{ presence.nb_employes }}</div>
+                        <div class="text-muted small">Employé(s) actif(s)</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-semibold fs-5">
+                            {% if presence.taux is not none %}{{ presence.taux }}%{% else %}—{% endif %}
+                        </div>
+                        <div class="text-muted small">Taux de présence</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-semibold fs-5">{{ kpis.nb_fournisseurs_actifs }}</div>
+                        <div class="text-muted small">Fournisseur(s) actif(s)</div>
+                    </div>
+                </div>
+                <p class="text-muted small mt-3 mb-0">
+                    {{ presence.jours_travailles }} jour(s) de présence confirmée · {{ presence.jours_absence }} jour(s) d'absence, cumulés sur les appels clôturés du mois.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Bulletins de salaire du mois</h2>
+                {% if bulletins_mois %}
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Employé</th>
+                                <th class="text-end">Montant</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in bulletins_mois %}
+                            <tr>
+                                <td>{{ b.employe.nom }}</td>
+                                <td class="text-end">{{ b.montant|kmf }}</td>
+                                <td>
+                                    {% if b.statut == 'paye' %}
+                                        <span class="badge text-bg-success">{{ statuts_salaire[b.statut] }}</span>
+                                    {% else %}
+                                        <span class="badge text-bg-warning">{{ statuts_salaire[b.statut] }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                    <p class="text-muted small mb-0">Aucun bulletin généré pour cette période.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Consommables du mois</h2>
+                {% if consommables_mois %}
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Élément</th>
+                                <th class="text-end">Montant</th>
+                                <th>Statut</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in consommables_mois %}
+                            <tr>
+                                <td>{{ c.consommable.nom }}</td>
+                                <td class="text-end">{{ c.montant|kmf }}</td>
+                                <td>
+                                    {% if c.paye %}
+                                        <span class="badge text-bg-success">Payé</span>
+                                    {% else %}
+                                        <span class="badge text-bg-warning">En attente</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-muted small">{{ c.notes or "-" }}</td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="sas-payslip-total">
+                                <td class="fw-bold">Total</td>
+                                <td class="text-end fw-bold">{{ kpis.total_consommables|kmf }}</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                    <p class="text-muted small mb-0">Aucun élément suivi pour cette période.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 sas-rapport-repartition">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Dépenses par catégorie</h2>
+                {% if depenses_par_categorie %}
+                <div class="row">
+                    <div class="col-4 sas-rapport-chart">
+                        <canvas id="chartDepenses"></canvas>
+                    </div>
+                    <div class="col-8">
+                        <table class="table table-sm sas-payslip-table mb-0">
+                            <tbody>
+                                {% for ligne in depenses_par_categorie %}
+                                <tr>
+                                    <td>{{ ligne.label }}</td>
+                                    <td class="text-end">{{ ligne.pourcentage }}%</td>
+                                    <td class="text-end">{{ ligne.montant|kmf }}</td>
+                                </tr>
+                                {% endfor %}
+                                <tr class="sas-payslip-total">
+                                    <td class="fw-bold">Total</td>
+                                    <td></td>
+                                    <td class="text-end fw-bold">{{ kpis.total_depenses|kmf }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% else %}
+                    <p class="text-muted small mb-0">Aucune dépense pour cette période.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Suivi des fournisseurs</h2>
+                {% if suivi_fournisseurs %}
+                <div class="row">
+                    <div class="col-4 sas-rapport-chart">
+                        <canvas id="chartFournisseurs"></canvas>
+                    </div>
+                    <div class="col-8">
+                        <table class="table table-sm sas-payslip-table mb-0">
+                            <tbody>
+                                {% for ligne in suivi_fournisseurs %}
+                                <tr>
+                                    <td>{{ ligne.label }}</td>
+                                    <td class="text-end">{{ ligne.taux_acompte ~ "%" if ligne.taux_acompte is not none else "-" }}</td>
+                                    <td class="text-end">{{ ligne.montant|kmf }}</td>
+                                </tr>
+                                {% endfor %}
+                                <tr class="sas-payslip-total">
+                                    <td class="fw-bold">Total</td>
+                                    <td></td>
+                                    <td class="text-end fw-bold">{{ suivi_fournisseurs|sum(attribute="montant")|kmf }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% else %}
+                    <p class="text-muted small mb-0">Aucune facture fournisseur pour cette période.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mt-1">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Détail des dépenses ({{ depenses_mois|length }})</h2>
+                {% if depenses_mois %}
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Catégorie</th>
+                                <th>Description</th>
+                                <th class="text-end">Montant</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in depenses_mois %}
+                            <tr>
+                                <td>{{ d.date.strftime("%d/%m") if d.date else "-" }}</td>
+                                <td>{{ d.categorie or "-" }}</td>
+                                <td class="text-muted small">{{ d.description or "-" }}</td>
+                                <td class="text-end">{{ d.montant|kmf }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                    <p class="text-muted small mb-0">Aucune dépense pour cette période.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Suivi de la compte bancaire</h2>
+                <div class="row g-3 text-center">
+                    <div class="col-6 col-lg-3">
+                        <div class="text-muted small">Transactions</div>
+                        <div class="fw-semibold fs-5">{{ lignes_bancaires|length }}</div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="text-muted small">Total débit</div>
+                        <div class="fw-semibold fs-5 text-success">{{ kpis.total_debit|kmf2 }}</div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="text-muted small">Total crédit</div>
+                        <div class="fw-semibold fs-5 text-danger">{{ kpis.total_credit|kmf2 }}</div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="text-muted small">Solde restant</div>
+                        <div class="fw-semibold fs-5">{{ kpis.solde_compte|kmf2 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<p class="text-muted small text-center mt-4 mb-0 d-none d-print-block">
+    Document généré le {{ now.strftime("%d/%m/%Y à %H:%M") }}.
+</p>
+{% endblock %}
+
+{% block scripts %}
+<script type="application/json" id="rapport-data">
+    {{ {"depenses": depenses_par_categorie, "fournisseurs": suivi_fournisseurs} | tojson }}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    const rapportData = JSON.parse(document.getElementById('rapport-data').textContent);
+
+    function formatKmf(value) {
+        return new Intl.NumberFormat('fr-FR').format(Math.round(value)) + ' KMF';
+    }
+
+    function creerGraphique(canvasId, lignes) {
+        if (!lignes.length) {
+            return null;
+        }
+        const palette = ['#0d6efd', '#198754', '#dc3545', '#ffc107', '#6f42c1', '#20c997', '#fd7e14', '#6c757d'];
+        return new Chart(document.getElementById(canvasId), {
+            type: 'doughnut',
+            data: {
+                labels: lignes.map((ligne) => ligne.label),
+                datasets: [{
+                    data: lignes.map((ligne) => ligne.montant),
+                    backgroundColor: palette,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${formatKmf(ctx.parsed)}` } },
+                },
+            },
+        });
+    }
+
+    const graphiquesRapport = [
+        creerGraphique('chartDepenses', rapportData.depenses),
+        creerGraphique('chartFournisseurs', rapportData.fournisseurs),
+    ].filter(Boolean);
+
+    // Le canvas Chart.js ne se redimensionne pas tout seul quand la mise en page
+    // change pour l'impression (pas d'événement resize), il faut le forcer.
+    window.addEventListener('beforeprint', () => {
+        graphiquesRapport.forEach((chart) => chart.resize());
+    });
+</script>
+{% endblock %}

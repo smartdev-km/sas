@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Modifier le bulletin{% endblock %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="h3 mb-0">Modifier le bulletin</h1>
+    <p class="text-muted mb-0">
+        {{ bulletin.employe.nom }} — {{ mois_fr[bulletin.mois - 1] }} {{ bulletin.annee }}
+        {% if bulletin.numero_bulletin %}<span class="text-muted">· {{ bulletin.numero_bulletin }}</span>{% endif %}
+        <a href="{{ url_for('salaires.bulletin_detail', bulletin_id=bulletin.id) }}" class="text-decoration-none ms-2">
+            <i class="bi bi-arrow-left"></i> Retour au bulletin
+        </a>
+    </p>
+</div>
+
+<form method="post">
+    <div class="card mb-3" style="max-width: 680px;">
+        <div class="card-body">
+            <h2 class="h6 mb-3">Rémunération</h2>
+            <div class="row g-3">
+                <div class="col-sm-4">
+                    <label class="form-label" for="salaire_base">Salaire de base (KMF) *</label>
+                    <input type="number" step="1" min="0" class="form-control" id="salaire_base" name="salaire_base" value="{{ bulletin.salaire_base }}" required>
+                </div>
+                <div class="col-sm-4">
+                    <label class="form-label" for="primes">Primes / indemnités (KMF)</label>
+                    <input type="number" step="1" min="0" class="form-control" id="primes" name="primes" value="{{ bulletin.primes }}">
+                </div>
+                <div class="col-sm-4">
+                    <label class="form-label" for="retenues">Retenues (KMF)</label>
+                    <input type="number" step="1" min="0" class="form-control" id="retenues" name="retenues" value="{{ bulletin.retenues }}">
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label" for="primes_detail">Détail des primes</label>
+                    <input type="text" class="form-control" id="primes_detail" name="primes_detail" value="{{ bulletin.primes_detail or '' }}" placeholder="Ex: prime de transport, performance...">
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label" for="retenues_detail">Détail des retenues</label>
+                    <input type="text" class="form-control" id="retenues_detail" name="retenues_detail" value="{{ bulletin.retenues_detail or '' }}" placeholder="Ex: cotisation sociale, avance...">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3" style="max-width: 680px;">
+        <div class="card-body">
+            <h2 class="h6 mb-3">Présence</h2>
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <label class="form-label" for="jours_travailles">Jours travaillés</label>
+                    <input type="number" step="1" min="0" class="form-control" id="jours_travailles" name="jours_travailles" value="{{ bulletin.jours_travailles if bulletin.jours_travailles is not none else '' }}">
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label" for="jours_absence">Jours d'absence</label>
+                    <input type="number" step="1" min="0" class="form-control" id="jours_absence" name="jours_absence" value="{{ bulletin.jours_absence if bulletin.jours_absence is not none else '' }}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3" style="max-width: 680px;">
+        <div class="card-body">
+            <h2 class="h6 mb-3">Note</h2>
+            <p class="text-muted small mb-3">
+                La validation (par un admin) et le paiement (par le comptable) se font depuis le détail du bulletin, pas depuis ce formulaire.
+            </p>
+            <textarea class="form-control" id="note" name="note" rows="2">{{ bulletin.note or '' }}</textarea>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mb-4">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg"></i> Enregistrer
+        </button>
+        <a href="{{ url_for('salaires.bulletin_detail', bulletin_id=bulletin.id) }}" class="btn btn-outline-secondary">Annuler</a>
+    </div>
+</form>
+{% endblock %}

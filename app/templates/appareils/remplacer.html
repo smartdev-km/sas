@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Remplacer un appareil{% endblock %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="h3 mb-0">Remplacer un appareil endommagé</h1>
+    <p class="text-muted mb-0">
+        <a href="{{ url_for('appareils.liste') }}" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Retour à la liste</a>
+    </p>
+</div>
+
+<div class="card mb-3" style="max-width: 640px;">
+    <div class="card-body">
+        <h2 class="h6 mb-3">Appareil endommagé</h2>
+        <dl class="row mb-0 small">
+            <dt class="col-4 text-muted fw-normal">Type</dt>
+            <dd class="col-8">{{ ancien.type_appareil }}</dd>
+            <dt class="col-4 text-muted fw-normal">Marque / Modèle</dt>
+            <dd class="col-8">{{ [ancien.marque, ancien.modele] | select | join(' ') or "-" }}</dd>
+            <dt class="col-4 text-muted fw-normal">Attribué à</dt>
+            <dd class="col-8">{{ ancien.employe.nom if ancien.employe else "En stock" }}</dd>
+            {% if ancien.notes %}
+            <dt class="col-4 text-muted fw-normal">Notes</dt>
+            <dd class="col-8" style="white-space: pre-line;">{{ ancien.notes }}</dd>
+            {% endif %}
+        </dl>
+    </div>
+</div>
+
+<div class="card" style="max-width: 640px;">
+    <div class="card-body">
+        <h2 class="h6 mb-3">Nouvel appareil de remplacement</h2>
+        <form method="post">
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <label class="form-label" for="type_appareil">Type d'appareil *</label>
+                    <select class="form-select" id="type_appareil" name="type_appareil" required>
+                        <option value="">—</option>
+                        {% for t in types %}
+                            <option value="{{ t }}" {% if form.type_appareil == t %}selected{% endif %}>{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label" for="numero_serie">N° de série / IMEI</label>
+                    <input type="text" class="form-control" id="numero_serie" name="numero_serie" value="{{ form.numero_serie or '' }}">
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label" for="marque">Marque</label>
+                    <input type="text" class="form-control" id="marque" name="marque" value="{{ form.marque or '' }}">
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label" for="modele">Modèle</label>
+                    <input type="text" class="form-control" id="modele" name="modele" value="{{ form.modele or '' }}">
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="notes">Notes</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="2">{{ form.notes or '' }}</textarea>
+                </div>
+            </div>
+            <p class="text-muted small mt-3 mb-0">
+                Le nouvel appareil sera automatiquement attribué à <strong>{{ ancien.employe.nom if ancien.employe else "personne (en stock)" }}</strong>
+                et l'ancien sera marqué comme <span class="badge text-bg-secondary">Remplacé</span>.
+            </p>
+            <div class="d-flex gap-2 mt-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-arrow-repeat"></i> Confirmer le remplacement
+                </button>
+                <a href="{{ url_for('appareils.liste') }}" class="btn btn-outline-secondary">Annuler</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Appareils{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Appareils</h1>
+        <p class="text-muted mb-0">Matériel de l'entreprise attribué aux employés</p>
+    </div>
+    <a href="{{ url_for('appareils.nouveau') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Nouvel appareil
+    </a>
+</div>
+
+<ul class="nav nav-pills mb-3">
+    {% for valeur, libelle in statuts.items() %}
+    <li class="nav-item">
+        <a class="nav-link {% if filtres.statut == valeur %}active{% endif %}" href="{{ url_for('appareils.liste', statut=valeur, employe_id=filtres.employe_id) }}">
+            {{ libelle }} <span class="badge text-bg-secondary ms-1">{{ compteurs[valeur] }}</span>
+        </a>
+    </li>
+    {% endfor %}
+    <li class="nav-item">
+        <a class="nav-link {% if filtres.statut == 'en_stock' %}active{% endif %}" href="{{ url_for('appareils.liste', statut='en_stock', employe_id=filtres.employe_id) }}">
+            En stock <span class="badge text-bg-secondary ms-1">{{ compteurs['en_stock'] }}</span>
+        </a>
+    </li>
+</ul>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <input type="hidden" name="statut" value="{{ filtres.statut }}">
+            <div class="col-sm-6 col-md-4">
+                <label class="form-label small mb-1">Employé</label>
+                <select class="form-select form-select-sm" name="employe_id">
+                    <option value="">Tous</option>
+                    {% for e in employes %}
+                        <option value="{{ e.id }}" {% if filtres.employe_id == e.id %}selected{% endif %}>{{ e.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-outline-primary w-100">Filtrer</button>
+                <a href="{{ url_for('appareils.liste', statut=filtres.statut) }}" class="btn btn-sm btn-outline-secondary w-100">Réinit.</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Type</th>
+                    <th>Marque / Modèle</th>
+                    <th>N° série</th>
+                    {% if filtres.statut != 'en_stock' %}<th>Attribué à</th>{% endif %}
+                    <th>Statut</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in appareils %}
+                <tr class="{% if a.statut in ('remplace', 'hors_service') %}text-muted{% endif %}">
+                    <td class="fw-semibold">{{ a.type_appareil }}</td>
+                    <td>{{ [a.marque, a.modele] | select | join(' ') or "-" }}</td>
+                    <td>{{ a.numero_serie or "-" }}</td>
+                    {% if filtres.statut != 'en_stock' %}
+                    <td>
+                        {% if a.employe %}
+                            <a href="{{ url_for('salaires.employe_detail', employe_id=a.employe.id) }}" class="text-decoration-none">{{ a.employe.nom }}</a>
+                        {% else %}
+                            <span class="text-muted">En stock</span>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                    <td>
+                        {% if a.statut == 'en_service' and not a.employe_id %}
+                            <span class="badge text-bg-info">En stock</span>
+                        {% elif a.statut == 'en_service' %}
+                            <span class="badge text-bg-success">{{ statuts[a.statut] }}</span>
+                        {% elif a.statut == 'endommage' %}
+                            <span class="badge text-bg-danger">{{ statuts[a.statut] }}</span>
+                        {% elif a.statut == 'remplace' %}
+                            <span class="badge text-bg-secondary">{{ statuts[a.statut] }}</span>
+                        {% else %}
+                            <span class="badge text-bg-dark">{{ statuts[a.statut] }}</span>
+                        {% endif %}
+                        {% if a.remplace_par %}
+                            <div class="small text-muted mt-1">
+                                Remplacé par :
+                                <a href="{{ url_for('appareils.modifier', appareil_id=a.remplace_par.id) }}">
+                                    {{ [a.remplace_par.marque, a.remplace_par.modele] | select | join(' ') or a.remplace_par.type_appareil }}
+                                </a>
+                            </div>
+                        {% endif %}
+                        {% if a.id in demandes_en_attente %}
+                            <div class="mt-1">
+                                <span class="badge text-bg-warning" title="{{ demandes_en_attente[a.id].description }}">
+                                    <i class="bi bi-flag"></i> Demande employé en attente
+                                </span>
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{{ url_for('appareils.modifier', appareil_id=a.id) }}" class="btn btn-sm btn-outline-secondary" title="Modifier">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        {% if a.statut == 'en_service' %}
+                        <form method="post" action="{{ url_for('appareils.endommager', appareil_id=a.id) }}" class="d-inline" onsubmit="return confirmerDommage(event, this);">
+                            <input type="hidden" name="note" class="js-note-dommage">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Marquer endommagé">
+                                <i class="bi bi-exclamation-triangle"></i>
+                            </button>
+                        </form>
+                        <form method="post" action="{{ url_for('appareils.hors_service', appareil_id=a.id) }}" class="d-inline" onsubmit="return confirm('Marquer cet appareil hors service ?');">
+                            <button type="submit" class="btn btn-sm btn-outline-dark" title="Mettre hors service">
+                                <i class="bi bi-power"></i>
+                            </button>
+                        </form>
+                        {% elif a.statut == 'endommage' %}
+                        <a href="{{ url_for('appareils.reparer', appareil_id=a.id) }}" class="btn btn-sm btn-outline-success" title="Marquer comme réparé">
+                            <i class="bi bi-tools"></i> Réparer
+                        </a>
+                        <a href="{{ url_for('appareils.remplacer', appareil_id=a.id) }}" class="btn btn-sm btn-outline-primary" title="Enregistrer un remplacement">
+                            <i class="bi bi-arrow-repeat"></i> Remplacer
+                        </a>
+                        {% if a.id in demandes_en_attente %}
+                        <form method="post" action="{{ url_for('appareils.rejeter_demande', appareil_id=a.id) }}" class="d-inline" onsubmit="return confirm('Rejeter cette demande et remettre l\'appareil en service ?');">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Rejeter la demande">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                        {% endif %}
+                        <form method="post" action="{{ url_for('appareils.supprimer', appareil_id=a.id) }}" class="d-inline" onsubmit="return confirm('Supprimer cet appareil ?');">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Supprimer">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="{{ 5 if filtres.statut == 'en_stock' else 6 }}" class="text-center text-muted py-4">Aucun appareil enregistré.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function confirmerDommage(event, form) {
+        const note = prompt("Décrire le dommage (optionnel) :");
+        if (note === null) {
+            event.preventDefault();
+            return false;
+        }
+        form.querySelector('.js-note-dommage').value = note;
+        return true;
+    }
+</script>
+{% endblock %}

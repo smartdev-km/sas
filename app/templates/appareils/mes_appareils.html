@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Mes appareils{% endblock %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="h4 mb-1">Mes appareils</h1>
+    <p class="text-muted mb-0">Matériel de l'entreprise qui vous est attribué</p>
+</div>
+
+<div class="row g-3">
+    {% for a in appareils %}
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h2 class="h6 mb-0">{{ a.type_appareil }}</h2>
+                    {% if a.statut == 'en_service' %}
+                        <span class="badge text-bg-success">{{ statuts[a.statut] }}</span>
+                    {% elif a.statut == 'endommage' %}
+                        <span class="badge text-bg-danger">{{ statuts[a.statut] }}</span>
+                    {% elif a.statut == 'remplace' %}
+                        <span class="badge text-bg-secondary">{{ statuts[a.statut] }}</span>
+                    {% else %}
+                        <span class="badge text-bg-dark">{{ statuts[a.statut] }}</span>
+                    {% endif %}
+                </div>
+                <dl class="row small mb-3">
+                    <dt class="col-5 text-muted fw-normal">Marque / Modèle</dt>
+                    <dd class="col-7">{{ [a.marque, a.modele] | select | join(' ') or "-" }}</dd>
+                    <dt class="col-5 text-muted fw-normal">N° série</dt>
+                    <dd class="col-7">{{ a.numero_serie or "-" }}</dd>
+                    <dt class="col-5 text-muted fw-normal">Attribué le</dt>
+                    <dd class="col-7">{{ a.date_attribution.strftime("%d/%m/%Y") if a.date_attribution else "-" }}</dd>
+                </dl>
+
+                {% if a.id in demandes_en_attente %}
+                    <div class="alert alert-warning small mb-0">
+                        <i class="bi bi-hourglass-split"></i> Demande de remplacement envoyée, en attente de traitement par l'administrateur.
+                    </div>
+                {% elif a.statut == 'en_service' %}
+                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="collapse" data-bs-target="#demande-{{ a.id }}">
+                        <i class="bi bi-exclamation-triangle"></i> Signaler un dommage
+                    </button>
+                    <div class="collapse mt-3" id="demande-{{ a.id }}">
+                        <form method="post" action="{{ url_for('appareils.demander_remplacement', appareil_id=a.id) }}">
+                            <div class="mb-2">
+                                <label class="form-label small" for="description-{{ a.id }}">Décrivez le problème</label>
+                                <textarea class="form-control form-control-sm" id="description-{{ a.id }}" name="description" rows="2" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-danger btn-sm">
+                                <i class="bi bi-send"></i> Envoyer la demande
+                            </button>
+                        </form>
+                    </div>
+                {% elif a.statut == 'remplace' %}
+                    <p class="text-muted small mb-0">Cet appareil a été remplacé.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center text-muted py-4">
+                Aucun appareil ne vous est attribué pour le moment.
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}Mouvement — {{ fournisseur.nom_societe }}{% endblock %}
+{% block head %}
+<style>
+    @media print {
+        @page {
+            size: A4 landscape;
+            margin: 1cm;
+        }
+
+        body {
+            font-size: 0.7rem;
+        }
+
+        .sas-content {
+            padding: 0.25rem;
+        }
+
+        .card {
+            box-shadow: none !important;
+            border: 1px solid #dee2e6 !important;
+            break-inside: avoid;
+        }
+
+        .card-body {
+            padding: 0.5rem 0.75rem !important;
+        }
+
+        table td, table th {
+            padding: 0.25rem 0.4rem !important;
+            font-size: 0.65rem;
+        }
+
+        .sas-fournisseur-resume {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+        }
+
+        .sas-fournisseur-resume > div {
+            flex: 1 1 0 !important;
+            max-width: none !important;
+            width: auto !important;
+        }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 d-print-none">
+    <div>
+        <h1 class="h3 mb-0">Mouvement du fournisseur</h1>
+        <p class="text-muted mb-0">
+            <a href="{{ url_for('fournisseurs.liste') }}" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Retour à la liste</a>
+        </p>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
+        <i class="bi bi-printer"></i> Imprimer
+    </button>
+</div>
+
+<div class="text-center mb-4 d-none d-print-block">
+    <h2 class="h4 mb-0"><i class="bi bi-hexagon-fill text-primary"></i> SAS</h2>
+    <p class="text-muted mb-0">Mouvement du fournisseur — {{ fournisseur.nom_societe }}</p>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h6 mb-3">{{ fournisseur.nom_societe }}</h2>
+        <div class="row g-3 sas-fournisseur-resume">
+            <div class="col-6 col-md-2">
+                <div class="text-muted small">N° du marché</div>
+                <div class="fw-semibold">{{ fournisseur.numero_marche or "-" }}</div>
+            </div>
+            <div class="col-6 col-md-2">
+                <div class="text-muted small">Date de signature</div>
+                <div class="fw-semibold">{{ fournisseur.date_signature.strftime("%d/%m/%Y") if fournisseur.date_signature else "-" }}</div>
+            </div>
+            <div class="col-6 col-md-2">
+                <div class="text-muted small">Montant du marché</div>
+                <div class="fw-semibold">{{ fournisseur.montant_marche|kmf if fournisseur.montant_marche is not none else "-" }}</div>
+            </div>
+            <div class="col-6 col-md-2">
+                <div class="text-muted small">Taux de l'acompte</div>
+                <div class="fw-semibold">{{ fournisseur.taux_acompte ~ "%" if fournisseur.taux_acompte is not none else "-" }}</div>
+            </div>
+            <div class="col-6 col-md-2">
+                <div class="text-muted small">Montant de l'acompte</div>
+                <div class="fw-semibold">{{ fournisseur.montant_acompte|kmf if fournisseur.montant_acompte is not none else "-" }}</div>
+            </div>
+            <div class="col-6 col-md-2">
+                <div class="text-muted small">Date de versement</div>
+                <div class="fw-semibold">{{ fournisseur.date_versement.strftime("%d/%m/%Y") if fournisseur.date_versement else "-" }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if current_user.role != 'admin' %}
+<div class="card mb-4 d-print-none">
+    <div class="card-body">
+        <h2 class="h6 mb-3">Ajouter une facture</h2>
+        <form method="post" action="{{ url_for('fournisseurs.nouvelle_facture', fournisseur_id=fournisseur.id) }}" class="row g-2 align-items-end">
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label small mb-1">Référence facture</label>
+                <input type="text" class="form-control form-control-sm" name="reference">
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label small mb-1">Date de la facture *</label>
+                <input type="date" class="form-control form-control-sm" name="date_facture" required>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label small mb-1">Date de paiement</label>
+                <input type="date" class="form-control form-control-sm" name="date_paiement">
+            </div>
+            <div class="col-sm-6 col-md-2">
+                <label class="form-label small mb-1">Montant net payé (KMF) *</label>
+                <input type="number" step="1" min="1" class="form-control form-control-sm" name="montant_net_paye" required>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>N°</th>
+                    <th>Référence facture</th>
+                    <th>Date de la facture</th>
+                    <th>Date de paiement</th>
+                    <th class="text-end">Montant net payé (KMF)</th>
+                    <th class="text-end">Solde du marché restant à payer (KMF)</th>
+                    <th class="text-end">Taux d'exécution (%)</th>
+                    <th class="text-end d-print-none">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ligne in lignes %}
+                <tr class="{% if ligne.est_acompte %}table-light fst-italic{% endif %}">
+                    <td>{{ ligne.numero }}</td>
+                    <td>{{ ligne.reference or "-" }}</td>
+                    <td>{{ ligne.date_facture.strftime("%d/%m/%Y") if ligne.date_facture else "-" }}</td>
+                    <td>{{ ligne.date_paiement.strftime("%d/%m/%Y") if ligne.date_paiement else "-" }}</td>
+                    <td class="text-end fw-semibold">{{ ligne.montant_net|nombre }}</td>
+                    <td class="text-end">{{ ligne.solde_marche_restant|nombre }}</td>
+                    <td class="text-end">{{ ligne.taux_execution ~ "%" if ligne.taux_execution is not none else "-" }}</td>
+                    <td class="text-end d-print-none">
+                        {% if not ligne.est_acompte %}
+                            {% if ligne.facture.valide %}
+                            <span class="text-muted small"><i class="bi bi-lock"></i></span>
+                            {% else %}
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modifier-{{ ligne.facture.id }}">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <form method="post" action="{{ url_for('fournisseurs.supprimer_facture', fournisseur_id=fournisseur.id, facture_id=ligne.facture.id) }}" class="d-inline" onsubmit="return confirm('Supprimer cette facture ?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% if current_user.role == 'admin' %}
+                            <form method="post" action="{{ url_for('fournisseurs.valider_facture', fournisseur_id=fournisseur.id, facture_id=ligne.facture.id) }}" class="d-inline" onsubmit="return confirm('Valider cette facture ? Elle ne pourra plus être modifiée ni supprimée ensuite.');">
+                                <button type="submit" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">Aucune facture enregistrée.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<p class="text-muted small text-center mt-4 mb-0 d-none d-print-block">
+    Document généré le {{ now.strftime("%d/%m/%Y à %H:%M") }}.
+</p>
+
+{% for ligne in lignes if not ligne.est_acompte and not ligne.facture.valide %}
+<div class="modal fade d-print-none" id="modifier-{{ ligne.facture.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('fournisseurs.modifier_facture', fournisseur_id=fournisseur.id, facture_id=ligne.facture.id) }}">
+                <div class="modal-header">
+                    <h3 class="modal-title h6 mb-0">Modifier la facture</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Référence facture</label>
+                        <input type="text" class="form-control" name="reference" value="{{ ligne.facture.reference or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Date de la facture *</label>
+                        <input type="date" class="form-control" name="date_facture" value="{{ ligne.facture.date_facture.isoformat() }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Date de paiement</label>
+                        <input type="date" class="form-control" name="date_paiement" value="{{ ligne.facture.date_paiement.isoformat() if ligne.facture.date_paiement else '' }}">
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label">Montant net payé (KMF) *</label>
+                        <input type="number" step="1" min="1" class="form-control" name="montant_net_paye" value="{{ ligne.facture.montant_net_paye }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
