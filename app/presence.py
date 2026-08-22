@@ -247,15 +247,21 @@ def sauvegarder_horaire():
     horaire.jours_actifs = ",".join(jours_valides)
     db.session.commit()
 
-    # Répercute les nouveaux horaires sur l'appel du jour s'il vient d'être auto-lancé
-    # et qu'aucun employé n'a encore confirmé quoi que ce soit.
+    # Répercute les nouveaux horaires sur l'appel du jour, chaque fenêtre restant
+    # modifiable tant que personne ne l'a encore utilisée (entrée / sortie séparément).
     session_du_jour = SessionPresence.query.filter_by(date=date.today()).first()
-    if session_du_jour and not session_du_jour.presences:
-        session_du_jour.heure_debut = debut_entree
-        session_du_jour.heure_fin = fin_entree
-        session_du_jour.heure_debut_sortie = debut_sortie
-        session_du_jour.heure_fin_sortie = fin_sortie
-        db.session.commit()
+    if session_du_jour:
+        maj = False
+        if not session_du_jour.presences:
+            session_du_jour.heure_debut = debut_entree
+            session_du_jour.heure_fin = fin_entree
+            maj = True
+        if not any(p.heure_sortie for p in session_du_jour.presences):
+            session_du_jour.heure_debut_sortie = debut_sortie
+            session_du_jour.heure_fin_sortie = fin_sortie
+            maj = True
+        if maj:
+            db.session.commit()
 
     flash("Horaires programmés enregistrés.", "success")
     return redirect(url_for("presence.index"))
