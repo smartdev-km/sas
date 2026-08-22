@@ -55,6 +55,7 @@ def create_app(config_class=Config):
     from app.consommables import consommables_bp
     from app.employe_auth import employe_auth_bp
     from app.presence import presence_bp
+    from app.api import api_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -67,9 +68,13 @@ def create_app(config_class=Config):
     app.register_blueprint(consommables_bp)
     app.register_blueprint(employe_auth_bp)
     app.register_blueprint(presence_bp)
+    app.register_blueprint(api_bp)
 
     from app import cli
     cli.register(app)
+
+    from app import realtime
+    realtime.register(app, db)
 
     # En mode CLI ("flask db upgrade", ...), Alembic gère lui-même les tables :
     # on ne doit pas créer le schéma nous-mêmes, sous peine de doublon/conflit.

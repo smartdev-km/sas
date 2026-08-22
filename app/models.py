@@ -122,6 +122,16 @@ class CompteBancaireConfig(db.Model):
     solde_initial = db.Column(db.Numeric(14, 2), nullable=False, default=0)
 
 
+class AppState(db.Model):
+    """Ligne unique (singleton) : horodatage de la dernière écriture en base, utilisé
+    par les pages pour détecter qu'il faut se rafraîchir (mise à jour quasi temps réel)."""
+
+    __tablename__ = "app_state"
+
+    id = db.Column(db.Integer, primary_key=True)
+    last_modified_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
 class TransactionBancaire(db.Model):
     __tablename__ = "transactions_bancaires"
 
