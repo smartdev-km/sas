@@ -169,7 +169,15 @@
                                 <i class="bi bi-lock"></i>
                             </span>
                         {% elif ligne.transaction.valide %}
+                            {% if current_user.role == 'admin' %}
+                            <form method="post" action="{{ url_for('compte_bancaire.devalider', transaction_id=ligne.transaction.id) }}" class="d-inline" onsubmit="return confirm('Déverrouiller cette transaction ? Elle redeviendra modifiable comme avant la validation.');">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Déverrouiller">
+                                    <i class="bi bi-lock-fill"></i>
+                                </button>
+                            </form>
+                            {% else %}
                             <span class="text-muted small"><i class="bi bi-lock"></i></span>
+                            {% endif %}
                         {% else %}
                         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modifier-{{ ligne.transaction.id }}">
                             <i class="bi bi-pencil"></i>

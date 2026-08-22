@@ -205,6 +205,29 @@ def valider(depense_id):
     return redirect(url_for("depenses.liste"))
 
 
+@depenses_bp.route("/<int:depense_id>/devalider", methods=["POST"])
+@admin_required
+def devalider(depense_id):
+    depense = db.get_or_404(Depense, depense_id)
+
+    if not depense.valide:
+        flash("Cette dépense n'est pas validée.", "info")
+        return redirect(url_for("depenses.liste"))
+
+    if depense.transaction_bancaire_id:
+        transaction = TransactionBancaire.query.get(depense.transaction_bancaire_id)
+        depense.transaction_bancaire_id = None
+        db.session.flush()
+        if transaction:
+            db.session.delete(transaction)
+
+    depense.valide = False
+    depense.valide_le = None
+    db.session.commit()
+    flash("Dépense déverrouillée, elle peut de nouveau être modifiée.", "success")
+    return redirect(url_for("depenses.liste"))
+
+
 def _valider_formulaire(form):
     erreurs = []
 

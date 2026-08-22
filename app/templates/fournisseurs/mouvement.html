@@ -153,7 +153,15 @@
                     <td class="text-end d-print-none">
                         {% if not ligne.est_acompte %}
                             {% if ligne.facture.valide %}
-                            <span class="text-muted small"><i class="bi bi-lock"></i></span>
+                                {% if current_user.role == 'admin' %}
+                                <form method="post" action="{{ url_for('fournisseurs.devalider_facture', fournisseur_id=fournisseur.id, facture_id=ligne.facture.id) }}" class="d-inline" onsubmit="return confirm('Déverrouiller cette facture ? Elle redeviendra modifiable comme avant la validation.');">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="Déverrouiller">
+                                        <i class="bi bi-lock-fill"></i>
+                                    </button>
+                                </form>
+                                {% else %}
+                                <span class="text-muted small"><i class="bi bi-lock"></i></span>
+                                {% endif %}
                             {% else %}
                             <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modifier-{{ ligne.facture.id }}">
                                 <i class="bi bi-pencil"></i>

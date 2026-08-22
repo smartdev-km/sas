@@ -215,6 +215,28 @@ def valider(transaction_id):
     return redirect(url_for("compte_bancaire.liste", mois=mois, annee=annee))
 
 
+@compte_bancaire_bp.route("/<int:transaction_id>/devalider", methods=["POST"])
+@admin_required
+def devalider(transaction_id):
+    transaction = db.get_or_404(TransactionBancaire, transaction_id)
+    mois, annee = transaction.date.month, transaction.date.year
+
+    origine = _origine_transaction(transaction)
+    if origine:
+        flash(f"Cette transaction provient de {origine} validée, déverrouillez-la depuis ce module.", "warning")
+        return redirect(url_for("compte_bancaire.liste", mois=mois, annee=annee))
+
+    if not transaction.valide:
+        flash("Cette transaction n'est pas validée.", "info")
+    else:
+        transaction.valide = False
+        transaction.valide_le = None
+        db.session.commit()
+        flash("Transaction déverrouillée, elle peut de nouveau être modifiée.", "success")
+
+    return redirect(url_for("compte_bancaire.liste", mois=mois, annee=annee))
+
+
 @compte_bancaire_bp.route("/solde-initial", methods=["POST"])
 @admin_required
 def solde_initial():

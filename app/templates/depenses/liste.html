@@ -75,7 +75,15 @@
                     <td class="text-end fw-semibold">{{ d.montant|kmf }}</td>
                     <td class="text-end">
                         {% if d.valide %}
+                            {% if current_user.role == 'admin' %}
+                            <form method="post" action="{{ url_for('depenses.devalider', depense_id=d.id) }}" class="d-inline" onsubmit="return confirm('Déverrouiller cette dépense ? Elle redeviendra modifiable comme avant la validation.');">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Déverrouiller">
+                                    <i class="bi bi-lock-fill"></i>
+                                </button>
+                            </form>
+                            {% else %}
                             <span class="text-muted small"><i class="bi bi-lock"></i></span>
+                            {% endif %}
                         {% else %}
                         <a href="{{ url_for('depenses.modifier', depense_id=d.id) }}" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-pencil"></i>

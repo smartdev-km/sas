@@ -274,6 +274,22 @@ def valider_facture(fournisseur_id, facture_id):
     return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
 
 
+@fournisseurs_bp.route("/<int:fournisseur_id>/factures/<int:facture_id>/devalider", methods=["POST"])
+@admin_required
+def devalider_facture(fournisseur_id, facture_id):
+    facture = db.get_or_404(FactureFournisseur, facture_id)
+
+    if not facture.valide:
+        flash("Cette facture n'est pas validée.", "info")
+    else:
+        facture.valide = False
+        facture.valide_le = None
+        db.session.commit()
+        flash("Facture déverrouillée, elle peut de nouveau être modifiée.", "success")
+
+    return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
+
+
 def _valider_formulaire(form):
     erreurs = []
     if not form.get("nom_societe", "").strip():

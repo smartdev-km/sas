@@ -163,6 +163,22 @@ def valider(suivi_id):
     return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
 
 
+@consommables_bp.route("/<int:suivi_id>/devalider", methods=["POST"])
+@admin_required
+def devalider(suivi_id):
+    suivi = db.get_or_404(SuiviConsommable, suivi_id)
+
+    if not suivi.valide:
+        flash(f"{suivi.consommable.nom} n'est pas validé.", "info")
+    else:
+        suivi.valide = False
+        suivi.valide_le = None
+        db.session.commit()
+        flash(f"{suivi.consommable.nom} déverrouillé, il peut de nouveau être modifié.", "success")
+
+    return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
+
+
 @consommables_bp.route("/types/nouveau", methods=["POST"])
 @role_required("consommables")
 def type_nouveau():

@@ -82,7 +82,15 @@
                         {% if s.paye %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %}
                     </td>
                     <td>{{ s.notes or "-" }}</td>
-                    <td class="text-end"><span class="text-muted small"><i class="bi bi-lock"></i></span></td>
+                    <td class="text-end">
+                        {% if current_user.role == 'admin' %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" title="Déverrouiller" form="form-devalider-{{ s.id }}">
+                            <i class="bi bi-lock-fill"></i>
+                        </button>
+                        {% else %}
+                        <span class="text-muted small"><i class="bi bi-lock"></i></span>
+                        {% endif %}
+                    </td>
                     {% elif current_user.role == 'admin' %}
                     <td>{{ s.montant|int }}</td>
                     <td class="text-center">
@@ -127,8 +135,12 @@
 {% for s in suivis %}
 <form id="form-suivi-{{ s.id }}" method="post" action="{{ url_for('consommables.modifier', suivi_id=s.id) }}"></form>
 <form id="form-paye-{{ s.id }}" method="post" action="{{ url_for('consommables.toggle_paye', suivi_id=s.id) }}"></form>
-{% if not s.valide and current_user.role == 'admin' %}
+{% if current_user.role == 'admin' %}
+{% if not s.valide %}
 <form id="form-valider-{{ s.id }}" method="post" action="{{ url_for('consommables.valider', suivi_id=s.id) }}" onsubmit="return confirm('Valider cet élément ? Il ne pourra plus être modifié ensuite.');"></form>
+{% else %}
+<form id="form-devalider-{{ s.id }}" method="post" action="{{ url_for('consommables.devalider', suivi_id=s.id) }}" onsubmit="return confirm('Déverrouiller cet élément ? Il redeviendra modifiable comme avant la validation.');"></form>
+{% endif %}
 {% endif %}
 {% endfor %}
 
