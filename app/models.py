@@ -18,6 +18,11 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, default="admin")
     employe_id = db.Column(db.Integer, db.ForeignKey("employes.id"), nullable=True)
+    telephone = db.Column(db.String(30))
+    adresse = db.Column(db.String(255))
+    date_naissance = db.Column(db.Date)
+    sexe = db.Column(db.String(1))
+    numero_piece_identite = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     employe = db.relationship("Employe", backref=db.backref("compte_utilisateur", uselist=False))
