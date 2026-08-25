@@ -1,10 +1,22 @@
+from datetime import datetime
+
 from flask import Blueprint, render_template, redirect, url_for, request, flash, abort
 from flask_login import login_user, logout_user, login_required, current_user
 
 from app import db
 from app.models import Employe, ConnexionLog
+from app.constants import SEXES
 
 employe_auth_bp = Blueprint("employe_auth", __name__, url_prefix="/employe")
+
+
+def _parse_date(value):
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
 
 
 def _log_evenement(employe_id, type_evenement):
@@ -60,8 +72,13 @@ def profil():
         telephone = request.form.get("telephone", "").strip()
         email = request.form.get("email", "").strip()
         adresse = request.form.get("adresse", "").strip()
+        date_naissance = _parse_date(request.form.get("date_naissance"))
+        sexe = request.form.get("sexe") or None
+        numero_piece_identite = request.form.get("numero_piece_identite", "").strip()
 
         erreurs = []
+        if sexe and sexe not in SEXES:
+            erreurs.append("Le sexe sélectionné est invalide.")
         if not email:
             erreurs.append("L'email est obligatoire (il sert d'identifiant de connexion).")
         else:
@@ -87,11 +104,14 @@ def profil():
         if erreurs:
             for erreur in erreurs:
                 flash(erreur, "danger")
-            return render_template("employe_auth/profil.html")
+            return render_template("employe_auth/profil.html", sexes=SEXES)
 
         current_user.telephone = telephone or None
         current_user.email = email
         current_user.adresse = adresse or None
+        current_user.date_naissance = date_naissance
+        current_user.sexe = sexe
+        current_user.numero_piece_identite = numero_piece_identite or None
         if changer_mdp:
             current_user.set_password(nouveau_mot_de_passe)
 
@@ -99,4 +119,4 @@ def profil():
         flash("Profil mis à jour avec succès.", "success")
         return redirect(url_for("employe_auth.profil"))
 
-    return render_template("employe_auth/profil.html")
+    return render_template("employe_auth/profil.html", sexes=SEXES)
