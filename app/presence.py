@@ -1,6 +1,6 @@
 from datetime import date, datetime, time, timedelta
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
 from sqlalchemy import extract
 
@@ -351,7 +351,12 @@ def supprimer(session_id):
 def confirmer():
     employe_id = _employe_id_courant()
     if employe_id is None:
-        abort(403)
+        flash(
+            "Votre compte n'est pas lié à une fiche employé, la présence ne peut pas être "
+            "enregistrée. Contactez un administrateur (Salaires → Employés → Accès).",
+            "warning",
+        )
+        return redirect(url_for("dashboard.index"))
 
     today = date.today()
     session = SessionPresence.query.filter_by(date=today).first()
