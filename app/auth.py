@@ -5,7 +5,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import or_
 
 from app import db
-from app.models import User
+from app.models import User, Employe
 from app.constants import SEXES
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
@@ -116,6 +116,17 @@ def profil():
         current_user.numero_piece_identite = numero_piece_identite or None
         if changer_mdp:
             current_user.set_password(nouveau_mot_de_passe)
+
+        # Le compte comptable/secrétaire est lié à une fiche employé (Salaires → Employés) :
+        # on garde les coordonnées / l'identité civile synchronisées entre les deux.
+        if current_user.employe_id:
+            employe = db.session.get(Employe, current_user.employe_id)
+            if employe:
+                employe.telephone = telephone or None
+                employe.adresse = adresse or None
+                employe.date_naissance = date_naissance
+                employe.sexe = sexe
+                employe.numero_piece_identite = numero_piece_identite or None
 
         db.session.commit()
         flash("Profil mis à jour avec succès.", "success")

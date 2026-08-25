@@ -115,6 +115,16 @@ def profil():
         if changer_mdp:
             current_user.set_password(nouveau_mot_de_passe)
 
+        # Si cet employé a aussi un compte comptable/secrétaire (Salaires → Employés →
+        # Accès), on garde les coordonnées / l'identité civile synchronisées.
+        if current_user.compte_utilisateur:
+            compte = current_user.compte_utilisateur
+            compte.telephone = telephone or None
+            compte.adresse = adresse or None
+            compte.date_naissance = date_naissance
+            compte.sexe = sexe
+            compte.numero_piece_identite = numero_piece_identite or None
+
         db.session.commit()
         flash("Profil mis à jour avec succès.", "success")
         return redirect(url_for("employe_auth.profil"))
