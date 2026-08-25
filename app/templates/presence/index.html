@@ -41,6 +41,10 @@
         <p class="text-muted mb-0">L'appel du jour est lancé automatiquement selon les horaires programmés</p>
     </div>
     <div class="d-flex gap-2">
+        <a href="{{ url_for('presence.demandes') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-file-earmark-text"></i> Demandes d'absence
+            {% if nb_demandes_en_attente %}<span class="badge text-bg-danger ms-1">{{ nb_demandes_en_attente }}</span>{% endif %}
+        </a>
         <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-situation-presence">
             <i class="bi bi-eye"></i> Voir le détail — Situation de présence
         </button>
@@ -140,6 +144,7 @@
                                 <th>Poste</th>
                                 <th class="text-end">Jours travaillés</th>
                                 <th class="text-end">Jours d'absence</th>
+                                <th class="text-end">Dont justifiées</th>
                                 <th class="text-end">Taux de présence</th>
                             </tr>
                         </thead>
@@ -151,11 +156,18 @@
                                 <td>{{ ligne.employe.poste or "-" }}</td>
                                 <td class="text-end">{{ ligne.jours_travailles }}</td>
                                 <td class="text-end">{{ ligne.jours_absence }}</td>
+                                <td class="text-end">
+                                    {% if ligne.jours_absence_justifies %}
+                                        <span class="badge text-bg-info">{{ ligne.jours_absence_justifies }}</span>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
                                 <td class="text-end">{{ (ligne.taux ~ "%") if ligne.taux is not none else "-" }}</td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-3">Aucun employé actif.</td>
+                                <td colspan="7" class="text-center text-muted py-3">Aucun employé actif.</td>
                             </tr>
                             {% endfor %}
                         </tbody>

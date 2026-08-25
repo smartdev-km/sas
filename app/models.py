@@ -290,6 +290,27 @@ class Presence(db.Model):
     )
 
 
+class DemandeAbsence(db.Model):
+    """Demande de congé ou justificatif d'absence (maladie, empêchement, autre).
+    Validée ou non, elle ne change pas le décompte jours travaillés/absence : elle
+    sert uniquement à documenter la raison d'une absence déjà enregistrée."""
+
+    __tablename__ = "demandes_absence"
+
+    id = db.Column(db.Integer, primary_key=True)
+    employe_id = db.Column(db.Integer, db.ForeignKey("employes.id"), nullable=False)
+    date_debut = db.Column(db.Date, nullable=False)
+    date_fin = db.Column(db.Date, nullable=False)
+    motif = db.Column(db.String(20), nullable=False)
+    precision = db.Column(db.Text)
+    statut = db.Column(db.String(20), nullable=False, default="en_attente")
+    commentaire_admin = db.Column(db.Text)
+    traite_le = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    employe = db.relationship("Employe", backref=db.backref("demandes_absence", lazy=True))
+
+
 class ConnexionLog(db.Model):
     __tablename__ = "connexions_log"
 

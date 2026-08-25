@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Demandes d'absence{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Demandes d'absence</h1>
+        <p class="text-muted mb-0">
+            <a href="{{ url_for('presence.index') }}" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Retour à la présence</a>
+        </p>
+    </div>
+    <form method="get" class="d-flex gap-2 align-items-end">
+        <div>
+            <label class="form-label small mb-1">Statut</label>
+            <select class="form-select form-select-sm" name="statut" onchange="this.form.submit()">
+                <option value="">Tous</option>
+                {% for valeur, libelle in statuts.items() %}
+                    <option value="{{ valeur }}" {% if statut_filtre == valeur %}selected{% endif %}>{{ libelle }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Employé</th>
+                    <th>Période</th>
+                    <th>Motif</th>
+                    <th>Précision</th>
+                    <th>Statut</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in demandes %}
+                <tr>
+                    <td class="fw-semibold">{{ d.employe.nom }}</td>
+                    <td>
+                        {{ d.date_debut.strftime("%d/%m/%Y") }}
+                        {% if d.date_fin != d.date_debut %} – {{ d.date_fin.strftime("%d/%m/%Y") }}{% endif %}
+                    </td>
+                    <td>{{ motifs.get(d.motif, d.motif) }}</td>
+                    <td class="text-muted small">{{ d.precision or "-" }}</td>
+                    <td>
+                        {% if d.statut == 'validee' %}
+                            <span class="badge text-bg-success">{{ statuts[d.statut] }}</span>
+                        {% elif d.statut == 'refusee' %}
+                            <span class="badge text-bg-danger">{{ statuts[d.statut] }}</span>
+                        {% else %}
+                            <span class="badge text-bg-warning">{{ statuts[d.statut] }}</span>
+                        {% endif %}
+                        {% if d.commentaire_admin %}<div class="text-muted small">{{ d.commentaire_admin }}</div>{% endif %}
+                    </td>
+                    <td class="text-end">
+                        {% if d.statut == 'en_attente' %}
+                        <form method="post" action="{{ url_for('presence.demande_valider', demande_id=d.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-success" title="Valider">
+                                <i class="bi bi-check-lg"></i>
+                            </button>
+                        </form>
+                        <button type="button" class="btn btn-sm btn-outline-danger" title="Refuser" data-bs-toggle="modal" data-bs-target="#refuser-{{ d.id }}">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                        {% else %}
+                        <span class="text-muted small">
+                            {{ d.traite_le.strftime("%d/%m/%Y") if d.traite_le else "" }}
+                        </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">Aucune demande.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% for d in demandes if d.statut == 'en_attente' %}
+<div class="modal fade" id="refuser-{{ d.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('presence.demande_refuser', demande_id=d.id) }}">
+                <div class="modal-header">
+                    <h3 class="modal-title h6 mb-0">Refuser la demande de {{ d.employe.nom }}</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label" for="commentaire_admin-{{ d.id }}">Commentaire (optionnel)</label>
+                    <textarea class="form-control" id="commentaire_admin-{{ d.id }}" name="commentaire_admin" rows="2"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-danger">Refuser</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

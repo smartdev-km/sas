@@ -91,6 +91,11 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'presence.mes_demandes' %}active{% endif %}" href="{{ url_for('presence.mes_demandes') }}">
+                    <i class="bi bi-file-earmark-text"></i> Mes demandes d'absence
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'appareils.mes_appareils' %}active{% endif %}" href="{{ url_for('appareils.mes_appareils') }}">
                     <i class="bi bi-laptop"></i> Mes appareils
                 </a>
@@ -120,6 +125,9 @@
         <div class="d-flex align-items-center gap-3">
             <a href="{{ url_for('presence.confirmer') }}" class="btn btn-sm btn-outline-light">
                 <i class="bi bi-calendar-check"></i> Ma présence
+            </a>
+            <a href="{{ url_for('presence.mes_demandes') }}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-file-earmark-text"></i> Mes demandes
             </a>
             <a href="{{ url_for('appareils.mes_appareils') }}" class="btn btn-sm btn-outline-light">
                 <i class="bi bi-laptop"></i> Mes appareils

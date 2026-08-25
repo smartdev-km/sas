@@ -18,6 +18,19 @@ SEXES = {
 
 TYPES_CONTRAT = ["CDI", "CDD", "Stage", "Consultant"]
 
+MOTIFS_ABSENCE = {
+    "conge": "Congé",
+    "maladie": "Maladie",
+    "empechement": "Empêchement",
+    "autre": "Autre",
+}
+
+STATUTS_DEMANDE_ABSENCE = {
+    "en_attente": "En attente",
+    "validee": "Validée",
+    "refusee": "Refusée",
+}
+
 MODES_PAIEMENT = ["Virement bancaire", "Mobile money", "Espèces"]
 
 ROLES_COMPTE = {

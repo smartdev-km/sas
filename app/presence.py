@@ -5,9 +5,9 @@ from flask_login import current_user
 from sqlalchemy import extract
 
 from app import db
-from app.models import SessionPresence, Presence, Employe, Salaire, HoraireProgramme
-from app.decorators import role_required, confirmation_presence_required
-from app.constants import MOIS_FR
+from app.models import SessionPresence, Presence, Employe, Salaire, HoraireProgramme, DemandeAbsence
+from app.decorators import role_required, confirmation_presence_required, admin_required
+from app.constants import MOIS_FR, MOTIFS_ABSENCE, STATUTS_DEMANDE_ABSENCE
 
 presence_bp = Blueprint("presence", __name__, url_prefix="/presence")
 
@@ -94,6 +94,40 @@ def calculer_presence_mensuelle(employe_id, mois, annee):
     ).count()
     jours_absence = len(sessions_mois) - jours_travailles
     return jours_travailles, jours_absence
+
+
+def jours_absence_justifies(employe_id, mois, annee):
+    """Parmi les jours d'absence du mois, combien sont couverts par une demande
+    d'absence validée. Ne change pas le décompte jours_absence : sert juste à
+    l'annoter (l'absence reste comptée, seulement documentée)."""
+    sessions_mois = SessionPresence.query.filter(
+        SessionPresence.statut == "fermee",
+        extract("year", SessionPresence.date) == annee,
+        extract("month", SessionPresence.date) == mois,
+    ).all()
+    if not sessions_mois:
+        return 0
+
+    session_ids = [s.id for s in sessions_mois]
+    ids_sessions_travaillees = {
+        p.session_id for p in Presence.query.filter(
+            Presence.employe_id == employe_id,
+            Presence.session_id.in_(session_ids),
+            Presence.heure_sortie.isnot(None),
+        ).all()
+    }
+
+    demandes_validees = DemandeAbsence.query.filter_by(employe_id=employe_id, statut="validee").all()
+    if not demandes_validees:
+        return 0
+
+    justifiees = 0
+    for session in sessions_mois:
+        if session.id in ids_sessions_travaillees:
+            continue
+        if any(d.date_debut <= session.date <= d.date_fin for d in demandes_validees):
+            justifiees += 1
+    return justifiees
 
 
 def statistiques_annuelles_employe(employe_id, annee):
@@ -187,6 +221,7 @@ def index():
             "employe": employe,
             "jours_travailles": jours_travailles,
             "jours_absence": jours_absence,
+            "jours_absence_justifies": jours_absence_justifies(employe.id, mois_actuel, annee_actuelle),
             "taux": round(jours_travailles / total * 100, 1) if total else None,
         })
 
@@ -197,6 +232,7 @@ def index():
     ).count()
     taux_connus = [l["taux"] for l in situation_presence if l["taux"] is not None]
     taux_moyen = round(sum(taux_connus) / len(taux_connus), 1) if taux_connus else None
+    nb_demandes_en_attente = DemandeAbsence.query.filter_by(statut="en_attente").count()
 
     return render_template(
         "presence/index.html",
@@ -213,6 +249,7 @@ def index():
         jours_semaine=JOURS_SEMAINE,
         situation_presence=situation_presence,
         mois_label=f"{MOIS_FR[mois_actuel - 1]} {annee_actuelle}",
+        nb_demandes_en_attente=nb_demandes_en_attente,
     )
 
 
@@ -418,3 +455,93 @@ def confirmer():
         entree_expiree=entree_expiree, sortie_a_venir=sortie_a_venir, sortie_expiree=sortie_expiree,
         now=now, annee=today.year, stats=stats,
     )
+
+
+# --- Demandes d'absence (congé / justificatif) ---------------------------
+
+@presence_bp.route("/mes-demandes", methods=["GET", "POST"])
+@confirmation_presence_required
+def mes_demandes():
+    employe_id = _employe_id_courant()
+    if employe_id is None:
+        flash(
+            "Votre compte n'est pas lié à une fiche employé, impossible de soumettre une "
+            "demande. Contactez un administrateur (Salaires → Employés → Accès).",
+            "warning",
+        )
+        return redirect(url_for("dashboard.index"))
+
+    if request.method == "POST":
+        date_debut = date.fromisoformat(request.form.get("date_debut")) if request.form.get("date_debut") else None
+        date_fin = date.fromisoformat(request.form.get("date_fin")) if request.form.get("date_fin") else None
+        motif = request.form.get("motif")
+        precision = request.form.get("precision", "").strip()
+
+        erreurs = []
+        if not date_debut or not date_fin:
+            erreurs.append("Les dates de début et de fin sont obligatoires.")
+        elif date_fin < date_debut:
+            erreurs.append("La date de fin doit être après la date de début.")
+        if motif not in MOTIFS_ABSENCE:
+            erreurs.append("Le motif sélectionné est invalide.")
+        elif motif == "autre" and not precision:
+            erreurs.append("Merci de préciser le motif.")
+
+        if erreurs:
+            for erreur in erreurs:
+                flash(erreur, "danger")
+        else:
+            db.session.add(DemandeAbsence(
+                employe_id=employe_id, date_debut=date_debut, date_fin=date_fin,
+                motif=motif, precision=precision or None,
+            ))
+            db.session.commit()
+            flash("Demande envoyée, en attente de validation par un administrateur.", "success")
+        return redirect(url_for("presence.mes_demandes"))
+
+    demandes = DemandeAbsence.query.filter_by(employe_id=employe_id).order_by(
+        DemandeAbsence.date_debut.desc()
+    ).all()
+    return render_template(
+        "presence/mes_demandes.html", demandes=demandes,
+        motifs=MOTIFS_ABSENCE, statuts=STATUTS_DEMANDE_ABSENCE, today=date.today(),
+    )
+
+
+@presence_bp.route("/demandes")
+@role_required("presence")
+def demandes():
+    statut = request.args.get("statut", "")
+    query = DemandeAbsence.query.join(Employe)
+    if statut in STATUTS_DEMANDE_ABSENCE:
+        query = query.filter(DemandeAbsence.statut == statut)
+    liste_demandes = query.order_by(DemandeAbsence.created_at.desc()).all()
+
+    return render_template(
+        "presence/demandes.html", demandes=liste_demandes,
+        motifs=MOTIFS_ABSENCE, statuts=STATUTS_DEMANDE_ABSENCE, statut_filtre=statut,
+    )
+
+
+@presence_bp.route("/demandes/<int:demande_id>/valider", methods=["POST"])
+@admin_required
+def demande_valider(demande_id):
+    demande = db.get_or_404(DemandeAbsence, demande_id)
+    demande.statut = "validee"
+    demande.commentaire_admin = None
+    demande.traite_le = datetime.now()
+    db.session.commit()
+    flash("Demande validée. L'absence reste comptée, mais est maintenant justifiée.", "success")
+    return redirect(url_for("presence.demandes"))
+
+
+@presence_bp.route("/demandes/<int:demande_id>/refuser", methods=["POST"])
+@admin_required
+def demande_refuser(demande_id):
+    demande = db.get_or_404(DemandeAbsence, demande_id)
+    demande.statut = "refusee"
+    demande.commentaire_admin = request.form.get("commentaire_admin", "").strip() or None
+    demande.traite_le = datetime.now()
+    db.session.commit()
+    flash("Demande refusée.", "info")
+    return redirect(url_for("presence.demandes"))

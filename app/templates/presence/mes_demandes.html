@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Mes demandes d'absence{% endblock %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="h4 mb-1">Mes demandes d'absence</h1>
+    <p class="text-muted mb-0">Congé, maladie, empêchement ou autre — l'absence reste comptée, mais sera justifiée une fois validée.</p>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h6 mb-3">Nouvelle demande</h2>
+        <form method="post" class="row g-3">
+            <div class="col-sm-4">
+                <label class="form-label" for="date_debut">Date de début *</label>
+                <input type="date" class="form-control" id="date_debut" name="date_debut" value="{{ today.isoformat() }}" required>
+            </div>
+            <div class="col-sm-4">
+                <label class="form-label" for="date_fin">Date de fin *</label>
+                <input type="date" class="form-control" id="date_fin" name="date_fin" value="{{ today.isoformat() }}" required>
+            </div>
+            <div class="col-sm-4">
+                <label class="form-label" for="motif">Motif *</label>
+                <select class="form-select" id="motif" name="motif" required>
+                    {% for valeur, libelle in motifs.items() %}
+                        <option value="{{ valeur }}">{{ libelle }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12">
+                <label class="form-label" for="precision">Précision</label>
+                <textarea class="form-control" id="precision" name="precision" rows="2" placeholder="Optionnel, sauf si motif « Autre »"></textarea>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-send"></i> Envoyer la demande
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Période</th>
+                    <th>Motif</th>
+                    <th>Précision</th>
+                    <th>Statut</th>
+                    <th>Commentaire admin</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in demandes %}
+                <tr>
+                    <td>
+                        {{ d.date_debut.strftime("%d/%m/%Y") }}
+                        {% if d.date_fin != d.date_debut %} – {{ d.date_fin.strftime("%d/%m/%Y") }}{% endif %}
+                    </td>
+                    <td>{{ motifs.get(d.motif, d.motif) }}</td>
+                    <td class="text-muted small">{{ d.precision or "-" }}</td>
+                    <td>
+                        {% if d.statut == 'validee' %}
+                            <span class="badge text-bg-success">{{ statuts[d.statut] }}</span>
+                        {% elif d.statut == 'refusee' %}
+                            <span class="badge text-bg-danger">{{ statuts[d.statut] }}</span>
+                        {% else %}
+                            <span class="badge text-bg-warning">{{ statuts[d.statut] }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-muted small">{{ d.commentaire_admin or "-" }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">Aucune demande envoyée.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
