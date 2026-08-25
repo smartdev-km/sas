@@ -231,6 +231,10 @@ def employe_supprimer(employe_id):
         flash("Impossible de supprimer cet employé : des bulletins de salaire existent déjà. Désactivez-le à la place.", "danger")
         return redirect(url_for("salaires.employes"))
 
+    compte = User.query.filter_by(employe_id=employe.id).first()
+    if compte:
+        db.session.delete(compte)
+
     db.session.delete(employe)
     db.session.commit()
     flash("Employé supprimé.", "info")
