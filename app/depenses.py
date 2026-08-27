@@ -81,7 +81,7 @@ def nouvelle():
                 form=request.form,
             )
 
-        mode_paiement = request.form.get("mode_paiement") or "cash"
+        mode_paiement = request.form.get("mode_paiement") or "compte_bancaire"
         depense = Depense(
             date=_parse_date(request.form.get("date")),
             montant=request.form.get("montant"),
@@ -89,7 +89,6 @@ def nouvelle():
             beneficiaire=request.form.get("beneficiaire", "").strip() or None,
             description=request.form.get("description") or None,
             mode_paiement=mode_paiement,
-            libelle_bancaire=request.form.get("libelle_bancaire", "").strip() or None if mode_paiement == "compte_bancaire" else None,
             reference_paiement=request.form.get("reference_paiement", "").strip() or None if mode_paiement == "compte_bancaire" else None,
         )
         db.session.add(depense)
@@ -126,14 +125,13 @@ def modifier(depense_id):
                 form=request.form,
             )
 
-        mode_paiement = request.form.get("mode_paiement") or "cash"
+        mode_paiement = request.form.get("mode_paiement") or "compte_bancaire"
         depense.date = _parse_date(request.form.get("date"))
         depense.montant = request.form.get("montant")
         depense.categorie = request.form.get("categorie") or None
         depense.beneficiaire = request.form.get("beneficiaire", "").strip() or None
         depense.description = request.form.get("description") or None
         depense.mode_paiement = mode_paiement
-        depense.libelle_bancaire = request.form.get("libelle_bancaire", "").strip() or None if mode_paiement == "compte_bancaire" else None
         depense.reference_paiement = request.form.get("reference_paiement", "").strip() or None if mode_paiement == "compte_bancaire" else None
         db.session.commit()
         flash("Dépense modifiée avec succès.", "success")
@@ -150,7 +148,6 @@ def modifier(depense_id):
             "beneficiaire": depense.beneficiaire or "",
             "description": depense.description or "",
             "mode_paiement": depense.mode_paiement,
-            "libelle_bancaire": depense.libelle_bancaire or "",
             "reference_paiement": depense.reference_paiement or "",
         },
     )
