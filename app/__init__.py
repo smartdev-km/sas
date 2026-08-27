@@ -82,7 +82,7 @@ def create_app(config_class=Config):
         if not (_current_user.is_authenticated and getattr(_current_user, "is_admin_account", False) and _current_user.role == "admin"):
             return {}
 
-        from app.models import Depense, TransactionBancaire, SuiviConsommable, FactureFournisseur, Salaire
+        from app.models import Depense, TransactionBancaire, SuiviConsommable, FactureFournisseur, Salaire, DemandeAbsence
         return {
             "nb_depenses_a_valider": Depense.query.filter_by(valide=False).count(),
             "nb_transactions_a_valider": TransactionBancaire.query.filter_by(valide=False).count(),
@@ -91,6 +91,7 @@ def create_app(config_class=Config):
             ).count(),
             "nb_factures_a_valider": FactureFournisseur.query.filter_by(valide=False).count(),
             "nb_bulletins_a_valider": Salaire.query.filter_by(statut="en_attente").count(),
+            "nb_demandes_en_attente": DemandeAbsence.query.filter_by(statut="en_attente").count(),
         }
 
     # En mode CLI ("flask db upgrade", ...), Alembic gère lui-même les tables :

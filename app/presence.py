@@ -232,7 +232,6 @@ def index():
     ).count()
     taux_connus = [l["taux"] for l in situation_presence if l["taux"] is not None]
     taux_moyen = round(sum(taux_connus) / len(taux_connus), 1) if taux_connus else None
-    nb_demandes_en_attente = DemandeAbsence.query.filter_by(statut="en_attente").count()
 
     return render_template(
         "presence/index.html",
@@ -249,7 +248,6 @@ def index():
         jours_semaine=JOURS_SEMAINE,
         situation_presence=situation_presence,
         mois_label=f"{MOIS_FR[mois_actuel - 1]} {annee_actuelle}",
-        nb_demandes_en_attente=nb_demandes_en_attente,
     )
 
 

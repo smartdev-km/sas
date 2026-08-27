@@ -79,8 +79,14 @@
             {% endif %}
             {% if current_user.role == 'admin' %}
             <li class="nav-item">
-                <a class="nav-link {% if request.blueprint == 'presence' and request.endpoint != 'presence.confirmer' %}active{% endif %}" href="{{ url_for('presence.index') }}">
+                <a class="nav-link {% if request.endpoint == 'presence.index' %}active{% endif %}" href="{{ url_for('presence.index') }}">
                     <i class="bi bi-calendar-check"></i> Présence
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link d-flex justify-content-between align-items-center {% if request.endpoint == 'presence.demandes' %}active{% endif %}" href="{{ url_for('presence.demandes') }}">
+                    <span><i class="bi bi-file-earmark-text"></i> Demandes d'absence</span>
+                    {% if nb_demandes_en_attente %}<span class="badge text-bg-warning">{{ nb_demandes_en_attente }}</span>{% endif %}
                 </a>
             </li>
             <li class="nav-item">
