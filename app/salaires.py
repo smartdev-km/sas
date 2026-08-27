@@ -6,7 +6,7 @@ from app.decorators import admin_required, role_required
 from sqlalchemy import func
 
 from app import db
-from app.models import Employe, Salaire, User, ConnexionLog, TransactionBancaire
+from app.models import Employe, Salaire, User, ConnexionLog, TransactionBancaire, Depense
 from app.constants import MOIS_FR, STATUTS_SALAIRE, SEXES, TYPES_CONTRAT, MODES_PAIEMENT, ROLES_COMPTE
 from app.presence import calculer_presence_mensuelle, statistiques_annuelles_employe
 
@@ -519,9 +519,10 @@ def bulletin_ajouter_paiement(bulletin_id):
         bulletin.mode_paiement = mode_paiement
         bulletin.statut = "paye"
         bulletin.date_paiement = date.today()
+        libelle = f"Salaire {bulletin.employe.nom} - {MOIS_FR[bulletin.mois - 1]} {bulletin.annee}"
 
         if mode_paiement == "compte_bancaire":
-            libelle = request.form.get("libelle_bancaire", "").strip() or f"Salaire {bulletin.employe.nom} - {MOIS_FR[bulletin.mois - 1]} {bulletin.annee}"
+            libelle = request.form.get("libelle_bancaire", "").strip() or libelle
             reference_paiement = request.form.get("reference_paiement", "").strip() or None
             bulletin.libelle_bancaire = libelle
             bulletin.reference_paiement = reference_paiement
@@ -542,6 +543,20 @@ def bulletin_ajouter_paiement(bulletin_id):
             flash("Bulletin payé par virement bancaire, transaction ajoutée au Compte Bancaire.", "success")
         else:
             flash("Bulletin marqué comme payé en cash.", "success")
+
+        # Reflète aussi ce paiement dans Dépenses (déjà validé, puisque le bulletin
+        # a déjà été approuvé par un administrateur). Pas de lien vers la transaction
+        # bancaire ci-dessus : le bulletin la porte déjà, éviter le double lien.
+        db.session.add(Depense(
+            date=bulletin.date_paiement,
+            montant=bulletin.montant,
+            categorie="Salaires",
+            beneficiaire=bulletin.employe.nom,
+            description=libelle,
+            mode_paiement=mode_paiement,
+            valide=True,
+            valide_le=datetime.now(),
+        ))
 
         db.session.commit()
         return redirect(url_for("salaires.bulletin_detail", bulletin_id=bulletin.id))

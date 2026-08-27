@@ -1,4 +1,4 @@
-CATEGORIES_DEPENSE = ["Loyer", "Fournitures", "Transport", "Marketing", "Logiciels", "Réparation", "Consommables", "Divers"]
+CATEGORIES_DEPENSE = ["Loyer", "Fournitures", "Transport", "Marketing", "Logiciels", "Réparation", "Consommables", "Salaires", "Divers"]
 
 MOIS_FR = [
     "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
