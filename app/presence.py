@@ -308,27 +308,35 @@ def lancer():
     date_session = request.form.get("date")
     heure_debut = request.form.get("heure_debut")
     heure_fin = request.form.get("heure_fin")
+    heure_debut_sortie = request.form.get("heure_debut_sortie")
+    heure_fin_sortie = request.form.get("heure_fin_sortie")
 
+    horaire = _horaire_programme()
     try:
         date_valeur = date.fromisoformat(date_session)
         debut_valeur = time.fromisoformat(heure_debut)
         fin_valeur = time.fromisoformat(heure_fin)
+        debut_sortie_valeur = time.fromisoformat(heure_debut_sortie) if heure_debut_sortie else horaire.heure_debut_sortie
+        fin_sortie_valeur = time.fromisoformat(heure_fin_sortie) if heure_fin_sortie else horaire.heure_fin_sortie
     except (TypeError, ValueError):
         flash("Date ou heures invalides.", "danger")
         return redirect(url_for("presence.index"))
 
     if fin_valeur <= debut_valeur:
-        flash("L'heure de fin doit être après l'heure de début.", "danger")
+        flash("L'heure de fin d'entrée doit être après l'heure de début.", "danger")
+        return redirect(url_for("presence.index"))
+
+    if fin_sortie_valeur <= debut_sortie_valeur:
+        flash("L'heure de fin de sortie doit être après l'heure de début.", "danger")
         return redirect(url_for("presence.index"))
 
     if SessionPresence.query.filter_by(date=date_valeur).first():
         flash(f"Un appel existe déjà pour le {date_valeur.strftime('%d/%m/%Y')}.", "danger")
         return redirect(url_for("presence.index"))
 
-    horaire = _horaire_programme()
     session = SessionPresence(
         date=date_valeur, heure_debut=debut_valeur, heure_fin=fin_valeur,
-        heure_debut_sortie=horaire.heure_debut_sortie, heure_fin_sortie=horaire.heure_fin_sortie,
+        heure_debut_sortie=debut_sortie_valeur, heure_fin_sortie=fin_sortie_valeur,
         statut="ouverte",
     )
     db.session.add(session)
