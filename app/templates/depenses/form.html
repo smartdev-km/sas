@@ -18,12 +18,17 @@
                 </div>
                 <div class="col-sm-6">
                     <label class="form-label" for="categorie">Catégorie</label>
-                    <select class="form-select" id="categorie" name="categorie">
+                    <select class="form-select" id="categorie" name="categorie" onchange="document.getElementById('bloc-categorie-autre').classList.toggle('d-none', this.value !== '__autre__')">
                         <option value="">—</option>
                         {% for cat in categories %}
                             <option value="{{ cat }}" {% if form.categorie == cat %}selected{% endif %}>{{ cat }}</option>
                         {% endfor %}
+                        <option value="__autre__" {% if form.categorie == '__autre__' %}selected{% endif %}>Autre</option>
                     </select>
+                </div>
+                <div class="col-sm-6 {% if form.categorie != '__autre__' %}d-none{% endif %}" id="bloc-categorie-autre">
+                    <label class="form-label" for="categorie_autre">Préciser la catégorie</label>
+                    <input type="text" class="form-control" id="categorie_autre" name="categorie_autre" value="{{ form.categorie_autre or '' }}">
                 </div>
                 <div class="col-sm-6">
                     <label class="form-label" for="montant">Montant (KMF) *</label>

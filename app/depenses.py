@@ -21,6 +21,14 @@ def _parse_date(value):
         return None
 
 
+def _resoudre_categorie(form):
+    """Si « Autre » est sélectionné, la catégorie enregistrée est le texte précisé."""
+    categorie = form.get("categorie") or ""
+    if categorie == "__autre__":
+        return form.get("categorie_autre", "").strip() or None
+    return categorie or None
+
+
 @depenses_bp.route("/")
 @role_required("depenses")
 def liste():
@@ -85,7 +93,7 @@ def nouvelle():
         depense = Depense(
             date=_parse_date(request.form.get("date")),
             montant=request.form.get("montant"),
-            categorie=request.form.get("categorie") or None,
+            categorie=_resoudre_categorie(request.form),
             beneficiaire=request.form.get("beneficiaire", "").strip() or None,
             description=request.form.get("description") or None,
             mode_paiement=mode_paiement,
@@ -128,7 +136,7 @@ def modifier(depense_id):
         mode_paiement = request.form.get("mode_paiement") or "compte_bancaire"
         depense.date = _parse_date(request.form.get("date"))
         depense.montant = request.form.get("montant")
-        depense.categorie = request.form.get("categorie") or None
+        depense.categorie = _resoudre_categorie(request.form)
         depense.beneficiaire = request.form.get("beneficiaire", "").strip() or None
         depense.description = request.form.get("description") or None
         depense.mode_paiement = mode_paiement
@@ -137,6 +145,7 @@ def modifier(depense_id):
         flash("Dépense modifiée avec succès.", "success")
         return redirect(url_for("depenses.liste"))
 
+    categorie_est_autre = bool(depense.categorie) and depense.categorie not in CATEGORIES_DEPENSE
     return render_template(
         "depenses/form.html",
         categories=CATEGORIES_DEPENSE,
@@ -144,7 +153,8 @@ def modifier(depense_id):
         form={
             "date": depense.date.isoformat() if depense.date else "",
             "montant": depense.montant,
-            "categorie": depense.categorie or "",
+            "categorie": "__autre__" if categorie_est_autre else (depense.categorie or ""),
+            "categorie_autre": depense.categorie if categorie_est_autre else "",
             "beneficiaire": depense.beneficiaire or "",
             "description": depense.description or "",
             "mode_paiement": depense.mode_paiement,
@@ -242,5 +252,8 @@ def _valider_formulaire(form):
 
     if form.get("mode_paiement") not in ("cash", "compte_bancaire"):
         erreurs.append("Le mode de paiement est invalide.")
+
+    if form.get("categorie") == "__autre__" and not form.get("categorie_autre", "").strip():
+        erreurs.append("Merci de préciser la catégorie.")
 
     return erreurs
