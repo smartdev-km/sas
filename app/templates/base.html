@@ -32,29 +32,33 @@
             {% endif %}
             {% if current_user.role in ('admin', 'comptable') %}
             <li class="nav-item">
-                <a class="nav-link {% if request.blueprint == 'depenses' %}active{% endif %}" href="{{ url_for('depenses.liste') }}">
-                    <i class="bi bi-graph-down-arrow"></i> Dépenses
+                <a class="nav-link d-flex justify-content-between align-items-center {% if request.blueprint == 'depenses' %}active{% endif %}" href="{{ url_for('depenses.liste') }}">
+                    <span><i class="bi bi-graph-down-arrow"></i> Dépenses</span>
+                    {% if current_user.role == 'admin' and nb_depenses_a_valider %}<span class="badge text-bg-warning">{{ nb_depenses_a_valider }}</span>{% endif %}
                 </a>
             </li>
             {% endif %}
             {% if current_user.role in ('admin', 'comptable') %}
             <li class="nav-item">
-                <a class="nav-link {% if request.blueprint == 'compte_bancaire' %}active{% endif %}" href="{{ url_for('compte_bancaire.liste') }}">
-                    <i class="bi bi-bank"></i> Compte Bancaire
+                <a class="nav-link d-flex justify-content-between align-items-center {% if request.blueprint == 'compte_bancaire' %}active{% endif %}" href="{{ url_for('compte_bancaire.liste') }}">
+                    <span><i class="bi bi-bank"></i> Compte Bancaire</span>
+                    {% if current_user.role == 'admin' and nb_transactions_a_valider %}<span class="badge text-bg-warning">{{ nb_transactions_a_valider }}</span>{% endif %}
                 </a>
             </li>
             {% endif %}
             {% if current_user.role in ('admin', 'secretaire') %}
             <li class="nav-item">
-                <a class="nav-link {% if request.blueprint == 'consommables' %}active{% endif %}" href="{{ url_for('consommables.liste') }}">
-                    <i class="bi bi-lightning-charge"></i> Consommables
+                <a class="nav-link d-flex justify-content-between align-items-center {% if request.blueprint == 'consommables' %}active{% endif %}" href="{{ url_for('consommables.liste') }}">
+                    <span><i class="bi bi-lightning-charge"></i> Consommables</span>
+                    {% if current_user.role == 'admin' and nb_consommables_a_valider %}<span class="badge text-bg-warning">{{ nb_consommables_a_valider }}</span>{% endif %}
                 </a>
             </li>
             {% endif %}
             {% if current_user.role in ('admin', 'comptable') %}
             <li class="nav-item">
-                <a class="nav-link {% if request.blueprint == 'fournisseurs' %}active{% endif %}" href="{{ url_for('fournisseurs.liste') }}">
-                    <i class="bi bi-truck"></i> Fournisseurs
+                <a class="nav-link d-flex justify-content-between align-items-center {% if request.blueprint == 'fournisseurs' %}active{% endif %}" href="{{ url_for('fournisseurs.liste') }}">
+                    <span><i class="bi bi-truck"></i> Fournisseurs</span>
+                    {% if current_user.role == 'admin' and nb_factures_a_valider %}<span class="badge text-bg-warning">{{ nb_factures_a_valider }}</span>{% endif %}
                 </a>
             </li>
             {% endif %}
@@ -67,8 +71,9 @@
             {% endif %}
             {% if current_user.role in ('admin', 'secretaire', 'comptable') %}
             <li class="nav-item">
-                <a class="nav-link {% if request.blueprint == 'salaires' %}active{% endif %}" href="{{ url_for('salaires.bulletins') }}">
-                    <i class="bi bi-people"></i> Salaires
+                <a class="nav-link d-flex justify-content-between align-items-center {% if request.blueprint == 'salaires' %}active{% endif %}" href="{{ url_for('salaires.bulletins') }}">
+                    <span><i class="bi bi-people"></i> Salaires</span>
+                    {% if current_user.role == 'admin' and nb_bulletins_a_valider %}<span class="badge text-bg-warning">{{ nb_bulletins_a_valider }}</span>{% endif %}
                 </a>
             </li>
             {% endif %}
