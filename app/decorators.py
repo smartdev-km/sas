@@ -12,7 +12,7 @@ ROLE_MODULES = {
 }
 
 # Rôles qui doivent valider leur propre présence lors d'un appel (en plus des employés).
-ROLES_DOIVENT_CONFIRMER_PRESENCE = {"comptable", "secretaire"}
+ROLES_DOIVENT_CONFIRMER_PRESENCE = {"comptable", "secretaire", "employe"}
 
 
 def admin_required(view):

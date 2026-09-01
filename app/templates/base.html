@@ -95,7 +95,7 @@
                 </a>
             </li>
             {% endif %}
-            {% if current_user.role in ('comptable', 'secretaire') %}
+            {% if current_user.role in ('comptable', 'secretaire', 'employe') %}
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'presence.confirmer' %}active{% endif %}" href="{{ url_for('presence.confirmer') }}">
                     <i class="bi bi-calendar-check"></i> Ma présence

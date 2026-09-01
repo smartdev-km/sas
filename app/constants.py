@@ -37,6 +37,7 @@ ROLES_COMPTE = {
     "admin": "Administrateur",
     "comptable": "RAF",
     "secretaire": "Secrétaire",
+    "employe": "Employée",
 }
 
 TYPES_APPAREIL = ["Téléphone", "Ordinateur portable", "Ordinateur fixe", "Tablette", "Imprimante", "Autre"]

@@ -24,6 +24,8 @@ def _parse_date(value):
 def login():
     if current_user.is_authenticated:
         if current_user.is_admin_account:
+            if current_user.role == "employe":
+                return redirect(url_for("presence.confirmer"))
             return redirect(url_for("dashboard.index"))
         return redirect(url_for("presence.confirmer"))
 
@@ -43,6 +45,8 @@ def login():
         next_page = request.args.get("next")
         if next_page and user.role == "admin":
             return redirect(next_page)
+        if user.role == "employe":
+            return redirect(url_for("presence.confirmer"))
         return redirect(url_for("dashboard.index"))
 
     return render_template("auth/login.html")
