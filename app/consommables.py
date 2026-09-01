@@ -210,3 +210,27 @@ def type_toggle_actif(consommable_id):
     db.session.commit()
     flash(f"« {consommable.nom} » {'réactivé' if consommable.actif else 'désactivé'}.", "info")
     return redirect(url_for("consommables.liste"))
+
+
+@consommables_bp.route("/types/<int:consommable_id>/supprimer", methods=["POST"])
+@role_required("consommables")
+def type_supprimer(consommable_id):
+    consommable = db.get_or_404(Consommable, consommable_id)
+
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas supprimer de consommable directement.", "warning")
+        return redirect(url_for("consommables.liste"))
+
+    a_des_donnees = SuiviConsommable.query.filter(
+        SuiviConsommable.consommable_id == consommable.id,
+        db.or_(SuiviConsommable.montant > 0, SuiviConsommable.valide.is_(True), SuiviConsommable.paye.is_(True)),
+    ).first()
+    if a_des_donnees:
+        flash(f"Impossible de supprimer « {consommable.nom} » : des données existent déjà pour ce type.", "danger")
+        return redirect(url_for("consommables.liste"))
+
+    SuiviConsommable.query.filter_by(consommable_id=consommable.id).delete(synchronize_session=False)
+    db.session.delete(consommable)
+    db.session.commit()
+    flash(f"« {consommable.nom} » supprimé.", "info")
+    return redirect(url_for("consommables.liste"))
