@@ -11,8 +11,6 @@ from app.constants import MOIS_FR
 
 consommables_bp = Blueprint("consommables", __name__, url_prefix="/consommables")
 
-TYPES_PAR_DEFAUT = ["Internet", "Data mobile", "Encre", "Papier A4", "Eau", "Électricité"]
-
 
 def _budget():
     """Budget Consommables : dépenses validées de catégorie « Consommables »,
@@ -28,16 +26,7 @@ def _budget():
     return alloue, depense, alloue - depense
 
 
-def _assurer_types_par_defaut():
-    if Consommable.query.first():
-        return
-    for nom in TYPES_PAR_DEFAUT:
-        db.session.add(Consommable(nom=nom, actif=True))
-    db.session.commit()
-
-
 def _assurer_suivis_du_mois(mois, annee):
-    _assurer_types_par_defaut()
     types_actifs = Consommable.query.filter_by(actif=True).all()
     existants = {
         s.consommable_id
