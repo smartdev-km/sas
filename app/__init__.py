@@ -1,4 +1,12 @@
 import os
+import time as _time
+
+# Fixe le fuseau horaire du process sur celui des Comores (identique à Nairobi,
+# UTC+3, pas de changement d'heure) : sans ça, un hébergeur comme Render tourne
+# en UTC par défaut et datetime.now()/date.today() affichent une heure fausse.
+os.environ["TZ"] = "Indian/Comoro"
+if hasattr(_time, "tzset"):
+    _time.tzset()
 
 from flask import Flask, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
