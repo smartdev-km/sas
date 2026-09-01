@@ -26,29 +26,12 @@ def _budget():
     return alloue, depense, alloue - depense
 
 
-def _assurer_suivis_du_mois(mois, annee):
-    types_actifs = Consommable.query.filter_by(actif=True).all()
-    existants = {
-        s.consommable_id
-        for s in SuiviConsommable.query.filter_by(mois=mois, annee=annee).all()
-    }
-    cree = False
-    for consommable in types_actifs:
-        if consommable.id not in existants:
-            db.session.add(SuiviConsommable(consommable_id=consommable.id, mois=mois, annee=annee, montant=0))
-            cree = True
-    if cree:
-        db.session.commit()
-
-
 @consommables_bp.route("/")
 @role_required("consommables")
 def liste():
     today = date.today()
     annee = request.args.get("annee", today.year, type=int)
     mois = request.args.get("mois", today.month, type=int)
-
-    _assurer_suivis_du_mois(mois, annee)
 
     suivis = (
         SuiviConsommable.query.filter_by(mois=mois, annee=annee)
@@ -172,8 +155,9 @@ def devalider(suivi_id):
 @role_required("consommables")
 def type_nouveau():
     nom = request.form.get("nom", "").strip()
-    mois = request.form.get("mois", type=int)
-    annee = request.form.get("annee", type=int)
+    today = date.today()
+    mois = request.form.get("mois", type=int) or today.month
+    annee = request.form.get("annee", type=int) or today.year
 
     if current_user.role == "admin":
         flash("Un compte admin ne peut pas ajouter de consommable directement.", "warning")
@@ -181,12 +165,23 @@ def type_nouveau():
 
     if not nom:
         flash("Le nom est obligatoire.", "danger")
-    elif Consommable.query.filter(Consommable.nom.ilike(nom)).first():
-        flash(f"« {nom} » existe déjà.", "danger")
+        return redirect(url_for("consommables.liste", mois=mois, annee=annee))
+
+    # Le type (le libellé) est réutilisable d'un mois à l'autre, mais son apparition
+    # dans la liste est propre à chaque mois : l'ajouter ne le fait pas apparaître
+    # automatiquement dans les mois suivants.
+    consommable = Consommable.query.filter(Consommable.nom.ilike(nom)).first()
+    if not consommable:
+        consommable = Consommable(nom=nom, actif=True)
+        db.session.add(consommable)
+        db.session.flush()
+
+    if SuiviConsommable.query.filter_by(consommable_id=consommable.id, mois=mois, annee=annee).first():
+        flash(f"« {nom} » est déjà dans la liste de ce mois.", "danger")
     else:
-        db.session.add(Consommable(nom=nom, actif=True))
+        db.session.add(SuiviConsommable(consommable_id=consommable.id, mois=mois, annee=annee, montant=0))
         db.session.commit()
-        flash(f"« {nom} » ajouté.", "success")
+        flash(f"« {nom} » ajouté pour ce mois.", "success")
 
     return redirect(url_for("consommables.liste", mois=mois, annee=annee))
 
