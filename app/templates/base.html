@@ -30,7 +30,7 @@
             <i class="bi bi-hexagon-fill"></i> SAS
         </div>
         <ul class="nav flex-column sas-nav">
-            {% if current_user.role in ('admin', 'comptable', 'secretaire') %}
+            {% if current_user.role in ('admin', 'comptable', 'secretaire', 'agent_commercial') %}
             <li class="nav-item">
                 <a class="nav-link {% if request.blueprint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard.index') }}">
                     <i class="bi bi-speedometer2"></i> Dashboard
