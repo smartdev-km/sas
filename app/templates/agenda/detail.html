@@ -67,7 +67,7 @@
                 <section class="sas-payslip-section">
                     <h3 class="sas-payslip-section-title">Description</h3>
                     {% if evenement.description %}
-                        <p class="mb-0" style="white-space: pre-line;">{{ evenement.description }}</p>
+                        <div class="mb-0">{{ evenement.description|safe }}</div>
                     {% else %}
                         <p class="text-muted small mb-0">Aucune description fournie.</p>
                     {% endif %}

@@ -1,5 +1,6 @@
 from datetime import datetime, date
 
+import bleach
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
 from sqlalchemy import extract
@@ -13,9 +14,28 @@ agenda_bp = Blueprint("agenda", __name__, url_prefix="/agenda")
 
 JOURS_SEMAINE = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
 
+# Mise en forme autorisée dans la description (gras, italique, souligné, listes,
+# taille du texte) : tout le reste (scripts, attributs, balises inconnues) est
+# supprimé au nettoyage.
+DESCRIPTION_BALISES_AUTORISEES = ["p", "br", "b", "strong", "i", "em", "u", "ul", "ol", "li", "font"]
+DESCRIPTION_ATTRIBUTS_AUTORISES = {"font": ["size"]}
+
 
 def _date_label(date_valeur):
     return f"{JOURS_SEMAINE[date_valeur.weekday()]} {date_valeur.day} {MOIS_FR[date_valeur.month - 1]} {date_valeur.year}"
+
+
+def _nettoyer_description(html):
+    """Assainit le HTML de la description (supprime tout sauf la mise en forme de base),
+    et renvoie None si le résultat est vide une fois le texte extrait."""
+    if not html:
+        return None
+    nettoye = bleach.clean(
+        html, tags=DESCRIPTION_BALISES_AUTORISEES, attributes=DESCRIPTION_ATTRIBUTS_AUTORISES, strip=True
+    )
+    if not bleach.clean(nettoye, tags=[], strip=True).strip():
+        return None
+    return nettoye
 
 
 def _parse_date(value):
@@ -103,7 +123,7 @@ def nouveau():
             heure_debut=_parse_heure(request.form.get("heure_debut")),
             heure_fin=_parse_heure(request.form.get("heure_fin")),
             lieu=request.form.get("lieu", "").strip() or None,
-            description=request.form.get("description", "").strip() or None,
+            description=_nettoyer_description(request.form.get("description")),
             cree_par_id=current_user.id,
         ))
         db.session.commit()
@@ -140,7 +160,7 @@ def modifier(evenement_id):
         evenement.heure_debut = _parse_heure(request.form.get("heure_debut"))
         evenement.heure_fin = _parse_heure(request.form.get("heure_fin"))
         evenement.lieu = request.form.get("lieu", "").strip() or None
-        evenement.description = request.form.get("description", "").strip() or None
+        evenement.description = _nettoyer_description(request.form.get("description"))
         db.session.commit()
         flash("Événement modifié.", "success")
         mois, annee = date_evenement.month, date_evenement.year

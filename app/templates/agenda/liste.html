@@ -1,5 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Agenda{% endblock %}
+{% block head %}
+<style>
+    .sas-richtext {
+        min-height: 110px;
+        overflow-y: auto;
+    }
+
+    .sas-richtext:empty:before {
+        content: attr(data-placeholder);
+        color: #6c757d;
+    }
+
+    .sas-richtext ul, .sas-richtext ol {
+        margin-bottom: 0;
+        padding-left: 1.25rem;
+    }
+</style>
+{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
@@ -63,7 +81,26 @@
             </div>
             <div class="col-12">
                 <label class="form-label small mb-1">Description détaillée</label>
-                <textarea class="form-control form-control-sm" name="description" rows="5" placeholder="Objet de la réunion, ordre du jour, participants attendus, documents à préparer, décisions à prendre..."></textarea>
+                <div class="btn-toolbar mb-1" role="toolbar">
+                    <div class="btn-group btn-group-sm me-1">
+                        <button type="button" class="btn btn-outline-secondary" onmousedown="event.preventDefault()" onclick="document.execCommand('bold')" title="Gras"><i class="bi bi-type-bold"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" onmousedown="event.preventDefault()" onclick="document.execCommand('italic')" title="Italique"><i class="bi bi-type-italic"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" onmousedown="event.preventDefault()" onclick="document.execCommand('underline')" title="Souligné"><i class="bi bi-type-underline"></i></button>
+                    </div>
+                    <div class="btn-group btn-group-sm me-1">
+                        <button type="button" class="btn btn-outline-secondary" onmousedown="event.preventDefault()" onclick="document.execCommand('insertUnorderedList')" title="Liste à puces"><i class="bi bi-list-ul"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" onmousedown="event.preventDefault()" onclick="document.execCommand('insertOrderedList')" title="Liste numérotée"><i class="bi bi-list-ol"></i></button>
+                    </div>
+                    <select class="form-select form-select-sm w-auto" onchange="document.execCommand('fontSize', false, this.value); this.selectedIndex = 0;" title="Taille du texte">
+                        <option value="" selected disabled>Taille</option>
+                        <option value="2">Petit</option>
+                        <option value="3">Normal</option>
+                        <option value="5">Grand</option>
+                        <option value="7">Très grand</option>
+                    </select>
+                </div>
+                <div class="form-control sas-richtext" contenteditable="true" data-sync-target="description-new" data-placeholder="Objet de la réunion, ordre du jour, participants attendus, documents à préparer, décisions à prendre..."></div>
+                <input type="hidden" name="description" id="description-new">
             </div>
             <div class="col-12">
                 <button type="submit" class="btn btn-sm btn-primary">
@@ -106,7 +143,7 @@
                     <td><span class="badge text-bg-light border">{{ types_evenement.get(e.type_evenement, e.type_evenement) }}</span></td>
                     {% if current_user.role != 'admin' %}
                     <td>{{ e.lieu or "-" }}</td>
-                    <td class="text-muted small">{{ e.description or "-" }}</td>
+                    <td class="text-muted small">{{ e.description|striptags|truncate(60) if e.description else "-" }}</td>
                     {% endif %}
                     <td class="text-end">
                         {% if current_user.role == 'admin' %}
@@ -176,8 +213,27 @@
                             <input type="text" class="form-control" id="lieu-{{ e.id }}" name="lieu" value="{{ e.lieu or '' }}">
                         </div>
                         <div class="col-12">
-                            <label class="form-label" for="description-{{ e.id }}">Description détaillée</label>
-                            <textarea class="form-control" id="description-{{ e.id }}" name="description" rows="5" placeholder="Objet de la réunion, ordre du jour, participants attendus, documents à préparer, décisions à prendre...">{{ e.description or '' }}</textarea>
+                            <label class="form-label">Description détaillée</label>
+                            <div class="btn-toolbar mb-1" role="toolbar">
+                                <div class="btn-group btn-group-sm me-1">
+                                    <button type="button" class="btn btn-outline-secondary" onmousedown="event.preventDefault()" onclick="document.execCommand('bold')" title="Gras"><i class="bi bi-type-bold"></i></button>
+                                    <button type="button" class="btn btn-outline-secondary" onmousedown="event.preventDefault()" onclick="document.execCommand('italic')" title="Italique"><i class="bi bi-type-italic"></i></button>
+                                    <button type="button" class="btn btn-outline-secondary" onmousedown="event.preventDefault()" onclick="document.execCommand('underline')" title="Souligné"><i class="bi bi-type-underline"></i></button>
+                                </div>
+                                <div class="btn-group btn-group-sm me-1">
+                                    <button type="button" class="btn btn-outline-secondary" onmousedown="event.preventDefault()" onclick="document.execCommand('insertUnorderedList')" title="Liste à puces"><i class="bi bi-list-ul"></i></button>
+                                    <button type="button" class="btn btn-outline-secondary" onmousedown="event.preventDefault()" onclick="document.execCommand('insertOrderedList')" title="Liste numérotée"><i class="bi bi-list-ol"></i></button>
+                                </div>
+                                <select class="form-select form-select-sm w-auto" onchange="document.execCommand('fontSize', false, this.value); this.selectedIndex = 0;" title="Taille du texte">
+                                    <option value="" selected disabled>Taille</option>
+                                    <option value="2">Petit</option>
+                                    <option value="3">Normal</option>
+                                    <option value="5">Grand</option>
+                                    <option value="7">Très grand</option>
+                                </select>
+                            </div>
+                            <div class="form-control sas-richtext" contenteditable="true" data-sync-target="description-{{ e.id }}" data-placeholder="Objet de la réunion, ordre du jour, participants attendus, documents à préparer, décisions à prendre...">{{ e.description|safe if e.description else '' }}</div>
+                            <input type="hidden" id="description-{{ e.id }}" name="description">
                         </div>
                     </div>
                 </div>
@@ -191,4 +247,19 @@
 </div>
 {% endfor %}
 {% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+    document.querySelectorAll('.sas-richtext').forEach(function (editeur) {
+        var champCache = document.getElementById(editeur.dataset.syncTarget);
+        if (!champCache) return;
+        champCache.value = editeur.innerHTML;
+        var form = editeur.closest('form');
+        if (form) {
+            form.addEventListener('submit', function () {
+                champCache.value = editeur.innerHTML;
+            });
+        }
+    });
+</script>
 {% endblock %}
