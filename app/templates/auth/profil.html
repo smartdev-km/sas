@@ -8,7 +8,7 @@
 
 <form method="post">
     <div class="row g-3">
-        <div class="col-lg-6">
+        <div class="col-12 col-lg-6">
             <div class="card h-100">
                 <div class="card-body">
                     <h2 class="h6 mb-3">Informations</h2>
@@ -31,7 +31,7 @@
             </div>
         </div>
 
-        <div class="col-lg-6">
+        <div class="col-12 col-lg-6">
             <div class="card h-100">
                 <div class="card-body">
                     <h2 class="h6 mb-3">Coordonnées</h2>
@@ -49,16 +49,16 @@
     </div>
 
     <div class="row g-3 mt-1">
-        <div class="col-lg-6">
+        <div class="col-12 col-lg-6">
             <div class="card h-100">
                 <div class="card-body">
                     <h2 class="h6 mb-3">Identité civile</h2>
                     <div class="row g-3">
-                        <div class="col-sm-4">
+                        <div class="col-12 col-sm-4">
                             <label class="form-label" for="date_naissance">Date de naissance</label>
                             <input type="date" class="form-control" id="date_naissance" name="date_naissance" value="{{ current_user.date_naissance.isoformat() if current_user.date_naissance else '' }}">
                         </div>
-                        <div class="col-sm-4">
+                        <div class="col-12 col-sm-4">
                             <label class="form-label" for="sexe">Sexe</label>
                             <select class="form-select" id="sexe" name="sexe">
                                 <option value="">—</option>
@@ -67,7 +67,7 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-sm-4">
+                        <div class="col-12 col-sm-4">
                             <label class="form-label" for="numero_piece_identite">N° pièce d'identité</label>
                             <input type="text" class="form-control" id="numero_piece_identite" name="numero_piece_identite" value="{{ current_user.numero_piece_identite or '' }}">
                         </div>
@@ -76,7 +76,7 @@
             </div>
         </div>
 
-        <div class="col-lg-6">
+        <div class="col-12 col-lg-6">
             <div class="card h-100">
                 <div class="card-body">
                     <h2 class="h6 mb-3">Changer le mot de passe</h2>

@@ -9,7 +9,7 @@
 </div>
 
 <div class="row g-3 mb-4">
-    <div class="col-sm-6 col-lg-4 col-xl">
+    <div class="col-12 col-sm-6 col-lg-4 col-xl">
         <div class="card sas-kpi h-100">
             <div class="card-body">
                 <div class="sas-kpi-icon bg-danger-subtle text-danger"><i class="bi bi-graph-down-arrow"></i></div>
@@ -19,7 +19,7 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-lg-4 col-xl">
+    <div class="col-12 col-sm-6 col-lg-4 col-xl">
         <div class="card sas-kpi h-100">
             <div class="card-body">
                 <div class="sas-kpi-icon bg-warning-subtle text-warning"><i class="bi bi-people"></i></div>
@@ -29,7 +29,7 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-lg-4 col-xl">
+    <div class="col-12 col-sm-6 col-lg-4 col-xl">
         <div class="card sas-kpi h-100">
             <div class="card-body">
                 <div class="sas-kpi-icon bg-info-subtle text-info"><i class="bi bi-lightning-charge"></i></div>
@@ -42,7 +42,7 @@
 </div>
 
 <div class="row g-3">
-    <div class="col-xl-8">
+    <div class="col-12 col-xl-8">
         <div class="card h-100">
             <div class="card-body">
                 <h2 class="h6 mb-3">Évolution mensuelle — Dépenses vs Consommables</h2>
@@ -50,7 +50,7 @@
             </div>
         </div>
     </div>
-    <div class="col-xl-4">
+    <div class="col-12 col-xl-4">
         <div class="card h-100">
             <div class="card-body">
                 <h2 class="h6 mb-3">Répartition des dépenses par catégorie</h2>
@@ -65,10 +65,10 @@
 </div>
 
 <div class="row g-3 mt-1">
-    <div class="col-xl-6">
+    <div class="col-12 col-xl-6">
         <div class="card h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                     <h2 class="h6 mb-0">Mouvements des fournisseurs</h2>
                     {% if current_user.role in ('admin', 'comptable') %}
                     <a href="{{ url_for('fournisseurs.liste') }}" class="btn btn-sm btn-outline-primary">
@@ -111,10 +111,10 @@
             </div>
         </div>
     </div>
-    <div class="col-xl-6">
+    <div class="col-12 col-xl-6">
         <div class="card h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                     <h2 class="h6 mb-0">Dernières dépenses</h2>
                     {% if current_user.role in ('admin', 'comptable') %}
                     <a href="{{ url_for('depenses.liste') }}" class="btn btn-sm btn-outline-danger">

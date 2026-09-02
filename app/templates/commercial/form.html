@@ -12,24 +12,24 @@
     <div class="card-body">
         <form method="post">
             <div class="row g-3">
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="date_contact">Date contact *</label>
                     <input type="date" class="form-control" id="date_contact" name="date_contact" value="{{ form.date_contact or '' }}" required>
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="nom_client">Nom du client *</label>
                     <input type="text" class="form-control" id="nom_client" name="nom_client" value="{{ form.nom_client or '' }}" required>
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="telephone">Téléphone</label>
                     <input type="text" class="form-control" id="telephone" name="telephone" value="{{ form.telephone or '' }}">
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="email">Email</label>
                     <input type="email" class="form-control" id="email" name="email" value="{{ form.email or '' }}">
                 </div>
 
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="type_client">Type de client *</label>
                     <select class="form-select" id="type_client" name="type_client" required
                             onchange="document.getElementById('bloc-type-autre').classList.toggle('d-none', this.value !== 'autre'); document.getElementById('bloc-budget').classList.toggle('d-none', this.value !== 'investisseur');">
@@ -38,20 +38,20 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-sm-6 {% if form.type_client != 'autre' %}d-none{% endif %}" id="bloc-type-autre">
+                <div class="col-12 col-sm-6 {% if form.type_client != 'autre' %}d-none{% endif %}" id="bloc-type-autre">
                     <label class="form-label" for="type_client_precision">Préciser le type</label>
                     <input type="text" class="form-control" id="type_client_precision" name="type_client_precision" value="{{ form.type_client_precision or '' }}">
                 </div>
-                <div class="col-sm-6 {% if form.type_client != 'investisseur' %}d-none{% endif %}" id="bloc-budget">
+                <div class="col-12 col-sm-6 {% if form.type_client != 'investisseur' %}d-none{% endif %}" id="bloc-budget">
                     <label class="form-label" for="budget">Budget (KMF)</label>
                     <input type="number" step="1" min="0" class="form-control" id="budget" name="budget" value="{{ form.budget if form.budget is not none else '' }}">
                 </div>
 
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="villa_interessee">Villa intéressée</label>
                     <input type="text" class="form-control" id="villa_interessee" name="villa_interessee" value="{{ form.villa_interessee or '' }}">
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="statut">Statut *</label>
                     <select class="form-select" id="statut" name="statut" required
                             onchange="document.getElementById('bloc-relance').classList.toggle('d-none', !['rdv_cale', 'a_relancer'].includes(this.value));">
@@ -60,7 +60,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-sm-6 {% if form.statut not in ('rdv_cale', 'a_relancer') %}d-none{% endif %}" id="bloc-relance">
+                <div class="col-12 col-sm-6 {% if form.statut not in ('rdv_cale', 'a_relancer') %}d-none{% endif %}" id="bloc-relance">
                     <label class="form-label" for="prochaine_relance">Prochaine relance</label>
                     <input type="date" class="form-control" id="prochaine_relance" name="prochaine_relance" value="{{ form.prochaine_relance or '' }}">
                 </div>

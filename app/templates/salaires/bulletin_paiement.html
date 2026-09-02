@@ -44,19 +44,19 @@
                             Une transaction sera automatiquement ajoutée dans Compte Bancaire pour ce montant.
                         </p>
                         <div class="row g-3">
-                            <div class="col-sm-6">
+                            <div class="col-12 col-sm-6">
                                 <label class="form-label" for="libelle_bancaire">Libellé</label>
                                 <input type="text" class="form-control" id="libelle_bancaire" name="libelle_bancaire" placeholder="Salaire {{ bulletin.employe.nom }} - {{ mois_fr[bulletin.mois - 1] }} {{ bulletin.annee }}">
                             </div>
-                            <div class="col-sm-6">
+                            <div class="col-12 col-sm-6">
                                 <label class="form-label" for="reference_paiement">Réf. paiement</label>
                                 <input type="text" class="form-control" id="reference_paiement" name="reference_paiement">
                             </div>
-                            <div class="col-sm-6">
+                            <div class="col-12 col-sm-6">
                                 <label class="form-label mb-1">Montant</label>
                                 <div class="form-control-plaintext py-0">{{ bulletin.montant|kmf }}</div>
                             </div>
-                            <div class="col-sm-6">
+                            <div class="col-12 col-sm-6">
                                 <label class="form-label mb-1">Sens</label>
                                 <div><span class="badge text-bg-danger">Crédit (sortie)</span></div>
                             </div>

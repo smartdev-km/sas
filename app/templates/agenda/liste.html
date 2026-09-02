@@ -51,11 +51,11 @@
         <form method="post" action="{{ url_for('agenda.nouveau') }}" class="row g-2 align-items-end">
             <input type="hidden" name="mois" value="{{ mois }}">
             <input type="hidden" name="annee" value="{{ annee }}">
-            <div class="col-sm-6 col-md-3">
+            <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label small mb-1">Titre *</label>
                 <input type="text" class="form-control form-control-sm" name="titre" required>
             </div>
-            <div class="col-sm-6 col-md-2">
+            <div class="col-12 col-sm-6 col-md-2">
                 <label class="form-label small mb-1">Type *</label>
                 <select class="form-select form-select-sm" name="type_evenement" required>
                     {% for valeur, libelle in types_evenement.items() %}
@@ -63,19 +63,19 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-sm-6 col-md-2">
+            <div class="col-12 col-sm-6 col-md-2">
                 <label class="form-label small mb-1">Date *</label>
                 <input type="date" class="form-control form-control-sm" name="date" required>
             </div>
-            <div class="col-sm-6 col-md-2">
+            <div class="col-12 col-sm-6 col-md-2">
                 <label class="form-label small mb-1">Heure début</label>
                 <input type="time" class="form-control form-control-sm" name="heure_debut">
             </div>
-            <div class="col-sm-6 col-md-2">
+            <div class="col-12 col-sm-6 col-md-2">
                 <label class="form-label small mb-1">Heure fin</label>
                 <input type="time" class="form-control form-control-sm" name="heure_fin">
             </div>
-            <div class="col-sm-6 col-md-3">
+            <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label small mb-1">Lieu</label>
                 <input type="text" class="form-control form-control-sm" name="lieu">
             </div>
@@ -191,7 +191,7 @@
                             <label class="form-label" for="titre-{{ e.id }}">Titre *</label>
                             <input type="text" class="form-control" id="titre-{{ e.id }}" name="titre" value="{{ e.titre }}" required>
                         </div>
-                        <div class="col-sm-4">
+                        <div class="col-12 col-sm-4">
                             <label class="form-label" for="type_evenement-{{ e.id }}">Type *</label>
                             <select class="form-select" id="type_evenement-{{ e.id }}" name="type_evenement" required>
                                 {% for valeur, libelle in types_evenement.items() %}
@@ -199,15 +199,15 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-sm-4">
+                        <div class="col-12 col-sm-4">
                             <label class="form-label" for="date-{{ e.id }}">Date *</label>
                             <input type="date" class="form-control" id="date-{{ e.id }}" name="date" value="{{ e.date.isoformat() }}" required>
                         </div>
-                        <div class="col-sm-4">
+                        <div class="col-12 col-sm-4">
                             <label class="form-label" for="heure_debut-{{ e.id }}">Heure début</label>
                             <input type="time" class="form-control" id="heure_debut-{{ e.id }}" name="heure_debut" value="{{ e.heure_debut.strftime('%H:%M') if e.heure_debut else '' }}">
                         </div>
-                        <div class="col-sm-4">
+                        <div class="col-12 col-sm-4">
                             <label class="form-label" for="heure_fin-{{ e.id }}">Heure fin</label>
                             <input type="time" class="form-control" id="heure_fin-{{ e.id }}" name="heure_fin" value="{{ e.heure_fin.strftime('%H:%M') if e.heure_fin else '' }}">
                         </div>

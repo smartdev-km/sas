@@ -10,15 +10,15 @@
     <div class="card-body">
         <h2 class="h6 mb-3">Nouvelle demande</h2>
         <form method="post" class="row g-3">
-            <div class="col-sm-4">
+            <div class="col-12 col-sm-4">
                 <label class="form-label" for="date_debut">Date de début *</label>
                 <input type="date" class="form-control" id="date_debut" name="date_debut" value="{{ today.isoformat() }}" required>
             </div>
-            <div class="col-sm-4">
+            <div class="col-12 col-sm-4">
                 <label class="form-label" for="date_fin">Date de fin *</label>
                 <input type="date" class="form-control" id="date_fin" name="date_fin" value="{{ today.isoformat() }}" required>
             </div>
-            <div class="col-sm-4">
+            <div class="col-12 col-sm-4">
                 <label class="form-label" for="motif">Motif *</label>
                 <select class="form-select" id="motif" name="motif" required>
                     {% for valeur, libelle in motifs.items() %}

@@ -12,11 +12,11 @@
     <div class="card-body">
         <form method="post">
             <div class="row g-3">
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="date">Date *</label>
                     <input type="date" class="form-control" id="date" name="date" value="{{ form.date or '' }}" required>
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="categorie">Catégorie</label>
                     <select class="form-select" id="categorie" name="categorie" onchange="document.getElementById('bloc-categorie-autre').classList.toggle('d-none', this.value !== '__autre__')">
                         <option value="">—</option>
@@ -26,15 +26,15 @@
                         <option value="__autre__" {% if form.categorie == '__autre__' %}selected{% endif %}>Autre</option>
                     </select>
                 </div>
-                <div class="col-sm-6 {% if form.categorie != '__autre__' %}d-none{% endif %}" id="bloc-categorie-autre">
+                <div class="col-12 col-sm-6 {% if form.categorie != '__autre__' %}d-none{% endif %}" id="bloc-categorie-autre">
                     <label class="form-label" for="categorie_autre">Préciser la catégorie</label>
                     <input type="text" class="form-control" id="categorie_autre" name="categorie_autre" value="{{ form.categorie_autre or '' }}">
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="montant">Montant (KMF) *</label>
                     <input type="number" step="1" min="1" class="form-control" id="montant" name="montant" value="{{ form.montant or '' }}" required>
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="beneficiaire">Bénéficiaire</label>
                     <input type="text" class="form-control" id="beneficiaire" name="beneficiaire" value="{{ form.beneficiaire or '' }}" placeholder="Personne ou entreprise payée">
                 </div>
@@ -60,11 +60,11 @@
                                 Une fois cette dépense validée par un admin, une transaction sera automatiquement ajoutée dans Compte Bancaire (avec le libellé/description ci-dessus).
                             </p>
                             <div class="row g-3">
-                                <div class="col-sm-6">
+                                <div class="col-12 col-sm-6">
                                     <label class="form-label" for="reference_paiement">Réf. paiement</label>
                                     <input type="text" class="form-control" id="reference_paiement" name="reference_paiement" value="{{ form.reference_paiement or '' }}">
                                 </div>
-                                <div class="col-sm-6">
+                                <div class="col-12 col-sm-6">
                                     <label class="form-label mb-1">Sens</label>
                                     <div><span class="badge text-bg-danger">Crédit (sortie)</span></div>
                                 </div>

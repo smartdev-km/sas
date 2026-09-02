@@ -16,28 +16,28 @@
                     <label class="form-label" for="nom_societe">Nom de la société *</label>
                     <input type="text" class="form-control" id="nom_societe" name="nom_societe" value="{{ form.nom_societe or '' }}" required>
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="numero_marche">N° du marché</label>
                     <input type="text" class="form-control" id="numero_marche" name="numero_marche" value="{{ form.numero_marche or '' }}">
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="date_signature">Date de signature</label>
                     <input type="date" class="form-control" id="date_signature" name="date_signature" value="{{ form.date_signature or '' }}">
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="montant_marche">Montant du marché (KMF)</label>
                     <input type="number" step="1" min="0" class="form-control" id="montant_marche" name="montant_marche" value="{{ form.montant_marche if form.montant_marche is not none else '' }}">
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="montant_acompte_initial">Montant de l'acompte de démarrage (KMF)</label>
                     <input type="number" step="1" min="0" class="form-control" id="montant_acompte_initial" name="montant_acompte_initial" value="{{ form.montant_acompte_initial if form.montant_acompte_initial is not none else '' }}">
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="date_versement_initial">Date de versement de l'acompte</label>
                     <input type="date" class="form-control" id="date_versement_initial" name="date_versement_initial" value="{{ form.date_versement_initial or '' }}">
                 </div>
                 {% if fournisseur and fournisseur.taux_acompte is not none %}
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label mb-1">Montant total versé à ce jour</label>
                     <div class="form-control-plaintext fw-semibold">{{ fournisseur.montant_acompte|kmf }} <span class="text-muted fw-normal">({{ fournisseur.taux_acompte }}% du marché)</span></div>
                 </div>

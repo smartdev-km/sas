@@ -208,23 +208,23 @@
                                 Utile pour un jour non programmé (ex. un samedi exceptionnel) ou pour rattraper un appel manqué.
                             </p>
                             <div class="row g-2">
-                                <div class="col-sm-4">
+                                <div class="col-12 col-sm-4">
                                     <label class="form-label small mb-1">Date</label>
                                     <input type="date" class="form-control form-control-sm" name="date" value="{{ today.isoformat() }}" required>
                                 </div>
-                                <div class="col-sm-4">
+                                <div class="col-12 col-sm-4">
                                     <label class="form-label small mb-1">Entrée — début</label>
                                     <input type="time" class="form-control form-control-sm" name="heure_debut" value="{{ heure_debut_defaut }}" required>
                                 </div>
-                                <div class="col-sm-4">
+                                <div class="col-12 col-sm-4">
                                     <label class="form-label small mb-1">Entrée — fin</label>
                                     <input type="time" class="form-control form-control-sm" name="heure_fin" value="{{ heure_fin_defaut }}" required>
                                 </div>
-                                <div class="col-sm-6">
+                                <div class="col-12 col-sm-6">
                                     <label class="form-label small mb-1">Sortie — début</label>
                                     <input type="time" class="form-control form-control-sm" name="heure_debut_sortie" value="{{ horaire.heure_debut_sortie.strftime('%H:%M') }}" required>
                                 </div>
-                                <div class="col-sm-6">
+                                <div class="col-12 col-sm-6">
                                     <label class="form-label small mb-1">Sortie — fin</label>
                                     <input type="time" class="form-control form-control-sm" name="heure_fin_sortie" value="{{ horaire.heure_fin_sortie.strftime('%H:%M') }}" required>
                                 </div>
@@ -240,19 +240,19 @@
                                 L'appel du jour se lance automatiquement, sans action de votre part, les jours actifs ci-dessous.
                             </p>
                             <div class="row g-2">
-                                <div class="col-sm-6">
+                                <div class="col-12 col-sm-6">
                                     <label class="form-label small mb-1">Entrée — début</label>
                                     <input type="time" class="form-control form-control-sm" name="heure_debut_entree" value="{{ horaire.heure_debut_entree.strftime('%H:%M') }}" required>
                                 </div>
-                                <div class="col-sm-6">
+                                <div class="col-12 col-sm-6">
                                     <label class="form-label small mb-1">Entrée — fin</label>
                                     <input type="time" class="form-control form-control-sm" name="heure_fin_entree" value="{{ horaire.heure_fin_entree.strftime('%H:%M') }}" required>
                                 </div>
-                                <div class="col-sm-6">
+                                <div class="col-12 col-sm-6">
                                     <label class="form-label small mb-1">Sortie — début</label>
                                     <input type="time" class="form-control form-control-sm" name="heure_debut_sortie" value="{{ horaire.heure_debut_sortie.strftime('%H:%M') }}" required>
                                 </div>
-                                <div class="col-sm-6">
+                                <div class="col-12 col-sm-6">
                                     <label class="form-label small mb-1">Sortie — fin</label>
                                     <input type="time" class="form-control form-control-sm" name="heure_fin_sortie" value="{{ horaire.heure_fin_sortie.strftime('%H:%M') }}" required>
                                 </div>

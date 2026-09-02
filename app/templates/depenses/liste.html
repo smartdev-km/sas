@@ -16,15 +16,15 @@
 <div class="card mb-4">
     <div class="card-body">
         <form method="get" class="row g-2 align-items-end">
-            <div class="col-sm-6 col-md-2">
+            <div class="col-12 col-sm-6 col-md-2">
                 <label class="form-label small mb-1">Du</label>
                 <input type="date" class="form-control form-control-sm" name="date_debut" value="{{ filtres.date_debut }}">
             </div>
-            <div class="col-sm-6 col-md-2">
+            <div class="col-12 col-sm-6 col-md-2">
                 <label class="form-label small mb-1">Au</label>
                 <input type="date" class="form-control form-control-sm" name="date_fin" value="{{ filtres.date_fin }}">
             </div>
-            <div class="col-sm-6 col-md-3">
+            <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label small mb-1">Catégorie</label>
                 <select class="form-select form-select-sm" name="categorie">
                     <option value="">Toutes</option>
@@ -33,11 +33,11 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-sm-6 col-md-3">
+            <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label small mb-1">Bénéficiaire</label>
                 <input type="text" class="form-control form-control-sm" name="beneficiaire" value="{{ filtres.beneficiaire }}" placeholder="Rechercher...">
             </div>
-            <div class="col-md-2 d-flex gap-2">
+            <div class="col-12 col-md-2 d-flex gap-2">
                 <button type="submit" class="btn btn-sm btn-outline-primary w-100">Filtrer</button>
                 <a href="{{ url_for('depenses.liste') }}" class="btn btn-sm btn-outline-secondary w-100">Réinit.</a>
             </div>

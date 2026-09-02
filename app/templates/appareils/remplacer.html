@@ -31,7 +31,7 @@
         <h2 class="h6 mb-3">Nouvel appareil de remplacement</h2>
         <form method="post">
             <div class="row g-3">
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="type_appareil">Type d'appareil *</label>
                     <select class="form-select" id="type_appareil" name="type_appareil" required>
                         <option value="">—</option>
@@ -40,15 +40,15 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="numero_serie">N° de série / IMEI</label>
                     <input type="text" class="form-control" id="numero_serie" name="numero_serie" value="{{ form.numero_serie or '' }}">
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="marque">Marque</label>
                     <input type="text" class="form-control" id="marque" name="marque" value="{{ form.marque or '' }}">
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="modele">Modèle</label>
                     <input type="text" class="form-control" id="modele" name="modele" value="{{ form.modele or '' }}">
                 </div>

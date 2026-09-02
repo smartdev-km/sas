@@ -17,23 +17,23 @@
         <div class="card-body">
             <h2 class="h6 mb-3">Rémunération</h2>
             <div class="row g-3">
-                <div class="col-sm-4">
+                <div class="col-12 col-sm-4">
                     <label class="form-label" for="salaire_base">Salaire de base (KMF) *</label>
                     <input type="number" step="1" min="0" class="form-control" id="salaire_base" name="salaire_base" value="{{ bulletin.salaire_base }}" required>
                 </div>
-                <div class="col-sm-4">
+                <div class="col-12 col-sm-4">
                     <label class="form-label" for="primes">Primes / indemnités (KMF)</label>
                     <input type="number" step="1" min="0" class="form-control" id="primes" name="primes" value="{{ bulletin.primes }}">
                 </div>
-                <div class="col-sm-4">
+                <div class="col-12 col-sm-4">
                     <label class="form-label" for="retenues">Retenues (KMF)</label>
                     <input type="number" step="1" min="0" class="form-control" id="retenues" name="retenues" value="{{ bulletin.retenues }}">
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="primes_detail">Détail des primes</label>
                     <input type="text" class="form-control" id="primes_detail" name="primes_detail" value="{{ bulletin.primes_detail or '' }}" placeholder="Ex: prime de transport, performance...">
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="retenues_detail">Détail des retenues</label>
                     <input type="text" class="form-control" id="retenues_detail" name="retenues_detail" value="{{ bulletin.retenues_detail or '' }}" placeholder="Ex: cotisation sociale, avance...">
                 </div>
@@ -45,11 +45,11 @@
         <div class="card-body">
             <h2 class="h6 mb-3">Présence</h2>
             <div class="row g-3">
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="jours_travailles">Jours travaillés</label>
                     <input type="number" step="1" min="0" class="form-control" id="jours_travailles" name="jours_travailles" value="{{ bulletin.jours_travailles if bulletin.jours_travailles is not none else '' }}">
                 </div>
-                <div class="col-sm-6">
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="jours_absence">Jours d'absence</label>
                     <input type="number" step="1" min="0" class="form-control" id="jours_absence" name="jours_absence" value="{{ bulletin.jours_absence if bulletin.jours_absence is not none else '' }}">
                 </div>

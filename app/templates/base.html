@@ -18,7 +18,14 @@
 
 {% if sas_layout == 'admin' %}
 <div class="sas-layout">
-    <nav class="sas-sidebar d-print-none">
+    <div class="sas-topbar d-print-none">
+        <button type="button" class="btn btn-link text-white p-0" id="sasSidebarToggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="sasSidebar">
+            <i class="bi bi-list fs-3"></i>
+        </button>
+        <span class="sas-topbar-brand"><i class="bi bi-hexagon-fill"></i> SAS</span>
+    </div>
+    <div class="sas-sidebar-backdrop d-print-none" id="sasSidebarBackdrop"></div>
+    <nav class="sas-sidebar d-print-none" id="sasSidebar">
         <div class="sas-brand">
             <i class="bi bi-hexagon-fill"></i> SAS
         </div>
@@ -142,26 +149,26 @@
     <main class="sas-content">
 {% elif sas_layout == 'employe' %}
 <nav class="navbar navbar-dark sas-employe-navbar">
-    <div class="container-fluid">
+    <div class="container-fluid flex-wrap gap-2">
         <span class="navbar-brand mb-0">
             <i class="bi bi-hexagon-fill"></i> SAS
         </span>
-        <div class="d-flex align-items-center gap-3">
+        <div class="d-flex align-items-center flex-wrap gap-2">
             <a href="{{ url_for('presence.confirmer') }}" class="btn btn-sm btn-outline-light">
-                <i class="bi bi-calendar-check"></i> Ma présence
+                <i class="bi bi-calendar-check"></i> <span class="d-none d-sm-inline">Ma présence</span>
             </a>
             <a href="{{ url_for('presence.mes_demandes') }}" class="btn btn-sm btn-outline-light">
-                <i class="bi bi-file-earmark-text"></i> Mes demandes
+                <i class="bi bi-file-earmark-text"></i> <span class="d-none d-sm-inline">Mes demandes</span>
             </a>
             <a href="{{ url_for('appareils.mes_appareils') }}" class="btn btn-sm btn-outline-light">
-                <i class="bi bi-laptop"></i> Mes appareils
+                <i class="bi bi-laptop"></i> <span class="d-none d-sm-inline">Mes appareils</span>
             </a>
-            <span class="text-white-50 small">{{ current_user.nom }}</span>
+            <span class="text-white-50 small d-none d-md-inline">{{ current_user.nom }}</span>
             <a href="{{ url_for('employe_auth.profil') }}" class="btn btn-sm btn-outline-light">
-                <i class="bi bi-person-circle"></i> Mon profil
+                <i class="bi bi-person-circle"></i> <span class="d-none d-sm-inline">Mon profil</span>
             </a>
             <a href="{{ url_for('employe_auth.logout') }}" class="btn btn-sm btn-outline-light">
-                <i class="bi bi-box-arrow-right"></i> Déconnexion
+                <i class="bi bi-box-arrow-right"></i> <span class="d-none d-sm-inline">Déconnexion</span>
             </a>
         </div>
     </div>
@@ -205,6 +212,34 @@
 {% endif %}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    (function () {
+        var toggle = document.getElementById('sasSidebarToggle');
+        var sidebar = document.getElementById('sasSidebar');
+        var backdrop = document.getElementById('sasSidebarBackdrop');
+        if (!toggle || !sidebar || !backdrop) return;
+
+        function ouvrirMenu() {
+            sidebar.classList.add('show');
+            backdrop.classList.add('show');
+            toggle.setAttribute('aria-expanded', 'true');
+        }
+
+        function fermerMenu() {
+            sidebar.classList.remove('show');
+            backdrop.classList.remove('show');
+            toggle.setAttribute('aria-expanded', 'false');
+        }
+
+        toggle.addEventListener('click', function () {
+            sidebar.classList.contains('show') ? fermerMenu() : ouvrirMenu();
+        });
+        backdrop.addEventListener('click', fermerMenu);
+        document.addEventListener('keydown', function (evenement) {
+            if (evenement.key === 'Escape') fermerMenu();
+        });
+    })();
+</script>
 {% block scripts %}{% endblock %}
 {% if current_user.is_authenticated %}
 <script>
