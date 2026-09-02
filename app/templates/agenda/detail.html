@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ evenement.titre }}{% endblock %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="h3 mb-0">{{ evenement.titre }}</h1>
+    <p class="text-muted mb-0">
+        <a href="{{ url_for('agenda.liste', mois=evenement.date.month, annee=evenement.date.year) }}" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Retour à l'agenda</a>
+    </p>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h2 class="h5 mb-0">{{ evenement.titre }}</h2>
+                    <div>
+                        {% if evenement.annule %}<span class="badge text-bg-danger">Annulé</span>{% endif %}
+                        {% if evenement.vu_par_admin %}<span class="badge text-bg-success">Vu</span>{% endif %}
+                    </div>
+                </div>
+                <dl class="row mb-0">
+                    <dt class="col-sm-3 text-muted fw-normal">Date</dt>
+                    <dd class="col-sm-9">{{ evenement.date.strftime("%d/%m/%Y") }}</dd>
+
+                    <dt class="col-sm-3 text-muted fw-normal">Heure</dt>
+                    <dd class="col-sm-9">
+                        {% if evenement.heure_debut %}{{ evenement.heure_debut.strftime("%H:%M") }}{% if evenement.heure_fin %} – {{ evenement.heure_fin.strftime("%H:%M") }}{% endif %}{% else %}-{% endif %}
+                    </dd>
+
+                    <dt class="col-sm-3 text-muted fw-normal">Lieu</dt>
+                    <dd class="col-sm-9">{{ evenement.lieu or "-" }}</dd>
+
+                    <dt class="col-sm-3 text-muted fw-normal">Description</dt>
+                    <dd class="col-sm-9">{{ evenement.description or "-" }}</dd>
+
+                    <dt class="col-sm-3 text-muted fw-normal">Ajouté par</dt>
+                    <dd class="col-sm-9 mb-0">{{ evenement.cree_par.nom }} le {{ evenement.created_at.strftime("%d/%m/%Y à %H:%M") }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    {% if current_user.role == 'admin' %}
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Actions</h2>
+                <form method="post" action="{{ url_for('agenda.marquer_vu', evenement_id=evenement.id) }}" class="mb-2">
+                    <button type="submit" class="btn btn-sm w-100 {{ 'btn-outline-secondary' if evenement.vu_par_admin else 'btn-outline-success' }}">
+                        <i class="bi {{ 'bi-eye-slash' if evenement.vu_par_admin else 'bi-eye' }}"></i>
+                        {{ 'Marquer non vu' if evenement.vu_par_admin else 'Marquer comme vu' }}
+                    </button>
+                </form>
+                <form method="post" action="{{ url_for('agenda.annuler', evenement_id=evenement.id) }}">
+                    <button type="submit" class="btn btn-sm w-100 {{ 'btn-outline-secondary' if evenement.annule else 'btn-outline-danger' }}">
+                        <i class="bi {{ 'bi-arrow-counterclockwise' if evenement.annule else 'bi-x-lg' }}"></i>
+                        {{ 'Réactiver' if evenement.annule else 'Annuler' }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

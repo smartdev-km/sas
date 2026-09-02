@@ -58,6 +58,13 @@ def liste():
     )
 
 
+@agenda_bp.route("/<int:evenement_id>")
+@role_required("agenda")
+def detail(evenement_id):
+    evenement = db.get_or_404(EvenementAgenda, evenement_id)
+    return render_template("agenda/detail.html", evenement=evenement)
+
+
 @agenda_bp.route("/nouveau", methods=["POST"])
 @role_required("agenda")
 def nouveau():
@@ -145,7 +152,7 @@ def marquer_vu(evenement_id):
     evenement = db.get_or_404(EvenementAgenda, evenement_id)
     evenement.vu_par_admin = not evenement.vu_par_admin
     db.session.commit()
-    return redirect(url_for("agenda.liste", mois=evenement.date.month, annee=evenement.date.year))
+    return redirect(url_for("agenda.detail", evenement_id=evenement.id))
 
 
 @agenda_bp.route("/<int:evenement_id>/annuler", methods=["POST"])
@@ -155,4 +162,4 @@ def annuler(evenement_id):
     evenement.annule = not evenement.annule
     db.session.commit()
     flash(f"Événement {'annulé' if evenement.annule else 'réactivé'}.", "info")
-    return redirect(url_for("agenda.liste", mois=evenement.date.month, annee=evenement.date.year))
+    return redirect(url_for("agenda.detail", evenement_id=evenement.id))

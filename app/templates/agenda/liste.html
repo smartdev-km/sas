@@ -75,8 +75,10 @@
                     <th>Date</th>
                     <th>Heure</th>
                     <th>Titre</th>
+                    {% if current_user.role != 'admin' %}
                     <th>Lieu</th>
                     <th>Description</th>
+                    {% endif %}
                     <th class="text-end">Actions</th>
                 </tr>
             </thead>
@@ -92,20 +94,15 @@
                         {% if e.annule %}<span class="badge text-bg-danger ms-1">Annulé</span>{% endif %}
                         {% if e.vu_par_admin %}<span class="badge text-bg-success ms-1">Vu</span>{% endif %}
                     </td>
+                    {% if current_user.role != 'admin' %}
                     <td>{{ e.lieu or "-" }}</td>
                     <td class="text-muted small">{{ e.description or "-" }}</td>
+                    {% endif %}
                     <td class="text-end">
                         {% if current_user.role == 'admin' %}
-                        <form method="post" action="{{ url_for('agenda.marquer_vu', evenement_id=e.id) }}" class="d-inline">
-                            <button type="submit" class="btn btn-sm {{ 'btn-outline-secondary' if e.vu_par_admin else 'btn-outline-success' }}" title="{{ 'Marquer non vu' if e.vu_par_admin else 'Marquer comme vu' }}">
-                                <i class="bi {{ 'bi-eye-slash' if e.vu_par_admin else 'bi-eye' }}"></i>
-                            </button>
-                        </form>
-                        <form method="post" action="{{ url_for('agenda.annuler', evenement_id=e.id) }}" class="d-inline">
-                            <button type="submit" class="btn btn-sm {{ 'btn-outline-secondary' if e.annule else 'btn-outline-danger' }}" title="{{ 'Réactiver' if e.annule else 'Annuler' }}">
-                                <i class="bi {{ 'bi-arrow-counterclockwise' if e.annule else 'bi-x-lg' }}"></i>
-                            </button>
-                        </form>
+                        <a href="{{ url_for('agenda.detail', evenement_id=e.id) }}" class="btn btn-sm btn-outline-secondary" title="Voir le détail">
+                            <i class="bi bi-eye"></i>
+                        </a>
                         {% else %}
                         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modifier-{{ e.id }}">
                             <i class="bi bi-pencil"></i>
@@ -120,7 +117,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-4">Aucun événement pour ce mois.</td>
+                    <td colspan="{{ 4 if current_user.role == 'admin' else 6 }}" class="text-center text-muted py-4">Aucun événement pour ce mois.</td>
                 </tr>
                 {% endfor %}
             </tbody>
