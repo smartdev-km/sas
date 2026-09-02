@@ -64,6 +64,7 @@ def create_app(config_class=Config):
     from app.employe_auth import employe_auth_bp
     from app.presence import presence_bp
     from app.api import api_bp
+    from app.agenda import agenda_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -71,6 +72,7 @@ def create_app(config_class=Config):
     app.register_blueprint(compte_bancaire_bp)
     app.register_blueprint(fournisseurs_bp)
     app.register_blueprint(salaires_bp)
+    app.register_blueprint(agenda_bp)
     app.register_blueprint(rapports_bp)
     app.register_blueprint(appareils_bp)
     app.register_blueprint(consommables_bp)

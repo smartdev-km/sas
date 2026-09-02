@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 # secrétaire doivent en revanche confirmer leur propre présence comme un employé.
 ROLE_MODULES = {
     "comptable": {"dashboard", "depenses", "compte_bancaire", "fournisseurs", "salaires_paiement"},
-    "secretaire": {"dashboard", "rapports", "salaires", "consommables"},
+    "secretaire": {"dashboard", "rapports", "salaires", "consommables", "agenda"},
 }
 
 # Rôles qui doivent valider leur propre présence lors d'un appel (en plus des employés).

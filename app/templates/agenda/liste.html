@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Agenda{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Agenda</h1>
+        <p class="text-muted mb-0">Réunions et événements — {{ mois_label }}</p>
+    </div>
+    <form method="get" class="d-flex gap-2 align-items-end">
+        <div>
+            <label class="form-label small mb-1">Mois</label>
+            <select class="form-select form-select-sm" name="mois" onchange="this.form.submit()">
+                {% for i in range(1, 13) %}
+                    <option value="{{ i }}" {% if i == mois %}selected{% endif %}>{{ mois_fr[i - 1] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="form-label small mb-1">Année</label>
+            <select class="form-select form-select-sm" name="annee" onchange="this.form.submit()">
+                {% for a in annees %}
+                    <option value="{{ a }}" {% if a == annee %}selected{% endif %}>{{ a }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+</div>
+
+{% if current_user.role != 'admin' %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h6 mb-3">Nouvel événement</h2>
+        <form method="post" action="{{ url_for('agenda.nouveau') }}" class="row g-2 align-items-end">
+            <input type="hidden" name="mois" value="{{ mois }}">
+            <input type="hidden" name="annee" value="{{ annee }}">
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label small mb-1">Titre *</label>
+                <input type="text" class="form-control form-control-sm" name="titre" required>
+            </div>
+            <div class="col-sm-6 col-md-2">
+                <label class="form-label small mb-1">Date *</label>
+                <input type="date" class="form-control form-control-sm" name="date" required>
+            </div>
+            <div class="col-sm-6 col-md-2">
+                <label class="form-label small mb-1">Heure début</label>
+                <input type="time" class="form-control form-control-sm" name="heure_debut">
+            </div>
+            <div class="col-sm-6 col-md-2">
+                <label class="form-label small mb-1">Heure fin</label>
+                <input type="time" class="form-control form-control-sm" name="heure_fin">
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label small mb-1">Lieu</label>
+                <input type="text" class="form-control form-control-sm" name="lieu">
+            </div>
+            <div class="col-12">
+                <label class="form-label small mb-1">Description</label>
+                <textarea class="form-control form-control-sm" name="description" rows="2"></textarea>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-lg"></i> Ajouter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Heure</th>
+                    <th>Titre</th>
+                    <th>Lieu</th>
+                    <th>Description</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in evenements %}
+                <tr class="{% if e.annule %}text-muted text-decoration-line-through{% endif %}">
+                    <td class="fw-semibold">{{ e.date.strftime("%d/%m/%Y") }}</td>
+                    <td>
+                        {% if e.heure_debut %}{{ e.heure_debut.strftime("%H:%M") }}{% if e.heure_fin %} – {{ e.heure_fin.strftime("%H:%M") }}{% endif %}{% else %}-{% endif %}
+                    </td>
+                    <td>
+                        {{ e.titre }}
+                        {% if e.annule %}<span class="badge text-bg-danger ms-1">Annulé</span>{% endif %}
+                        {% if e.vu_par_admin %}<span class="badge text-bg-success ms-1">Vu</span>{% endif %}
+                    </td>
+                    <td>{{ e.lieu or "-" }}</td>
+                    <td class="text-muted small">{{ e.description or "-" }}</td>
+                    <td class="text-end">
+                        {% if current_user.role == 'admin' %}
+                        <form method="post" action="{{ url_for('agenda.marquer_vu', evenement_id=e.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm {{ 'btn-outline-secondary' if e.vu_par_admin else 'btn-outline-success' }}" title="{{ 'Marquer non vu' if e.vu_par_admin else 'Marquer comme vu' }}">
+                                <i class="bi {{ 'bi-eye-slash' if e.vu_par_admin else 'bi-eye' }}"></i>
+                            </button>
+                        </form>
+                        <form method="post" action="{{ url_for('agenda.annuler', evenement_id=e.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm {{ 'btn-outline-secondary' if e.annule else 'btn-outline-danger' }}" title="{{ 'Réactiver' if e.annule else 'Annuler' }}">
+                                <i class="bi {{ 'bi-arrow-counterclockwise' if e.annule else 'bi-x-lg' }}"></i>
+                            </button>
+                        </form>
+                        {% else %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modifier-{{ e.id }}">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <form method="post" action="{{ url_for('agenda.supprimer', evenement_id=e.id) }}" class="d-inline" onsubmit="return confirm('Supprimer cet événement ?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">Aucun événement pour ce mois.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if current_user.role != 'admin' %}
+{% for e in evenements %}
+<div class="modal fade" id="modifier-{{ e.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('agenda.modifier', evenement_id=e.id) }}">
+                <div class="modal-header">
+                    <h3 class="modal-title h6 mb-0">Modifier l'événement</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label" for="titre-{{ e.id }}">Titre *</label>
+                            <input type="text" class="form-control" id="titre-{{ e.id }}" name="titre" value="{{ e.titre }}" required>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label" for="date-{{ e.id }}">Date *</label>
+                            <input type="date" class="form-control" id="date-{{ e.id }}" name="date" value="{{ e.date.isoformat() }}" required>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label" for="heure_debut-{{ e.id }}">Heure début</label>
+                            <input type="time" class="form-control" id="heure_debut-{{ e.id }}" name="heure_debut" value="{{ e.heure_debut.strftime('%H:%M') if e.heure_debut else '' }}">
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label" for="heure_fin-{{ e.id }}">Heure fin</label>
+                            <input type="time" class="form-control" id="heure_fin-{{ e.id }}" name="heure_fin" value="{{ e.heure_fin.strftime('%H:%M') if e.heure_fin else '' }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="lieu-{{ e.id }}">Lieu</label>
+                            <input type="text" class="form-control" id="lieu-{{ e.id }}" name="lieu" value="{{ e.lieu or '' }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="description-{{ e.id }}">Description</label>
+                            <textarea class="form-control" id="description-{{ e.id }}" name="description" rows="3">{{ e.description or '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

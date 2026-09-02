@@ -407,3 +407,23 @@ class SuiviConsommable(db.Model):
     __table_args__ = (
         db.UniqueConstraint("consommable_id", "mois", "annee", name="uq_suivi_consommable_mois_annee"),
     )
+
+
+class EvenementAgenda(db.Model):
+    """Réunion ou événement ajouté par le secrétaire pour l'admin."""
+
+    __tablename__ = "evenements_agenda"
+
+    id = db.Column(db.Integer, primary_key=True)
+    titre = db.Column(db.String(200), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    heure_debut = db.Column(db.Time)
+    heure_fin = db.Column(db.Time)
+    lieu = db.Column(db.String(200))
+    description = db.Column(db.Text)
+    cree_par_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    vu_par_admin = db.Column(db.Boolean, default=False, nullable=False)
+    annule = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    cree_par = db.relationship("User")
