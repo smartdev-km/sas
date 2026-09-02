@@ -45,6 +45,31 @@ ROLES_COMPTE = {
     "comptable": "RAF",
     "secretaire": "Secrétaire",
     "employe": "Employée",
+    "agent_commercial": "Agent commercial",
+}
+
+TYPES_CLIENT = {
+    "acheteur": "Acheteur",
+    "investisseur": "Investisseur",
+    "autre": "Autre",
+}
+
+STATUTS_CLIENT = {
+    "nouveau": "Nouveau",
+    "contacte": "Contacté",
+    "rdv_cale": "RDV calé",
+    "a_relancer": "À relancer",
+    "vendu": "Vendu",
+    "perdu": "Perdu",
+}
+
+STATUTS_CLIENT_COULEUR = {
+    "nouveau": "secondary",
+    "contacte": "info",
+    "rdv_cale": "primary",
+    "a_relancer": "warning",
+    "vendu": "success",
+    "perdu": "danger",
 }
 
 TYPES_APPAREIL = ["Téléphone", "Ordinateur portable", "Ordinateur fixe", "Tablette", "Imprimante", "Autre"]

@@ -9,10 +9,11 @@ from flask_login import login_required, current_user
 ROLE_MODULES = {
     "comptable": {"dashboard", "depenses", "compte_bancaire", "fournisseurs", "salaires_paiement"},
     "secretaire": {"dashboard", "rapports", "salaires", "consommables", "agenda"},
+    "agent_commercial": {"dashboard", "commercial"},
 }
 
 # Rôles qui doivent valider leur propre présence lors d'un appel (en plus des employés).
-ROLES_DOIVENT_CONFIRMER_PRESENCE = {"comptable", "secretaire", "employe"}
+ROLES_DOIVENT_CONFIRMER_PRESENCE = {"comptable", "secretaire", "employe", "agent_commercial"}
 
 
 def admin_required(view):

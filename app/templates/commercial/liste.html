@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Clientèle{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Appel clientèle</h1>
+        <p class="text-muted mb-0">Suivi des prospects et clients</p>
+    </div>
+    <div class="d-flex gap-2 align-items-end">
+        <form method="get" class="d-flex gap-2 align-items-end">
+            <div>
+                <label class="form-label small mb-1">Statut</label>
+                <select class="form-select form-select-sm" name="statut" onchange="this.form.submit()">
+                    <option value="">Tous</option>
+                    {% for valeur, libelle in statuts_client.items() %}
+                        <option value="{{ valeur }}" {% if statut_filtre == valeur %}selected{% endif %}>{{ libelle }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+        <a href="{{ url_for('commercial.nouveau') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Nouveau client
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>N°</th>
+                    <th>Date contact</th>
+                    <th>Client</th>
+                    <th>Téléphone</th>
+                    <th>Type</th>
+                    <th>Statut</th>
+                    <th>Prochaine relance</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in clients %}
+                <tr>
+                    <td class="text-muted">{{ loop.index }}</td>
+                    <td>{{ c.date_contact.strftime("%d/%m/%Y") }}</td>
+                    <td class="fw-semibold">{{ c.nom_client }}</td>
+                    <td>{{ c.telephone or "-" }}</td>
+                    <td>
+                        {{ types_client.get(c.type_client, c.type_client) }}
+                        {% if c.type_client == 'autre' and c.type_client_precision %}
+                            <div class="text-muted small">{{ c.type_client_precision }}</div>
+                        {% elif c.type_client == 'investisseur' and c.budget is not none %}
+                            <div class="text-muted small">{{ c.budget|kmf }}</div>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge text-bg-{{ statuts_couleur.get(c.statut, 'secondary') }}">{{ statuts_client.get(c.statut, c.statut) }}</span></td>
+                    <td>{{ c.prochaine_relance.strftime("%d/%m/%Y") if c.prochaine_relance else "-" }}</td>
+                    <td class="text-end">
+                        <a href="{{ url_for('commercial.modifier', client_id=c.id) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="post" action="{{ url_for('commercial.supprimer', client_id=c.id) }}" class="d-inline" onsubmit="return confirm('Supprimer cette fiche client ?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">Aucun client enregistré.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

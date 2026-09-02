@@ -428,3 +428,26 @@ class EvenementAgenda(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     cree_par = db.relationship("User")
+
+
+class ClientCommercial(db.Model):
+    """Fiche de suivi d'un prospect/client géré par un agent commercial."""
+
+    __tablename__ = "clients_commercial"
+
+    id = db.Column(db.Integer, primary_key=True)
+    date_contact = db.Column(db.Date, nullable=False)
+    nom_client = db.Column(db.String(150), nullable=False)
+    telephone = db.Column(db.String(30))
+    email = db.Column(db.String(120))
+    type_client = db.Column(db.String(20), nullable=False, default="acheteur")
+    type_client_precision = db.Column(db.String(150))
+    budget = db.Column(db.Numeric(14, 2))
+    villa_interessee = db.Column(db.String(150))
+    statut = db.Column(db.String(20), nullable=False, default="nouveau")
+    prochaine_relance = db.Column(db.Date)
+    notes = db.Column(db.Text)
+    cree_par_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    cree_par = db.relationship("User")

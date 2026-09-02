@@ -62,6 +62,13 @@
                 </a>
             </li>
             {% endif %}
+            {% if current_user.role in ('admin', 'agent_commercial') %}
+            <li class="nav-item">
+                <a class="nav-link {% if request.blueprint == 'commercial' %}active{% endif %}" href="{{ url_for('commercial.liste') }}">
+                    <i class="bi bi-person-lines-fill"></i> Appel clientèle
+                </a>
+            </li>
+            {% endif %}
             {% if current_user.role in ('admin', 'secretaire') %}
             <li class="nav-item">
                 <a class="nav-link {% if request.blueprint == 'rapports' %}active{% endif %}" href="{{ url_for('rapports.index') }}">
@@ -101,7 +108,7 @@
                 </a>
             </li>
             {% endif %}
-            {% if current_user.role in ('comptable', 'secretaire', 'employe') %}
+            {% if current_user.role in ('comptable', 'secretaire', 'employe', 'agent_commercial') %}
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'presence.confirmer' %}active{% endif %}" href="{{ url_for('presence.confirmer') }}">
                     <i class="bi bi-calendar-check"></i> Ma présence
