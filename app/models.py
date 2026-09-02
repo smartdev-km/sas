@@ -416,6 +416,7 @@ class EvenementAgenda(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     titre = db.Column(db.String(200), nullable=False)
+    type_evenement = db.Column(db.String(20), nullable=False, default="reunion")
     date = db.Column(db.Date, nullable=False)
     heure_debut = db.Column(db.Time)
     heure_fin = db.Column(db.Time)

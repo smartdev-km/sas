@@ -7,7 +7,7 @@ from sqlalchemy import extract
 from app import db
 from app.models import EvenementAgenda
 from app.decorators import role_required, admin_required
-from app.constants import MOIS_FR
+from app.constants import MOIS_FR, TYPES_EVENEMENT
 
 agenda_bp = Blueprint("agenda", __name__, url_prefix="/agenda")
 
@@ -55,6 +55,7 @@ def liste():
         mois_fr=MOIS_FR,
         mois_label=f"{MOIS_FR[mois - 1]} {annee}",
         today=today,
+        types_evenement=TYPES_EVENEMENT,
     )
 
 
@@ -62,7 +63,7 @@ def liste():
 @role_required("agenda")
 def detail(evenement_id):
     evenement = db.get_or_404(EvenementAgenda, evenement_id)
-    return render_template("agenda/detail.html", evenement=evenement)
+    return render_template("agenda/detail.html", evenement=evenement, types_evenement=TYPES_EVENEMENT)
 
 
 @agenda_bp.route("/nouveau", methods=["POST"])
@@ -77,14 +78,18 @@ def nouveau():
 
     titre = request.form.get("titre", "").strip()
     date_evenement = _parse_date(request.form.get("date"))
+    type_evenement = request.form.get("type_evenement") or "reunion"
 
     if not titre:
         flash("Le titre est obligatoire.", "danger")
     elif not date_evenement:
         flash("La date est invalide ou manquante.", "danger")
+    elif type_evenement not in TYPES_EVENEMENT:
+        flash("Le type d'événement est invalide.", "danger")
     else:
         db.session.add(EvenementAgenda(
             titre=titre,
+            type_evenement=type_evenement,
             date=date_evenement,
             heure_debut=_parse_heure(request.form.get("heure_debut")),
             heure_fin=_parse_heure(request.form.get("heure_fin")),
@@ -111,13 +116,17 @@ def modifier(evenement_id):
 
     titre = request.form.get("titre", "").strip()
     date_evenement = _parse_date(request.form.get("date"))
+    type_evenement = request.form.get("type_evenement") or "reunion"
 
     if not titre:
         flash("Le titre est obligatoire.", "danger")
     elif not date_evenement:
         flash("La date est invalide ou manquante.", "danger")
+    elif type_evenement not in TYPES_EVENEMENT:
+        flash("Le type d'événement est invalide.", "danger")
     else:
         evenement.titre = titre
+        evenement.type_evenement = type_evenement
         evenement.date = date_evenement
         evenement.heure_debut = _parse_heure(request.form.get("heure_debut"))
         evenement.heure_fin = _parse_heure(request.form.get("heure_fin"))

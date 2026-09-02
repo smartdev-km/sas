@@ -20,6 +20,9 @@
                     </div>
                 </div>
                 <dl class="row mb-0">
+                    <dt class="col-sm-3 text-muted fw-normal">Type</dt>
+                    <dd class="col-sm-9">{{ types_evenement.get(evenement.type_evenement, evenement.type_evenement) }}</dd>
+
                     <dt class="col-sm-3 text-muted fw-normal">Date</dt>
                     <dd class="col-sm-9">{{ evenement.date.strftime("%d/%m/%Y") }}</dd>
 

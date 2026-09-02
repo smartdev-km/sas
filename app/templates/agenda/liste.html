@@ -38,6 +38,14 @@
                 <input type="text" class="form-control form-control-sm" name="titre" required>
             </div>
             <div class="col-sm-6 col-md-2">
+                <label class="form-label small mb-1">Type *</label>
+                <select class="form-select form-select-sm" name="type_evenement" required>
+                    {% for valeur, libelle in types_evenement.items() %}
+                        <option value="{{ valeur }}">{{ libelle }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-sm-6 col-md-2">
                 <label class="form-label small mb-1">Date *</label>
                 <input type="date" class="form-control form-control-sm" name="date" required>
             </div>
@@ -75,6 +83,7 @@
                     <th>Date</th>
                     <th>Heure</th>
                     <th>Titre</th>
+                    <th>Type</th>
                     {% if current_user.role != 'admin' %}
                     <th>Lieu</th>
                     <th>Description</th>
@@ -94,6 +103,7 @@
                         {% if e.annule %}<span class="badge text-bg-danger ms-1">Annulé</span>{% endif %}
                         {% if e.vu_par_admin %}<span class="badge text-bg-success ms-1">Vu</span>{% endif %}
                     </td>
+                    <td><span class="badge text-bg-light border">{{ types_evenement.get(e.type_evenement, e.type_evenement) }}</span></td>
                     {% if current_user.role != 'admin' %}
                     <td>{{ e.lieu or "-" }}</td>
                     <td class="text-muted small">{{ e.description or "-" }}</td>
@@ -117,7 +127,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="{{ 4 if current_user.role == 'admin' else 6 }}" class="text-center text-muted py-4">Aucun événement pour ce mois.</td>
+                    <td colspan="{{ 5 if current_user.role == 'admin' else 7 }}" class="text-center text-muted py-4">Aucun événement pour ce mois.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -140,6 +150,14 @@
                         <div class="col-12">
                             <label class="form-label" for="titre-{{ e.id }}">Titre *</label>
                             <input type="text" class="form-control" id="titre-{{ e.id }}" name="titre" value="{{ e.titre }}" required>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label" for="type_evenement-{{ e.id }}">Type *</label>
+                            <select class="form-select" id="type_evenement-{{ e.id }}" name="type_evenement" required>
+                                {% for valeur, libelle in types_evenement.items() %}
+                                    <option value="{{ valeur }}" {% if e.type_evenement == valeur %}selected{% endif %}>{{ libelle }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
                         <div class="col-sm-4">
                             <label class="form-label" for="date-{{ e.id }}">Date *</label>

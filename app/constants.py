@@ -31,6 +31,13 @@ STATUTS_DEMANDE_ABSENCE = {
     "refusee": "Refusée",
 }
 
+TYPES_EVENEMENT = {
+    "reunion": "Réunion",
+    "rdv_externe": "Rendez-vous externe",
+    "formation": "Formation",
+    "autre": "Autre",
+}
+
 MODES_PAIEMENT = ["Virement bancaire", "Mobile money", "Espèces"]
 
 ROLES_COMPTE = {
