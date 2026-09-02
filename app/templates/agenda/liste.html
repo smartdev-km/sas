@@ -151,6 +151,9 @@
                             <i class="bi bi-eye"></i>
                         </a>
                         {% else %}
+                        <a href="{{ url_for('agenda.detail', evenement_id=e.id) }}" class="btn btn-sm btn-outline-secondary" title="Aperçu du détail">
+                            <i class="bi bi-eye"></i>
+                        </a>
                         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modifier-{{ e.id }}">
                             <i class="bi bi-pencil"></i>
                         </button>
