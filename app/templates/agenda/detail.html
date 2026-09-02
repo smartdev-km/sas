@@ -1,51 +1,90 @@
 {% extends "base.html" %}
 {% block title %}{{ evenement.titre }}{% endblock %}
 {% block content %}
-<div class="mb-4">
-    <h1 class="h3 mb-0">{{ evenement.titre }}</h1>
-    <p class="text-muted mb-0">
-        <a href="{{ url_for('agenda.liste', mois=evenement.date.month, annee=evenement.date.year) }}" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Retour à l'agenda</a>
-    </p>
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 d-print-none">
+    <div>
+        <h1 class="h3 mb-0">Détail de l'événement</h1>
+        <p class="text-muted mb-0">
+            <a href="{{ url_for('agenda.liste', mois=evenement.date.month, annee=evenement.date.year) }}" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Retour à l'agenda</a>
+        </p>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
+        <i class="bi bi-printer"></i> Imprimer
+    </button>
 </div>
 
 <div class="row g-3">
     <div class="col-lg-8">
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <h2 class="h5 mb-0">{{ evenement.titre }}</h2>
+        <div class="card sas-payslip">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start sas-payslip-header pb-3 mb-4">
                     <div>
-                        {% if evenement.annule %}<span class="badge text-bg-danger">Annulé</span>{% endif %}
-                        {% if evenement.vu_par_admin %}<span class="badge text-bg-success">Vu</span>{% endif %}
+                        <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Société de projet Village des jeux" style="height: 50px;">
+                        <p class="text-muted small mb-0 mt-1">Fiche événement d'agenda</p>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-semibold">{{ evenement.date.strftime("%d/%m/%Y") }}</div>
+                        {% if evenement.annule %}
+                            <span class="badge text-bg-danger">Annulé</span>
+                        {% elif evenement.vu_par_admin %}
+                            <span class="badge text-bg-success">Vu par l'administration</span>
+                        {% else %}
+                            <span class="badge text-bg-warning">Non consulté</span>
+                        {% endif %}
                     </div>
                 </div>
-                <dl class="row mb-0">
-                    <dt class="col-sm-3 text-muted fw-normal">Type</dt>
-                    <dd class="col-sm-9">{{ types_evenement.get(evenement.type_evenement, evenement.type_evenement) }}</dd>
 
-                    <dt class="col-sm-3 text-muted fw-normal">Date</dt>
-                    <dd class="col-sm-9">{{ evenement.date.strftime("%d/%m/%Y") }}</dd>
+                <h2 class="h4 mb-3">{{ evenement.titre }}</h2>
 
-                    <dt class="col-sm-3 text-muted fw-normal">Heure</dt>
-                    <dd class="col-sm-9">
-                        {% if evenement.heure_debut %}{{ evenement.heure_debut.strftime("%H:%M") }}{% if evenement.heure_fin %} – {{ evenement.heure_fin.strftime("%H:%M") }}{% endif %}{% else %}-{% endif %}
-                    </dd>
+                <section class="sas-payslip-section">
+                    <h3 class="sas-payslip-section-title">Informations générales</h3>
+                    <div class="sas-payslip-columns">
+                        <div class="sas-payslip-col">
+                            <div class="sas-payslip-field">
+                                <div class="text-muted small">Type</div>
+                                <div class="fw-semibold">{{ types_evenement.get(evenement.type_evenement, evenement.type_evenement) }}</div>
+                            </div>
+                            <div class="sas-payslip-field">
+                                <div class="text-muted small">Date</div>
+                                <div class="fw-semibold">{{ date_label }}</div>
+                            </div>
+                        </div>
+                        <div class="sas-payslip-col">
+                            <div class="sas-payslip-field">
+                                <div class="text-muted small">Horaire</div>
+                                <div class="fw-semibold">
+                                    {% if evenement.heure_debut %}{{ evenement.heure_debut.strftime("%H:%M") }}{% if evenement.heure_fin %} – {{ evenement.heure_fin.strftime("%H:%M") }}{% endif %}{% else %}Non précisé{% endif %}
+                                </div>
+                            </div>
+                            <div class="sas-payslip-field">
+                                <div class="text-muted small">Lieu</div>
+                                <div class="fw-semibold">{{ evenement.lieu or "Non précisé" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
-                    <dt class="col-sm-3 text-muted fw-normal">Lieu</dt>
-                    <dd class="col-sm-9">{{ evenement.lieu or "-" }}</dd>
+                <section class="sas-payslip-section">
+                    <h3 class="sas-payslip-section-title">Description</h3>
+                    {% if evenement.description %}
+                        <p class="mb-0" style="white-space: pre-line;">{{ evenement.description }}</p>
+                    {% else %}
+                        <p class="text-muted small mb-0">Aucune description fournie.</p>
+                    {% endif %}
+                </section>
 
-                    <dt class="col-sm-3 text-muted fw-normal">Description</dt>
-                    <dd class="col-sm-9">{{ evenement.description or "-" }}</dd>
-
-                    <dt class="col-sm-3 text-muted fw-normal">Ajouté par</dt>
-                    <dd class="col-sm-9 mb-0">{{ evenement.cree_par.nom }} le {{ evenement.created_at.strftime("%d/%m/%Y à %H:%M") }}</dd>
-                </dl>
+                <p class="text-muted small mt-4 mb-0 sas-payslip-footer">
+                    Ajouté par {{ evenement.cree_par.nom }} le {{ evenement.created_at.strftime("%d/%m/%Y à %H:%M") }}.
+                </p>
+                <p class="text-muted small mt-1 mb-0 d-none d-print-block">
+                    Document généré le {{ now.strftime("%d/%m/%Y à %H:%M") }}.
+                </p>
             </div>
         </div>
     </div>
 
     {% if current_user.role == 'admin' %}
-    <div class="col-lg-4">
+    <div class="col-lg-4 d-print-none">
         <div class="card">
             <div class="card-body">
                 <h2 class="h6 mb-3">Actions</h2>

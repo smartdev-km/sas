@@ -62,8 +62,8 @@
                 <input type="text" class="form-control form-control-sm" name="lieu">
             </div>
             <div class="col-12">
-                <label class="form-label small mb-1">Description</label>
-                <textarea class="form-control form-control-sm" name="description" rows="2" placeholder="Objet de la réunion, points à l'ordre du jour, participants attendus..."></textarea>
+                <label class="form-label small mb-1">Description détaillée</label>
+                <textarea class="form-control form-control-sm" name="description" rows="5" placeholder="Objet de la réunion, ordre du jour, participants attendus, documents à préparer, décisions à prendre..."></textarea>
             </div>
             <div class="col-12">
                 <button type="submit" class="btn btn-sm btn-primary">
@@ -176,8 +176,8 @@
                             <input type="text" class="form-control" id="lieu-{{ e.id }}" name="lieu" value="{{ e.lieu or '' }}">
                         </div>
                         <div class="col-12">
-                            <label class="form-label" for="description-{{ e.id }}">Description</label>
-                            <textarea class="form-control" id="description-{{ e.id }}" name="description" rows="3" placeholder="Objet de la réunion, points à l'ordre du jour, participants attendus...">{{ e.description or '' }}</textarea>
+                            <label class="form-label" for="description-{{ e.id }}">Description détaillée</label>
+                            <textarea class="form-control" id="description-{{ e.id }}" name="description" rows="5" placeholder="Objet de la réunion, ordre du jour, participants attendus, documents à préparer, décisions à prendre...">{{ e.description or '' }}</textarea>
                         </div>
                     </div>
                 </div>

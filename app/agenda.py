@@ -11,6 +11,12 @@ from app.constants import MOIS_FR, TYPES_EVENEMENT
 
 agenda_bp = Blueprint("agenda", __name__, url_prefix="/agenda")
 
+JOURS_SEMAINE = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+
+
+def _date_label(date_valeur):
+    return f"{JOURS_SEMAINE[date_valeur.weekday()]} {date_valeur.day} {MOIS_FR[date_valeur.month - 1]} {date_valeur.year}"
+
 
 def _parse_date(value):
     if not value:
@@ -63,7 +69,10 @@ def liste():
 @role_required("agenda")
 def detail(evenement_id):
     evenement = db.get_or_404(EvenementAgenda, evenement_id)
-    return render_template("agenda/detail.html", evenement=evenement, types_evenement=TYPES_EVENEMENT)
+    return render_template(
+        "agenda/detail.html", evenement=evenement, types_evenement=TYPES_EVENEMENT,
+        now=datetime.now(), date_label=_date_label(evenement.date),
+    )
 
 
 @agenda_bp.route("/nouveau", methods=["POST"])
