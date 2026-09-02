@@ -4,7 +4,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h1 class="h3 mb-0">Agenda</h1>
-        <p class="text-muted mb-0">Réunions et événements — {{ mois_label }}</p>
+        <p class="text-muted mb-0">Planification des réunions et rendez-vous professionnels — {{ mois_label }}</p>
     </div>
     <form method="get" class="d-flex gap-2 align-items-end">
         <div>
@@ -55,7 +55,7 @@
             </div>
             <div class="col-12">
                 <label class="form-label small mb-1">Description</label>
-                <textarea class="form-control form-control-sm" name="description" rows="2"></textarea>
+                <textarea class="form-control form-control-sm" name="description" rows="2" placeholder="Objet de la réunion, points à l'ordre du jour, participants attendus..."></textarea>
             </div>
             <div class="col-12">
                 <button type="submit" class="btn btn-sm btn-primary">
@@ -159,7 +159,7 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label" for="description-{{ e.id }}">Description</label>
-                            <textarea class="form-control" id="description-{{ e.id }}" name="description" rows="3">{{ e.description or '' }}</textarea>
+                            <textarea class="form-control" id="description-{{ e.id }}" name="description" rows="3" placeholder="Objet de la réunion, points à l'ordre du jour, participants attendus...">{{ e.description or '' }}</textarea>
                         </div>
                     </div>
                 </div>
