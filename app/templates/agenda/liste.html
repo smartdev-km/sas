@@ -79,7 +79,7 @@
                 <label class="form-label small mb-1">Lieu</label>
                 <input type="text" class="form-control form-control-sm" name="lieu">
             </div>
-            <div class="col-12">
+            <div class="col-12 sas-richtext-groupe">
                 <label class="form-label small mb-1">Description détaillée</label>
                 <div class="btn-toolbar mb-1" role="toolbar">
                     <div class="btn-group btn-group-sm me-1">
@@ -91,7 +91,7 @@
                         <button type="button" class="btn btn-outline-secondary" onmousedown="event.preventDefault()" onclick="document.execCommand('insertUnorderedList')" title="Liste à puces"><i class="bi bi-list-ul"></i></button>
                         <button type="button" class="btn btn-outline-secondary" onmousedown="event.preventDefault()" onclick="document.execCommand('insertOrderedList')" title="Liste numérotée"><i class="bi bi-list-ol"></i></button>
                     </div>
-                    <select class="form-select form-select-sm w-auto" onchange="document.execCommand('fontSize', false, this.value); this.selectedIndex = 0;" title="Taille du texte">
+                    <select class="form-select form-select-sm w-auto" data-role="taille" title="Taille du texte">
                         <option value="" selected disabled>Taille</option>
                         <option value="2">Petit</option>
                         <option value="3">Normal</option>
@@ -212,7 +212,7 @@
                             <label class="form-label" for="lieu-{{ e.id }}">Lieu</label>
                             <input type="text" class="form-control" id="lieu-{{ e.id }}" name="lieu" value="{{ e.lieu or '' }}">
                         </div>
-                        <div class="col-12">
+                        <div class="col-12 sas-richtext-groupe">
                             <label class="form-label">Description détaillée</label>
                             <div class="btn-toolbar mb-1" role="toolbar">
                                 <div class="btn-group btn-group-sm me-1">
@@ -224,7 +224,7 @@
                                     <button type="button" class="btn btn-outline-secondary" onmousedown="event.preventDefault()" onclick="document.execCommand('insertUnorderedList')" title="Liste à puces"><i class="bi bi-list-ul"></i></button>
                                     <button type="button" class="btn btn-outline-secondary" onmousedown="event.preventDefault()" onclick="document.execCommand('insertOrderedList')" title="Liste numérotée"><i class="bi bi-list-ol"></i></button>
                                 </div>
-                                <select class="form-select form-select-sm w-auto" onchange="document.execCommand('fontSize', false, this.value); this.selectedIndex = 0;" title="Taille du texte">
+                                <select class="form-select form-select-sm w-auto" data-role="taille" title="Taille du texte">
                                     <option value="" selected disabled>Taille</option>
                                     <option value="2">Petit</option>
                                     <option value="3">Normal</option>
@@ -260,6 +260,38 @@
                 champCache.value = editeur.innerHTML;
             });
         }
+    });
+
+    // Le <select> de taille vole le focus (et donc la sélection) de l'éditeur dès
+    // qu'on clique dessus : on sauvegarde la sélection juste avant, et on la
+    // restaure juste avant d'appliquer la taille, sinon fontSize ne fait rien.
+    document.querySelectorAll('.sas-richtext-groupe').forEach(function (groupe) {
+        var editeur = groupe.querySelector('.sas-richtext');
+        var selectTaille = groupe.querySelector('select[data-role="taille"]');
+        if (!editeur || !selectTaille) return;
+        var rangeSauvee = null;
+
+        function sauvegarderSelection() {
+            var selection = window.getSelection();
+            if (selection.rangeCount > 0 && editeur.contains(selection.anchorNode)) {
+                rangeSauvee = selection.getRangeAt(0).cloneRange();
+            }
+        }
+
+        editeur.addEventListener('mouseup', sauvegarderSelection);
+        editeur.addEventListener('keyup', sauvegarderSelection);
+        selectTaille.addEventListener('mousedown', sauvegarderSelection);
+
+        selectTaille.addEventListener('change', function () {
+            editeur.focus();
+            if (rangeSauvee) {
+                var selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(rangeSauvee);
+            }
+            document.execCommand('fontSize', false, this.value);
+            this.selectedIndex = 0;
+        });
     });
 </script>
 {% endblock %}
