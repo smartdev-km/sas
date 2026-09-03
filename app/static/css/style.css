@@ -3,13 +3,8 @@
     --sas-dark: #1c2333;
 }
 
-html {
-    overflow-x: hidden;
-}
-
 body {
     background-color: #f4f6fb;
-    overflow-x: hidden;
 }
 
 img, table, .table-responsive, canvas {
@@ -19,6 +14,10 @@ img, table, .table-responsive, canvas {
 .sas-layout {
     display: flex;
     min-height: 100vh;
+}
+
+.sas-content {
+    overflow-x: hidden;
 }
 
 .sas-employe-navbar {
