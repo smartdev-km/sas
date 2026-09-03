@@ -80,7 +80,11 @@
                     <td class="text-end fw-semibold">{{ d.montant|kmf }}</td>
                     <td class="text-end">
                         {% if d.valide %}
-                            {% if current_user.role == 'admin' %}
+                            {% if d.id in depense_ids_salaire %}
+                            <span class="text-muted small" title="Provient d'un bulletin de salaire payé : à annuler depuis Salaires">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            {% elif current_user.role == 'admin' %}
                             <form method="post" action="{{ url_for('depenses.devalider', depense_id=d.id) }}" class="d-inline" onsubmit="return confirm('Déverrouiller cette dépense ? Elle redeviendra modifiable comme avant la validation.');">
                                 <button type="submit" class="btn btn-sm btn-outline-secondary" title="Déverrouiller">
                                     <i class="bi bi-lock-fill"></i>

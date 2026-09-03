@@ -33,6 +33,11 @@
         <a href="{{ url_for('salaires.bulletin_modifier', bulletin_id=bulletin.id) }}" class="btn btn-outline-secondary" title="Corriger la date de paiement">
             <i class="bi bi-pencil"></i> Modifier
         </a>
+        <form method="post" action="{{ url_for('salaires.bulletin_annuler_paiement', bulletin_id=bulletin.id) }}" onsubmit="return confirm('Annuler ce paiement ? La dépense et la transaction bancaire liées seront supprimées, et le bulletin repassera à « Validé ».');">
+            <button type="submit" class="btn btn-outline-danger" title="Annuler le paiement">
+                <i class="bi bi-arrow-counterclockwise"></i> Annuler le paiement
+            </button>
+        </form>
         {% else %}
         <button type="button" class="btn btn-outline-secondary" disabled title="Bulletin {{ statuts[bulletin.statut]|lower }} : non modifiable">
             <i class="bi bi-lock"></i> Modifier

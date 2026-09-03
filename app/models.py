@@ -246,9 +246,11 @@ class Salaire(db.Model):
     libelle_bancaire = db.Column(db.String(255))
     reference_paiement = db.Column(db.String(100))
     transaction_bancaire_id = db.Column(db.Integer, db.ForeignKey("transactions_bancaires.id"))
+    depense_id = db.Column(db.Integer, db.ForeignKey("depenses.id"))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     transaction_bancaire = db.relationship("TransactionBancaire")
+    depense = db.relationship("Depense")
 
     __table_args__ = (
         db.UniqueConstraint("employe_id", "mois", "annee", name="uq_salaire_employe_mois_annee"),

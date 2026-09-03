@@ -6,7 +6,7 @@ from app.decorators import role_required, admin_required
 from sqlalchemy import func
 
 from app import db
-from app.models import Depense, TransactionBancaire, PlanComptable
+from app.models import Depense, TransactionBancaire, PlanComptable, Salaire
 
 depenses_bp = Blueprint("depenses", __name__, url_prefix="/depenses")
 
@@ -58,12 +58,17 @@ def liste():
         page=page, per_page=20, error_out=False
     )
 
+    depense_ids_salaire = {
+        s.depense_id for s in Salaire.query.filter(Salaire.depense_id.isnot(None)).all()
+    }
+
     return render_template(
         "depenses/liste.html",
         depenses=pagination.items,
         pagination=pagination,
         categories=_categories_actives(),
         plan_comptable=PlanComptable.query.order_by(PlanComptable.numero).all(),
+        depense_ids_salaire=depense_ids_salaire,
         total_filtre=float(total_filtre),
         filtres={
             "date_debut": request.args.get("date_debut", ""),
@@ -224,6 +229,10 @@ def devalider(depense_id):
 
     if not depense.valide:
         flash("Cette dépense n'est pas validée.", "info")
+        return redirect(url_for("depenses.liste"))
+
+    if Salaire.query.filter_by(depense_id=depense.id).first():
+        flash("Cette dépense provient d'un bulletin de salaire payé : annulez le paiement depuis le bulletin, dans Salaires.", "warning")
         return redirect(url_for("depenses.liste"))
 
     if depense.transaction_bancaire_id:

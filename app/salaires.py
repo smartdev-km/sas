@@ -577,8 +577,10 @@ def bulletin_ajouter_paiement(bulletin_id):
 
         # Reflète aussi ce paiement dans Dépenses (déjà validé, puisque le bulletin
         # a déjà été approuvé par un administrateur). Pas de lien vers la transaction
-        # bancaire ci-dessus : le bulletin la porte déjà, éviter le double lien.
-        db.session.add(Depense(
+        # bancaire ci-dessus : le bulletin la porte déjà, éviter le double lien. Le lien
+        # inverse (bulletin.depense_id) permet en revanche de retrouver cette dépense
+        # pour tout annuler ensemble si le paiement est annulé depuis ce bulletin.
+        depense = Depense(
             date=bulletin.date_paiement,
             montant=bulletin.montant,
             categorie="Salaires",
@@ -587,12 +589,48 @@ def bulletin_ajouter_paiement(bulletin_id):
             mode_paiement=mode_paiement,
             valide=True,
             valide_le=datetime.now(),
-        ))
+        )
+        db.session.add(depense)
+        db.session.flush()
+        bulletin.depense_id = depense.id
 
         db.session.commit()
         return redirect(url_for("salaires.bulletin_detail", bulletin_id=bulletin.id))
 
     return render_template("salaires/bulletin_paiement.html", bulletin=bulletin, mois_fr=MOIS_FR)
+
+
+@salaires_bp.route("/bulletins/<int:bulletin_id>/annuler-paiement", methods=["POST"])
+@admin_required
+def bulletin_annuler_paiement(bulletin_id):
+    bulletin = db.get_or_404(Salaire, bulletin_id)
+
+    if bulletin.statut != "paye":
+        flash("Ce bulletin n'est pas marqué comme payé.", "info")
+        return redirect(url_for("salaires.bulletin_detail", bulletin_id=bulletin.id))
+
+    if bulletin.depense_id:
+        depense = Depense.query.get(bulletin.depense_id)
+        bulletin.depense_id = None
+        db.session.flush()
+        if depense:
+            db.session.delete(depense)
+
+    if bulletin.transaction_bancaire_id:
+        transaction = TransactionBancaire.query.get(bulletin.transaction_bancaire_id)
+        bulletin.transaction_bancaire_id = None
+        db.session.flush()
+        if transaction:
+            db.session.delete(transaction)
+
+    bulletin.statut = "valide"
+    bulletin.date_paiement = None
+    bulletin.mode_paiement = None
+    bulletin.libelle_bancaire = None
+    bulletin.reference_paiement = None
+    db.session.commit()
+    flash("Paiement annulé : la dépense et la transaction bancaire liées ont été supprimées, le bulletin repasse à « Validé ».", "success")
+    return redirect(url_for("salaires.bulletin_detail", bulletin_id=bulletin.id))
 
 
 @salaires_bp.route("/bulletins/<int:bulletin_id>/supprimer", methods=["POST"])
