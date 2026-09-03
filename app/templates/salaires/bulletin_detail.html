@@ -29,6 +29,10 @@
                 <i class="bi bi-lock-fill"></i> Modifier
             </button>
         </form>
+        {% elif bulletin.statut == 'paye' and current_user.role == 'admin' %}
+        <a href="{{ url_for('salaires.bulletin_modifier', bulletin_id=bulletin.id) }}" class="btn btn-outline-secondary" title="Corriger la date de paiement">
+            <i class="bi bi-pencil"></i> Modifier
+        </a>
         {% else %}
         <button type="button" class="btn btn-outline-secondary" disabled title="Bulletin {{ statuts[bulletin.statut]|lower }} : non modifiable">
             <i class="bi bi-lock"></i> Modifier

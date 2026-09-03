@@ -430,6 +430,22 @@ def bulletin_detail(bulletin_id):
 def bulletin_modifier(bulletin_id):
     bulletin = db.get_or_404(Salaire, bulletin_id)
 
+    if bulletin.statut == "paye" and current_user.role == "admin":
+        if request.method == "POST":
+            date_paiement = _parse_date(request.form.get("date_paiement"))
+            if not date_paiement:
+                flash("La date de paiement est invalide.", "danger")
+                return render_template("salaires/bulletin_form.html", bulletin=bulletin, statuts=STATUTS_SALAIRE, mois_fr=MOIS_FR)
+
+            bulletin.date_paiement = date_paiement
+            if bulletin.transaction_bancaire_id and bulletin.transaction_bancaire:
+                bulletin.transaction_bancaire.date = date_paiement
+            db.session.commit()
+            flash("Date de paiement corrigée.", "success")
+            return redirect(url_for("salaires.bulletin_detail", bulletin_id=bulletin.id))
+
+        return render_template("salaires/bulletin_form.html", bulletin=bulletin, statuts=STATUTS_SALAIRE, mois_fr=MOIS_FR)
+
     if bulletin.statut != "en_attente":
         flash("Ce bulletin est déjà validé ou payé, il ne peut plus être modifié.", "warning")
         return redirect(url_for("salaires.bulletin_detail", bulletin_id=bulletin.id))

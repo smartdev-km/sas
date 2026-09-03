@@ -12,6 +12,28 @@
     </p>
 </div>
 
+{% if bulletin.statut == 'paye' %}
+<form method="post">
+    <div class="card mb-3" style="max-width: 480px;">
+        <div class="card-body">
+            <h2 class="h6 mb-3">Date de paiement</h2>
+            <p class="text-muted small mb-3">
+                Ce bulletin est déjà payé : les montants ne sont plus modifiables (ils sont déjà reflétés dans Dépenses{% if bulletin.transaction_bancaire_id %} et Compte Bancaire{% endif %}). Seule la date de paiement peut être corrigée.
+            </p>
+            <div class="mb-0">
+                <label class="form-label" for="date_paiement">Date de paiement *</label>
+                <input type="date" class="form-control" id="date_paiement" name="date_paiement" value="{{ bulletin.date_paiement.isoformat() if bulletin.date_paiement else '' }}" required>
+            </div>
+        </div>
+    </div>
+    <div class="d-flex gap-2 mb-4">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg"></i> Enregistrer
+        </button>
+        <a href="{{ url_for('salaires.bulletin_detail', bulletin_id=bulletin.id) }}" class="btn btn-outline-secondary">Annuler</a>
+    </div>
+</form>
+{% else %}
 <form method="post">
     <div class="card mb-3" style="max-width: 680px;">
         <div class="card-body">
@@ -74,4 +96,5 @@
         <a href="{{ url_for('salaires.bulletin_detail', bulletin_id=bulletin.id) }}" class="btn btn-outline-secondary">Annuler</a>
     </div>
 </form>
+{% endif %}
 {% endblock %}
