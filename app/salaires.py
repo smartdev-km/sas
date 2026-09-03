@@ -497,6 +497,21 @@ def bulletin_valider(bulletin_id):
     return redirect(request.referrer or url_for("salaires.bulletins"))
 
 
+@salaires_bp.route("/bulletins/<int:bulletin_id>/devalider", methods=["POST"])
+@admin_required
+def bulletin_devalider(bulletin_id):
+    bulletin = db.get_or_404(Salaire, bulletin_id)
+
+    if bulletin.statut != "valide":
+        flash("Seul un bulletin validé (en attente de paiement) peut être déverrouillé depuis ici.", "info")
+    else:
+        bulletin.statut = "en_attente"
+        db.session.commit()
+        flash("Bulletin remis en attente, il peut de nouveau être modifié par le RAF.", "success")
+
+    return redirect(request.referrer or url_for("salaires.bulletins"))
+
+
 @salaires_bp.route("/bulletins/<int:bulletin_id>/paiement", methods=["GET", "POST"])
 @role_required("salaires_paiement")
 def bulletin_ajouter_paiement(bulletin_id):

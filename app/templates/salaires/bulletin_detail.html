@@ -12,11 +12,7 @@
     </div>
     <div class="d-flex gap-2">
         {% if current_user.role != 'comptable' %}
-        {% if bulletin.statut != 'en_attente' %}
-        <button type="button" class="btn btn-outline-secondary" disabled title="Bulletin {{ statuts[bulletin.statut]|lower }} : non modifiable">
-            <i class="bi bi-lock"></i> Modifier
-        </button>
-        {% else %}
+        {% if bulletin.statut == 'en_attente' %}
         <a href="{{ url_for('salaires.bulletin_modifier', bulletin_id=bulletin.id) }}" class="btn btn-outline-secondary">
             <i class="bi bi-pencil"></i> Modifier
         </a>
@@ -27,6 +23,16 @@
             </button>
         </form>
         {% endif %}
+        {% elif bulletin.statut == 'valide' and current_user.role == 'admin' %}
+        <form method="post" action="{{ url_for('salaires.bulletin_devalider', bulletin_id=bulletin.id) }}" onsubmit="return confirm('Remettre ce bulletin en attente ? Il redeviendra modifiable par le RAF comme avant la validation.');">
+            <button type="submit" class="btn btn-outline-secondary" title="Déverrouiller">
+                <i class="bi bi-lock-fill"></i> Modifier
+            </button>
+        </form>
+        {% else %}
+        <button type="button" class="btn btn-outline-secondary" disabled title="Bulletin {{ statuts[bulletin.statut]|lower }} : non modifiable">
+            <i class="bi bi-lock"></i> Modifier
+        </button>
         {% endif %}
         {% endif %}
         {% if bulletin.statut == 'valide' and current_user.role == 'comptable' %}

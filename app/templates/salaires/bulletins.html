@@ -114,10 +114,18 @@
                                 </button>
                             </form>
                             {% endif %}
-                        {% elif b.statut == 'valide' and current_user.role == 'comptable' %}
+                        {% elif b.statut == 'valide' %}
+                            {% if current_user.role == 'comptable' %}
                             <a href="{{ url_for('salaires.bulletin_ajouter_paiement', bulletin_id=b.id) }}" class="btn btn-sm btn-outline-success" title="Ajouter le mode de paiement">
                                 <i class="bi bi-cash-coin"></i>
                             </a>
+                            {% elif current_user.role == 'admin' %}
+                            <form method="post" action="{{ url_for('salaires.bulletin_devalider', bulletin_id=b.id) }}" class="d-inline" onsubmit="return confirm('Remettre ce bulletin en attente ? Il redeviendra modifiable par le RAF comme avant la validation.');">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Déverrouiller">
+                                    <i class="bi bi-lock-fill"></i>
+                                </button>
+                            </form>
+                            {% endif %}
                         {% endif %}
                     </td>
                 </tr>
