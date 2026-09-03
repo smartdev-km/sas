@@ -6,8 +6,7 @@ from app.decorators import role_required, admin_required
 from sqlalchemy import func
 
 from app import db
-from app.models import Depense, TransactionBancaire
-from app.constants import CATEGORIES_DEPENSE
+from app.models import Depense, TransactionBancaire, PlanComptable
 
 depenses_bp = Blueprint("depenses", __name__, url_prefix="/depenses")
 
@@ -19,6 +18,10 @@ def _parse_date(value):
         return datetime.strptime(value, "%Y-%m-%d").date()
     except ValueError:
         return None
+
+
+def _categories_actives():
+    return PlanComptable.query.filter_by(actif=True).order_by(PlanComptable.numero).all()
 
 
 def _resoudre_categorie(form):
@@ -59,7 +62,8 @@ def liste():
         "depenses/liste.html",
         depenses=pagination.items,
         pagination=pagination,
-        categories=CATEGORIES_DEPENSE,
+        categories=_categories_actives(),
+        plan_comptable=PlanComptable.query.order_by(PlanComptable.numero).all(),
         total_filtre=float(total_filtre),
         filtres={
             "date_debut": request.args.get("date_debut", ""),
@@ -84,7 +88,7 @@ def nouvelle():
                 flash(erreur, "danger")
             return render_template(
                 "depenses/form.html",
-                categories=CATEGORIES_DEPENSE,
+                categories=_categories_actives(),
                 depense=None,
                 form=request.form,
             )
@@ -106,7 +110,7 @@ def nouvelle():
 
     return render_template(
         "depenses/form.html",
-        categories=CATEGORIES_DEPENSE,
+        categories=_categories_actives(),
         depense=None,
         form={},
     )
@@ -128,7 +132,7 @@ def modifier(depense_id):
                 flash(erreur, "danger")
             return render_template(
                 "depenses/form.html",
-                categories=CATEGORIES_DEPENSE,
+                categories=_categories_actives(),
                 depense=depense,
                 form=request.form,
             )
@@ -145,10 +149,11 @@ def modifier(depense_id):
         flash("Dépense modifiée avec succès.", "success")
         return redirect(url_for("depenses.liste"))
 
-    categorie_est_autre = bool(depense.categorie) and depense.categorie not in CATEGORIES_DEPENSE
+    noms_categories_actives = {c.nom for c in _categories_actives()}
+    categorie_est_autre = bool(depense.categorie) and depense.categorie not in noms_categories_actives
     return render_template(
         "depenses/form.html",
-        categories=CATEGORIES_DEPENSE,
+        categories=_categories_actives(),
         depense=depense,
         form={
             "date": depense.date.isoformat() if depense.date else "",
@@ -232,6 +237,89 @@ def devalider(depense_id):
     depense.valide_le = None
     db.session.commit()
     flash("Dépense déverrouillée, elle peut de nouveau être modifiée.", "success")
+    return redirect(url_for("depenses.liste"))
+
+
+@depenses_bp.route("/plan-comptable/nouveau", methods=["POST"])
+@role_required("depenses")
+def plan_comptable_nouveau():
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas modifier le plan comptable.", "warning")
+        return redirect(url_for("depenses.liste"))
+
+    numero = request.form.get("numero", "").strip()
+    nom = request.form.get("nom", "").strip()
+
+    if not numero or not nom:
+        flash("Le numéro et la catégorie sont obligatoires.", "danger")
+    elif PlanComptable.query.filter(PlanComptable.numero.ilike(numero)).first():
+        flash(f"Le numéro « {numero} » est déjà utilisé.", "danger")
+    else:
+        db.session.add(PlanComptable(numero=numero, nom=nom))
+        db.session.commit()
+        flash(f"Catégorie « {numero} — {nom} » ajoutée au plan comptable.", "success")
+
+    return redirect(url_for("depenses.liste"))
+
+
+@depenses_bp.route("/plan-comptable/<int:plan_id>/modifier", methods=["POST"])
+@role_required("depenses")
+def plan_comptable_modifier(plan_id):
+    plan = db.get_or_404(PlanComptable, plan_id)
+
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas modifier le plan comptable.", "warning")
+        return redirect(url_for("depenses.liste"))
+
+    numero = request.form.get("numero", "").strip()
+    nom = request.form.get("nom", "").strip()
+
+    if not numero or not nom:
+        flash("Le numéro et la catégorie sont obligatoires.", "danger")
+    elif PlanComptable.query.filter(PlanComptable.numero.ilike(numero), PlanComptable.id != plan.id).first():
+        flash(f"Le numéro « {numero} » est déjà utilisé.", "danger")
+    else:
+        ancien_nom = plan.nom
+        plan.numero = numero
+        plan.nom = nom
+        if ancien_nom != nom:
+            Depense.query.filter_by(categorie=ancien_nom).update({"categorie": nom})
+        db.session.commit()
+        flash("Catégorie modifiée.", "success")
+
+    return redirect(url_for("depenses.liste"))
+
+
+@depenses_bp.route("/plan-comptable/<int:plan_id>/toggle-actif", methods=["POST"])
+@role_required("depenses")
+def plan_comptable_toggle_actif(plan_id):
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas modifier le plan comptable.", "warning")
+        return redirect(url_for("depenses.liste"))
+
+    plan = db.get_or_404(PlanComptable, plan_id)
+    plan.actif = not plan.actif
+    db.session.commit()
+    flash(f"« {plan.numero} — {plan.nom} » {'réactivée' if plan.actif else 'désactivée'}.", "info")
+    return redirect(url_for("depenses.liste"))
+
+
+@depenses_bp.route("/plan-comptable/<int:plan_id>/supprimer", methods=["POST"])
+@role_required("depenses")
+def plan_comptable_supprimer(plan_id):
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas modifier le plan comptable.", "warning")
+        return redirect(url_for("depenses.liste"))
+
+    plan = db.get_or_404(PlanComptable, plan_id)
+
+    if Depense.query.filter_by(categorie=plan.nom).first():
+        flash(f"Impossible de supprimer « {plan.numero} — {plan.nom} » : des dépenses utilisent déjà cette catégorie.", "danger")
+    else:
+        db.session.delete(plan)
+        db.session.commit()
+        flash("Catégorie supprimée.", "info")
+
     return redirect(url_for("depenses.liste"))
 
 

@@ -6,11 +6,16 @@
         <h1 class="h3 mb-0">Dépenses</h1>
         <p class="text-muted mb-0">Suivi des dépenses de l'entreprise</p>
     </div>
-    {% if current_user.role != 'admin' %}
-    <a href="{{ url_for('depenses.nouvelle') }}" class="btn btn-primary">
-        <i class="bi bi-plus-lg"></i> Nouvelle dépense
-    </a>
-    {% endif %}
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modal-plan-comptable">
+            <i class="bi bi-gear"></i> Paramètres
+        </button>
+        {% if current_user.role != 'admin' %}
+        <a href="{{ url_for('depenses.nouvelle') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Nouvelle dépense
+        </a>
+        {% endif %}
+    </div>
 </div>
 
 <div class="card mb-4">
@@ -29,7 +34,7 @@
                 <select class="form-select form-select-sm" name="categorie">
                     <option value="">Toutes</option>
                     {% for cat in categories %}
-                        <option value="{{ cat }}" {% if filtres.categorie == cat %}selected{% endif %}>{{ cat }}</option>
+                        <option value="{{ cat.nom }}" {% if filtres.categorie == cat.nom %}selected{% endif %}>{{ cat.numero }} — {{ cat.nom }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -134,4 +139,96 @@
     </ul>
 </nav>
 {% endif %}
+
+<div class="modal fade" id="modal-plan-comptable" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title h6 mb-0">Plan comptable</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">Numéro d'identification comptable associé à chaque catégorie de dépense (ex. 6222 — Location immobilière).</p>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 120px;">Numéro</th>
+                                <th>Catégorie</th>
+                                <th class="text-center" style="width: 90px;">Actif</th>
+                                {% if current_user.role != 'admin' %}<th class="text-end" style="width: 110px;">Actions</th>{% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for plan in plan_comptable %}
+                            <tr class="{% if not plan.actif %}text-muted{% endif %}">
+                                {% if current_user.role != 'admin' %}
+                                <td>
+                                    <input type="text" class="form-control form-control-sm" name="numero" value="{{ plan.numero }}" form="form-plan-modifier-{{ plan.id }}" required>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm" name="nom" value="{{ plan.nom }}" form="form-plan-modifier-{{ plan.id }}" required>
+                                </td>
+                                {% else %}
+                                <td>{{ plan.numero }}</td>
+                                <td>{{ plan.nom }}</td>
+                                {% endif %}
+                                <td class="text-center">
+                                    {% if plan.actif %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %}
+                                </td>
+                                {% if current_user.role != 'admin' %}
+                                <td class="text-end">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary" title="Enregistrer" form="form-plan-modifier-{{ plan.id }}">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="{{ 'Désactiver' if plan.actif else 'Réactiver' }}" form="form-plan-toggle-{{ plan.id }}">
+                                        <i class="bi {{ 'bi-pause-circle' if plan.actif else 'bi-play-circle' }}"></i>
+                                    </button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer" form="form-plan-supprimer-{{ plan.id }}" onclick="return confirm('Supprimer « {{ plan.numero }} — {{ plan.nom }} » ? Impossible si des dépenses utilisent déjà cette catégorie.');">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">Aucune catégorie dans le plan comptable.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% for plan in plan_comptable %}
+                <form id="form-plan-modifier-{{ plan.id }}" method="post" action="{{ url_for('depenses.plan_comptable_modifier', plan_id=plan.id) }}"></form>
+                <form id="form-plan-toggle-{{ plan.id }}" method="post" action="{{ url_for('depenses.plan_comptable_toggle_actif', plan_id=plan.id) }}"></form>
+                <form id="form-plan-supprimer-{{ plan.id }}" method="post" action="{{ url_for('depenses.plan_comptable_supprimer', plan_id=plan.id) }}"></form>
+                {% endfor %}
+
+                {% if current_user.role != 'admin' %}
+                <hr>
+                <h4 class="h6 mb-2">Ajouter une catégorie</h4>
+                <form method="post" action="{{ url_for('depenses.plan_comptable_nouveau') }}" class="row g-2 align-items-end">
+                    <div class="col-4">
+                        <label class="form-label small mb-1">Numéro</label>
+                        <input type="text" class="form-control form-control-sm" name="numero" placeholder="Ex : 6222" required>
+                    </div>
+                    <div class="col-8">
+                        <label class="form-label small mb-1">Catégorie</label>
+                        <div class="d-flex gap-2">
+                            <input type="text" class="form-control form-control-sm" name="nom" placeholder="Ex : Location immobilière" required>
+                            <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">
+                                <i class="bi bi-plus-lg"></i> Ajouter
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

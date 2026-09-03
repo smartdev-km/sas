@@ -21,7 +21,7 @@
                     <select class="form-select" id="categorie" name="categorie" onchange="document.getElementById('bloc-categorie-autre').classList.toggle('d-none', this.value !== '__autre__')">
                         <option value="">—</option>
                         {% for cat in categories %}
-                            <option value="{{ cat }}" {% if form.categorie == cat %}selected{% endif %}>{{ cat }}</option>
+                            <option value="{{ cat.nom }}" {% if form.categorie == cat.nom %}selected{% endif %}>{{ cat.numero }} — {{ cat.nom }}</option>
                         {% endfor %}
                         <option value="__autre__" {% if form.categorie == '__autre__' %}selected{% endif %}>Autre</option>
                     </select>

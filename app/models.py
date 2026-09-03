@@ -118,6 +118,21 @@ class Depense(db.Model):
     transaction_bancaire = db.relationship("TransactionBancaire")
 
 
+class PlanComptable(db.Model):
+    """Chart of accounts: mapping numéro comptable ↔ catégorie de dépense."""
+
+    __tablename__ = "plan_comptable"
+
+    id = db.Column(db.Integer, primary_key=True)
+    numero = db.Column(db.String(20), nullable=False, unique=True)
+    nom = db.Column(db.String(150), nullable=False)
+    actif = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<PlanComptable {self.numero} {self.nom}>"
+
+
 class CompteBancaireConfig(db.Model):
     """Configuration unique (singleton) du compte bancaire : solde avant la première transaction suivie."""
 
