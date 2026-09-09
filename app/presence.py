@@ -5,7 +5,7 @@ from flask_login import current_user
 from sqlalchemy import extract
 
 from app import db
-from app.models import SessionPresence, Presence, Employe, Salaire, HoraireProgramme, DemandeAbsence
+from app.models import SessionPresence, Presence, Employe, Salaire, HoraireProgramme, DemandeAbsence, User
 from app.decorators import role_required, confirmation_presence_required, admin_required
 from app.constants import MOIS_FR, MOTIFS_ABSENCE, STATUTS_DEMANDE_ABSENCE
 
@@ -25,6 +25,20 @@ def _employe_id_courant():
     if current_user.is_admin_account:
         return current_user.employe_id
     return current_user.id
+
+
+def _employes_pour_presence():
+    """Employés actifs à suivre pour la présence : un employé dont le compte
+    donné est de type « Administrateur » n'est pas soumis au pointage."""
+    employe_ids_admin = db.session.query(User.employe_id).filter(
+        User.employe_id.isnot(None), User.role == "admin"
+    )
+    return (
+        Employe.query.filter_by(actif=True)
+        .filter(~Employe.id.in_(employe_ids_admin))
+        .order_by(Employe.nom)
+        .all()
+    )
 
 
 def _horaire_programme():
@@ -187,7 +201,8 @@ def _avant_chaque_requete():
 @role_required("presence")
 def index():
     sessions = SessionPresence.query.order_by(SessionPresence.date.desc()).limit(30).all()
-    nb_employes_actifs = Employe.query.filter_by(actif=True).count()
+    employes_pour_presence = _employes_pour_presence()
+    nb_employes_actifs = len(employes_pour_presence)
 
     resume = {}
     for session in sessions:
@@ -210,9 +225,8 @@ def index():
 
     mois_actuel = date.today().month
     annee_actuelle = date.today().year
-    employes_actifs = Employe.query.filter_by(actif=True).order_by(Employe.nom).all()
     situation_presence = []
-    for employe in employes_actifs:
+    for employe in employes_pour_presence:
         jours_travailles, jours_absence = calculer_presence_mensuelle(employe.id, mois_actuel, annee_actuelle)
         jours_travailles = jours_travailles or 0
         jours_absence = jours_absence or 0
@@ -350,7 +364,7 @@ def lancer():
 def detail(session_id):
     session = db.get_or_404(SessionPresence, session_id)
 
-    employes_actifs = Employe.query.filter_by(actif=True).order_by(Employe.nom).all()
+    employes_actifs = _employes_pour_presence()
     confirmations = {p.employe_id: p for p in session.presences}
 
     lignes = []
