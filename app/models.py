@@ -426,6 +426,50 @@ class SuiviConsommable(db.Model):
     )
 
 
+class ConfigCarburant(db.Model):
+    """Configuration unique (singleton) du suivi des tickets de carburant."""
+
+    __tablename__ = "config_carburant"
+
+    id = db.Column(db.Integer, primary_key=True)
+    seuil_alerte = db.Column(db.Integer, nullable=False, default=10)
+
+
+class MouvementCarburant(db.Model):
+    """Réception (achat de tickets) ou utilisation de tickets de carburant."""
+
+    __tablename__ = "mouvements_carburant"
+
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False, default=datetime.now)
+    type_mouvement = db.Column(db.String(15), nullable=False)  # "reception" ou "utilisation"
+    quantite = db.Column(db.Integer, nullable=False)
+    beneficiaire = db.Column(db.String(150))
+    notes = db.Column(db.Text)
+    enregistre_par_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    enregistre_par = db.relationship("User")
+
+
+class DemandeCarburant(db.Model):
+    """Demande de réapprovisionnement en tickets de carburant."""
+
+    __tablename__ = "demandes_carburant"
+
+    id = db.Column(db.Integer, primary_key=True)
+    date_demande = db.Column(db.DateTime, default=datetime.now)
+    demande_par_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    stock_au_moment = db.Column(db.Integer, nullable=False, default=0)
+    notes = db.Column(db.Text)
+    statut = db.Column(db.String(20), nullable=False, default="en_attente")
+    traite_le = db.Column(db.DateTime)
+    traite_par_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+
+    demande_par = db.relationship("User", foreign_keys=[demande_par_id])
+    traite_par = db.relationship("User", foreign_keys=[traite_par_id])
+
+
 class EvenementAgenda(db.Model):
     """Réunion ou événement ajouté par le secrétaire pour l'admin."""
 

@@ -57,7 +57,7 @@
             <li class="nav-item">
                 <a class="nav-link d-flex justify-content-between align-items-center {% if request.blueprint == 'consommables' %}active{% endif %}" href="{{ url_for('consommables.liste') }}">
                     <span><i class="bi bi-lightning-charge"></i> Consommables</span>
-                    {% if current_user.role == 'admin' and nb_consommables_a_valider %}<span class="badge text-bg-warning">{{ nb_consommables_a_valider }}</span>{% endif %}
+                    {% if current_user.role == 'admin' and (nb_consommables_a_valider or nb_demandes_carburant_en_attente) %}<span class="badge text-bg-warning">{{ (nb_consommables_a_valider or 0) + (nb_demandes_carburant_en_attente or 0) }}</span>{% endif %}
                 </a>
             </li>
             {% endif %}

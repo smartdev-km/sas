@@ -6,10 +6,34 @@ from sqlalchemy import func
 from app.decorators import role_required, admin_required
 
 from app import db
-from app.models import Consommable, SuiviConsommable, Depense
+from app.models import Consommable, SuiviConsommable, Depense, ConfigCarburant, MouvementCarburant, DemandeCarburant
 from app.constants import MOIS_FR
 
 consommables_bp = Blueprint("consommables", __name__, url_prefix="/consommables")
+
+
+def _config_carburant():
+    config = ConfigCarburant.query.first()
+    if not config:
+        config = ConfigCarburant()
+        db.session.add(config)
+        db.session.commit()
+    return config
+
+
+def _stock_carburant():
+    entrees = db.session.query(func.coalesce(func.sum(MouvementCarburant.quantite), 0)).filter_by(type_mouvement="reception").scalar()
+    sorties = db.session.query(func.coalesce(func.sum(MouvementCarburant.quantite), 0)).filter_by(type_mouvement="utilisation").scalar()
+    return int(entrees) - int(sorties)
+
+
+def _parse_date(value):
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
 
 
 def _budget():
@@ -43,6 +67,7 @@ def liste():
     total = sum(float(s.montant) for s in suivis)
     nb_payes = sum(1 for s in suivis if s.paye)
     budget_alloue, budget_depense, budget_restant = _budget()
+    stock_bas = _stock_carburant() <= _config_carburant().seuil_alerte
 
     return render_template(
         "consommables/liste.html",
@@ -56,6 +81,7 @@ def liste():
         budget_alloue=budget_alloue,
         budget_depense=budget_depense,
         budget_restant=budget_restant,
+        stock_bas=stock_bas,
     )
 
 
@@ -218,3 +244,152 @@ def type_supprimer(consommable_id):
     db.session.commit()
     flash(f"« {consommable.nom} » supprimé.", "info")
     return redirect(url_for("consommables.liste"))
+
+
+# --- Carburant ------------------------------------------------------------
+
+@consommables_bp.route("/carburant")
+@role_required("consommables")
+def carburant():
+    config = _config_carburant()
+    stock = _stock_carburant()
+    mouvements = (
+        MouvementCarburant.query.order_by(MouvementCarburant.date.desc(), MouvementCarburant.id.desc())
+        .limit(50)
+        .all()
+    )
+    demandes = DemandeCarburant.query.order_by(DemandeCarburant.date_demande.desc()).limit(20).all()
+    demande_en_attente = DemandeCarburant.query.filter_by(statut="en_attente").first()
+
+    return render_template(
+        "consommables/carburant.html",
+        stock=stock,
+        seuil=config.seuil_alerte,
+        stock_bas=stock <= config.seuil_alerte,
+        mouvements=mouvements,
+        demandes=demandes,
+        demande_en_attente=demande_en_attente,
+        today=date.today().isoformat(),
+    )
+
+
+@consommables_bp.route("/carburant/mouvements/nouveau", methods=["POST"])
+@role_required("consommables")
+def carburant_mouvement_nouveau():
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas enregistrer de mouvement de carburant.", "warning")
+        return redirect(url_for("consommables.carburant"))
+
+    type_mouvement = request.form.get("type_mouvement")
+    if type_mouvement not in ("reception", "utilisation"):
+        flash("Type de mouvement invalide.", "danger")
+        return redirect(url_for("consommables.carburant"))
+
+    quantite_brute = request.form.get("quantite", "").strip()
+    try:
+        quantite = int(quantite_brute)
+        if quantite <= 0:
+            raise ValueError
+    except ValueError:
+        flash("La quantité doit être un nombre entier positif.", "danger")
+        return redirect(url_for("consommables.carburant"))
+
+    if type_mouvement == "utilisation" and quantite > _stock_carburant():
+        flash("Impossible d'enregistrer cette sortie : la quantité dépasse le stock disponible.", "danger")
+        return redirect(url_for("consommables.carburant"))
+
+    db.session.add(MouvementCarburant(
+        date=_parse_date(request.form.get("date")) or date.today(),
+        type_mouvement=type_mouvement,
+        quantite=quantite,
+        beneficiaire=request.form.get("beneficiaire", "").strip() or None,
+        notes=request.form.get("notes", "").strip() or None,
+        enregistre_par_id=current_user.id,
+    ))
+    db.session.commit()
+    flash("Mouvement de carburant enregistré.", "success")
+    return redirect(url_for("consommables.carburant"))
+
+
+@consommables_bp.route("/carburant/mouvements/<int:mouvement_id>/supprimer", methods=["POST"])
+@role_required("consommables")
+def carburant_mouvement_supprimer(mouvement_id):
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas supprimer de mouvement de carburant.", "warning")
+        return redirect(url_for("consommables.carburant"))
+
+    mouvement = db.get_or_404(MouvementCarburant, mouvement_id)
+    db.session.delete(mouvement)
+    db.session.commit()
+    flash("Mouvement supprimé.", "info")
+    return redirect(url_for("consommables.carburant"))
+
+
+@consommables_bp.route("/carburant/seuil", methods=["POST"])
+@role_required("consommables")
+def carburant_seuil():
+    seuil_brut = request.form.get("seuil_alerte", "").strip()
+    try:
+        seuil = int(seuil_brut)
+        if seuil < 0:
+            raise ValueError
+    except ValueError:
+        flash("Le seuil doit être un nombre entier positif ou nul.", "danger")
+        return redirect(url_for("consommables.carburant"))
+
+    config = _config_carburant()
+    config.seuil_alerte = seuil
+    db.session.commit()
+    flash("Seuil d'alerte mis à jour.", "success")
+    return redirect(url_for("consommables.carburant"))
+
+
+@consommables_bp.route("/carburant/demandes/nouvelle", methods=["POST"])
+@role_required("consommables")
+def carburant_demande_nouvelle():
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas faire de demande de carburant.", "warning")
+        return redirect(url_for("consommables.carburant"))
+
+    if DemandeCarburant.query.filter_by(statut="en_attente").first():
+        flash("Une demande de réapprovisionnement est déjà en attente.", "info")
+        return redirect(url_for("consommables.carburant"))
+
+    db.session.add(DemandeCarburant(
+        demande_par_id=current_user.id,
+        stock_au_moment=_stock_carburant(),
+        notes=request.form.get("notes", "").strip() or None,
+    ))
+    db.session.commit()
+    flash("Demande de réapprovisionnement envoyée à l'administration.", "success")
+    return redirect(url_for("consommables.carburant"))
+
+
+@consommables_bp.route("/carburant/demandes/<int:demande_id>/traiter", methods=["POST"])
+@admin_required
+def carburant_demande_traiter(demande_id):
+    demande = db.get_or_404(DemandeCarburant, demande_id)
+    if demande.statut != "en_attente":
+        flash("Cette demande a déjà été traitée.", "info")
+    else:
+        demande.statut = "traitee"
+        demande.traite_le = datetime.now()
+        demande.traite_par_id = current_user.id
+        db.session.commit()
+        flash("Demande marquée comme traitée. Pensez à enregistrer la réception des nouveaux tickets.", "success")
+    return redirect(url_for("consommables.carburant"))
+
+
+@consommables_bp.route("/carburant/demandes/<int:demande_id>/rejeter", methods=["POST"])
+@admin_required
+def carburant_demande_rejeter(demande_id):
+    demande = db.get_or_404(DemandeCarburant, demande_id)
+    if demande.statut != "en_attente":
+        flash("Cette demande a déjà été traitée.", "info")
+    else:
+        demande.statut = "rejetee"
+        demande.traite_le = datetime.now()
+        demande.traite_par_id = current_user.id
+        db.session.commit()
+        flash("Demande rejetée.", "info")
+    return redirect(url_for("consommables.carburant"))

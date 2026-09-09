@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% block title %}Carburant{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Consommables</h1>
+        <p class="text-muted mb-0">Suivi des tickets de carburant</p>
+    </div>
+    {% if current_user.role == 'admin' %}
+    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modal-seuil-carburant">
+        <i class="bi bi-gear"></i> Paramètres
+    </button>
+    {% endif %}
+</div>
+
+<ul class="nav nav-pills mb-4">
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('consommables.liste') }}">Suivi mensuel</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active d-flex align-items-center gap-2" href="{{ url_for('consommables.carburant') }}">
+            Carburant
+            {% if stock_bas %}<span class="badge text-bg-warning"><i class="bi bi-exclamation-triangle"></i></span>{% endif %}
+        </a>
+    </li>
+</ul>
+
+<div class="row g-3 mb-3">
+    <div class="col-12 col-sm-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Tickets en stock</div>
+                <div class="fw-semibold fs-4 {{ 'text-danger' if stock_bas else '' }}">{{ stock }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Seuil d'alerte</div>
+                <div class="fw-semibold fs-4">{{ seuil }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="card h-100">
+            <div class="card-body py-2 d-flex flex-column justify-content-center h-100">
+                {% if demande_en_attente %}
+                <span class="badge text-bg-warning align-self-start">Demande en attente</span>
+                {% elif stock_bas %}
+                <span class="badge text-bg-danger align-self-start">Stock bas</span>
+                {% else %}
+                <span class="badge text-bg-success align-self-start">Stock suffisant</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if stock_bas and current_user.role != 'admin' and not demande_en_attente %}
+<div class="alert alert-warning d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div><i class="bi bi-exclamation-triangle"></i> Le stock de tickets de carburant est presque épuisé.</div>
+    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modal-demande-carburant">
+        Faire une demande de réapprovisionnement
+    </button>
+</div>
+{% endif %}
+
+{% if current_user.role == 'admin' %}
+{% set demandes_en_attente_liste = demandes | selectattr('statut', 'equalto', 'en_attente') | list %}
+{% if demandes_en_attente_liste %}
+<div class="card mb-4 border-warning">
+    <div class="card-body">
+        <h2 class="h6 mb-3"><i class="bi bi-flag text-warning"></i> Demandes de réapprovisionnement en attente</h2>
+        {% for d in demandes_en_attente_liste %}
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 py-2 {% if not loop.last %}border-bottom{% endif %}">
+            <div>
+                <div class="fw-semibold">{{ d.demande_par.nom }} — {{ d.date_demande.strftime("%d/%m/%Y à %H:%M") }}</div>
+                <div class="text-muted small">Stock au moment de la demande : {{ d.stock_au_moment }} ticket(s)</div>
+                {% if d.notes %}<div class="small mt-1">{{ d.notes }}</div>{% endif %}
+            </div>
+            <div class="d-flex gap-2">
+                <form method="post" action="{{ url_for('consommables.carburant_demande_traiter', demande_id=d.id) }}">
+                    <button type="submit" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-check-lg"></i> Marquer traitée
+                    </button>
+                </form>
+                <form method="post" action="{{ url_for('consommables.carburant_demande_rejeter', demande_id=d.id) }}" onsubmit="return confirm('Rejeter cette demande ?');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-x-lg"></i> Rejeter
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+<div class="row g-3">
+    <div class="col-12 col-lg-7">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Mouvements récents</h2>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th class="text-end">Quantité</th>
+                                <th>Détail</th>
+                                {% if current_user.role != 'admin' %}<th class="text-end">Actions</th>{% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in mouvements %}
+                            <tr>
+                                <td>{{ m.date.strftime("%d/%m/%Y") }}</td>
+                                <td>
+                                    {% if m.type_mouvement == 'reception' %}
+                                        <span class="badge text-bg-success">Réception</span>
+                                    {% else %}
+                                        <span class="badge text-bg-secondary">Utilisation</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end fw-semibold {{ 'text-success' if m.type_mouvement == 'reception' else 'text-danger' }}">
+                                    {{ '+' if m.type_mouvement == 'reception' else '−' }}{{ m.quantite }}
+                                </td>
+                                <td class="text-muted small">
+                                    {{ m.beneficiaire or "-" }}{% if m.notes %} · {{ m.notes }}{% endif %}
+                                </td>
+                                {% if current_user.role != 'admin' %}
+                                <td class="text-end">
+                                    <form method="post" action="{{ url_for('consommables.carburant_mouvement_supprimer', mouvement_id=m.id) }}" onsubmit="return confirm('Supprimer ce mouvement ?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">Aucun mouvement enregistré.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {% if current_user.role != 'admin' %}
+        <div class="card mt-3">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Enregistrer un mouvement</h2>
+                <form method="post" action="{{ url_for('consommables.carburant_mouvement_nouveau') }}" class="row g-2 align-items-end">
+                    <div class="col-12 col-sm-3">
+                        <label class="form-label small mb-1">Date</label>
+                        <input type="date" class="form-control form-control-sm" name="date" value="{{ today }}" required>
+                    </div>
+                    <div class="col-12 col-sm-3">
+                        <label class="form-label small mb-1">Type</label>
+                        <select class="form-select form-select-sm" name="type_mouvement" required>
+                            <option value="reception">Réception (achat)</option>
+                            <option value="utilisation">Utilisation</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-sm-2">
+                        <label class="form-label small mb-1">Quantité</label>
+                        <input type="number" step="1" min="1" class="form-control form-control-sm" name="quantite" required>
+                    </div>
+                    <div class="col-12 col-sm-4">
+                        <label class="form-label small mb-1">Bénéficiaire / véhicule</label>
+                        <input type="text" class="form-control form-control-sm" name="beneficiaire" placeholder="Optionnel">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small mb-1">Notes</label>
+                        <input type="text" class="form-control form-control-sm" name="notes" placeholder="Optionnel">
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus-lg"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-12 col-lg-5">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Historique des demandes</h2>
+                {% if demandes %}
+                <ul class="list-unstyled mb-0">
+                    {% for d in demandes %}
+                    <li class="py-2 {% if not loop.last %}border-bottom{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <span class="small fw-semibold">{{ d.date_demande.strftime("%d/%m/%Y") }}</span>
+                            {% if d.statut == 'en_attente' %}
+                                <span class="badge text-bg-warning">En attente</span>
+                            {% elif d.statut == 'traitee' %}
+                                <span class="badge text-bg-success">Traitée</span>
+                            {% else %}
+                                <span class="badge text-bg-secondary">Rejetée</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted small">{{ d.demande_par.nom }} · stock à {{ d.stock_au_moment }} ticket(s)</div>
+                        {% if d.notes %}<div class="small">{{ d.notes }}</div>{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted small mb-0">Aucune demande pour le moment.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if current_user.role == 'admin' %}
+<div class="modal fade" id="modal-seuil-carburant" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title h6 mb-0">Paramètres</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{{ url_for('consommables.carburant_seuil') }}">
+                <div class="modal-body">
+                    <label class="form-label" for="seuil_alerte">Seuil d'alerte (nombre de tickets)</label>
+                    <input type="number" step="1" min="0" class="form-control" id="seuil_alerte" name="seuil_alerte" value="{{ seuil }}" required>
+                    <p class="text-muted small mt-2 mb-0">
+                        Un avertissement s'affiche dès que le stock passe à ce niveau ou en dessous.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="modal fade" id="modal-demande-carburant" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title h6 mb-0">Demande de réapprovisionnement</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{{ url_for('consommables.carburant_demande_nouvelle') }}">
+                <div class="modal-body">
+                    <p class="small text-muted">Stock actuel : {{ stock }} ticket(s).</p>
+                    <label class="form-label" for="notes">Notes (optionnel)</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-warning">Envoyer la demande</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
