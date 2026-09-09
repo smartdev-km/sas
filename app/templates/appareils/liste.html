@@ -90,9 +90,12 @@
                         {% if a.remplace_par %}
                             <div class="small text-muted mt-1">
                                 Remplacé par :
-                                <a href="{{ url_for('appareils.modifier', appareil_id=a.remplace_par.id) }}">
-                                    {{ [a.remplace_par.marque, a.remplace_par.modele] | select | join(' ') or a.remplace_par.type_appareil }}
-                                </a>
+                                {% set libelle_remplacant = [a.remplace_par.marque, a.remplace_par.modele] | select | join(' ') or a.remplace_par.type_appareil %}
+                                {% if current_user.role == 'admin' %}
+                                <a href="{{ url_for('appareils.modifier', appareil_id=a.remplace_par.id) }}">{{ libelle_remplacant }}</a>
+                                {% else %}
+                                {{ libelle_remplacant }}
+                                {% endif %}
                             </div>
                         {% endif %}
                         {% if a.id in demandes_en_attente %}
@@ -104,6 +107,7 @@
                         {% endif %}
                     </td>
                     <td class="text-end">
+                        {% if current_user.role == 'admin' %}
                         <a href="{{ url_for('appareils.modifier', appareil_id=a.id) }}" class="btn btn-sm btn-outline-secondary" title="Modifier">
                             <i class="bi bi-pencil"></i>
                         </a>
@@ -139,6 +143,9 @@
                                 <i class="bi bi-trash"></i>
                             </button>
                         </form>
+                        {% else %}
+                        <span class="text-muted small">—</span>
+                        {% endif %}
                     </td>
                 </tr>
                 {% else %}

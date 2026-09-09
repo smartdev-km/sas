@@ -109,6 +109,8 @@
                     {% if nb_demandes_en_attente %}<span class="badge text-bg-warning">{{ nb_demandes_en_attente }}</span>{% endif %}
                 </a>
             </li>
+            {% endif %}
+            {% if current_user.role in ('admin', 'secretaire') %}
             <li class="nav-item">
                 <a class="nav-link {% if request.blueprint == 'appareils' %}active{% endif %}" href="{{ url_for('appareils.liste') }}">
                     <i class="bi bi-laptop"></i> Appareils

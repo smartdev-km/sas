@@ -2,7 +2,7 @@ from datetime import datetime, date
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import current_user
-from app.decorators import admin_required, espace_employe_required
+from app.decorators import admin_required, espace_employe_required, role_required
 
 from app import db
 from app.models import Appareil, Employe, DemandeAppareil, Depense, HistoriqueAppareil
@@ -35,7 +35,7 @@ def _log_historique(appareil_id, type_evenement, description=None):
 
 
 @appareils_bp.route("/")
-@admin_required
+@role_required("appareils")
 def liste():
     statut = request.args.get("statut") or "en_service"
     employe_id = request.args.get("employe_id", type=int)
@@ -76,7 +76,7 @@ def liste():
 
 
 @appareils_bp.route("/nouveau", methods=["GET", "POST"])
-@admin_required
+@role_required("appareils")
 def nouveau():
     employes = Employe.query.filter_by(actif=True).order_by(Employe.nom).all()
 

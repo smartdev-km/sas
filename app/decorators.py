@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 # secrétaire doivent en revanche confirmer leur propre présence comme un employé.
 ROLE_MODULES = {
     "comptable": {"dashboard", "depenses", "compte_bancaire", "fournisseurs", "salaires_paiement"},
-    "secretaire": {"dashboard", "rapports", "salaires", "consommables", "agenda"},
+    "secretaire": {"dashboard", "rapports", "salaires", "consommables", "agenda", "appareils"},
     "agent_commercial": {"dashboard", "commercial"},
 }
 
