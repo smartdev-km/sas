@@ -76,12 +76,14 @@
                 </a>
             </li>
             {% endif %}
-            {% if current_user.role in ('admin', 'secretaire') %}
+            {% if current_user.role == 'admin' %}
             <li class="nav-item">
                 <a class="nav-link {% if request.blueprint == 'rapports' %}active{% endif %}" href="{{ url_for('rapports.index') }}">
                     <i class="bi bi-file-earmark-bar-graph"></i> Rapports mensuels
                 </a>
             </li>
+            {% endif %}
+            {% if current_user.role in ('admin', 'secretaire') %}
             <li class="nav-item">
                 <a class="nav-link d-flex justify-content-between align-items-center {% if request.blueprint == 'agenda' %}active{% endif %}" href="{{ url_for('agenda.liste') }}">
                     <span><i class="bi bi-calendar-event"></i> Agenda</span>
