@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Mouvement — {{ fournisseur.nom_societe }}{% endblock %}
+{% block title %}Fiche de suivi — {{ fournisseur.nom_societe }}{% endblock %}
 {% block head %}
 <style>
     @media print {
@@ -47,7 +47,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 d-print-none">
     <div>
-        <h1 class="h3 mb-0">Mouvement du fournisseur</h1>
+        <h1 class="h3 mb-0">Fiche de suivi du fournisseur</h1>
         <p class="text-muted mb-0">
             <a href="{{ url_for('fournisseurs.liste') }}" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Retour à la liste</a>
         </p>
@@ -59,7 +59,7 @@
 
 <div class="text-center mb-4 d-none d-print-block">
     <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Société de projet Village des jeux" style="height: 60px;">
-    <p class="text-muted mb-0">Mouvement du fournisseur — {{ fournisseur.nom_societe }}</p>
+    <p class="text-muted mb-0">Fiche de suivi du fournisseur — {{ fournisseur.nom_societe }}</p>
 </div>
 
 <div class="card mb-4">
