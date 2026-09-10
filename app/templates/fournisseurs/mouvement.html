@@ -9,7 +9,7 @@
         }
 
         body {
-            font-size: 0.7rem;
+            font-size: 0.78rem;
         }
 
         .sas-content {
@@ -28,7 +28,7 @@
 
         table td, table th {
             padding: 0.25rem 0.4rem !important;
-            font-size: 0.65rem;
+            font-size: 0.72rem;
         }
 
         .sas-fournisseur-resume {
@@ -57,8 +57,8 @@
     </button>
 </div>
 
-<div class="text-center mb-4 d-none d-print-block">
-    <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Société de projet Village des jeux" style="height: 60px;">
+<div class="text-center mb-4 d-none d-print-block sas-print-header">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Société de projet Village des jeux">
     <p class="text-muted mb-0">Fiche de suivi du fournisseur — {{ fournisseur.nom_societe }}</p>
 </div>
 

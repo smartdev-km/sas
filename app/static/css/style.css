@@ -239,6 +239,10 @@ img, table, .table-responsive, canvas {
     border-bottom: 2px solid var(--sas-dark);
 }
 
+.sas-payslip-header img {
+    height: 50px;
+}
+
 .sas-payslip-header h2 {
     letter-spacing: 0.03em;
 }
@@ -364,7 +368,23 @@ img, table, .table-responsive, canvas {
 
     .sas-payslip .card-body {
         padding: 0.5rem 0.25rem !important;
-        font-size: 0.85rem;
+        font-size: 1rem;
+    }
+
+    .sas-payslip-header img {
+        height: 70px;
+    }
+
+    .sas-payslip-header p {
+        font-size: 1.05rem;
+    }
+
+    .sas-print-header img {
+        height: 85px;
+    }
+
+    .sas-print-header p {
+        font-size: 1.1rem;
     }
 
     .sas-payslip-section {

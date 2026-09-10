@@ -14,7 +14,7 @@
         }
 
         body {
-            font-size: 0.72rem;
+            font-size: 0.8rem;
         }
 
         .sas-content {
@@ -72,28 +72,28 @@
         }
 
         h2.h6 {
-            font-size: 0.72rem;
+            font-size: 0.8rem;
             margin-bottom: 0.35rem !important;
         }
 
         .sas-kpi-icon {
-            width: 1.6rem;
-            height: 1.6rem;
-            font-size: 0.8rem;
+            width: 1.7rem;
+            height: 1.7rem;
+            font-size: 0.85rem;
             margin-bottom: 0.25rem;
             border-radius: 0.4rem;
         }
 
         .sas-kpi-value {
-            font-size: 1rem;
+            font-size: 1.1rem;
         }
 
         .sas-kpi-label {
-            font-size: 0.62rem;
+            font-size: 0.68rem;
         }
 
         .sas-kpi-sub {
-            font-size: 0.58rem;
+            font-size: 0.64rem;
         }
 
         .sas-rapport-chart {
@@ -103,7 +103,7 @@
         table td, table th {
             padding-top: 0.2rem !important;
             padding-bottom: 0.2rem !important;
-            font-size: 0.68rem;
+            font-size: 0.74rem;
         }
 
         .sas-payslip-table td {
@@ -155,8 +155,8 @@
     </div>
 </div>
 
-<div class="sas-rapport-header text-center mb-4 d-none d-print-block">
-    <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Société de projet Village des jeux" style="height: 60px;">
+<div class="sas-rapport-header text-center mb-4 d-none d-print-block sas-print-header">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Société de projet Village des jeux">
     <p class="text-muted mb-0">Rapport mensuel — {{ mois_fr[mois - 1] }} {{ annee }}</p>
 </div>
 
