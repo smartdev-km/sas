@@ -7,7 +7,7 @@ from app.decorators import role_required, admin_required
 
 from app import db
 from app.models import Consommable, SuiviConsommable, Depense, ConfigCarburant, MouvementCarburant, DemandeCarburant
-from app.constants import MOIS_FR
+from app.constants import MOIS_FR, PRIX_CARBURANT
 
 consommables_bp = Blueprint("consommables", __name__, url_prefix="/consommables")
 
@@ -25,6 +25,45 @@ def _stock_carburant():
     entrees = db.session.query(func.coalesce(func.sum(MouvementCarburant.quantite), 0)).filter_by(type_mouvement="reception").scalar()
     sorties = db.session.query(func.coalesce(func.sum(MouvementCarburant.quantite), 0)).filter_by(type_mouvement="utilisation").scalar()
     return int(entrees) - int(sorties)
+
+
+def _suivi_carburant_du_mois(date_mouvement, creer=False):
+    consommable = Consommable.query.filter(Consommable.nom.ilike("Carburant")).first()
+    if not consommable:
+        if not creer:
+            return None
+        consommable = Consommable(nom="Carburant", actif=True)
+        db.session.add(consommable)
+        db.session.flush()
+
+    suivi = SuiviConsommable.query.filter_by(
+        consommable_id=consommable.id, mois=date_mouvement.month, annee=date_mouvement.year
+    ).first()
+    if not suivi and creer:
+        suivi = SuiviConsommable(
+            consommable_id=consommable.id, mois=date_mouvement.month, annee=date_mouvement.year, montant=0
+        )
+        db.session.add(suivi)
+        db.session.flush()
+    return suivi
+
+
+def _appliquer_montant_carburant(date_mouvement, montant):
+    """Ajoute le montant calculé au Suivi mensuel (catégorie Carburant). Ignoré si ce mois est déjà validé."""
+    suivi = _suivi_carburant_du_mois(date_mouvement, creer=True)
+    if suivi.valide:
+        return False
+    suivi.montant = float(suivi.montant) + montant
+    return True
+
+
+def _retirer_montant_carburant(date_mouvement, montant):
+    """Contrepartie de _appliquer_montant_carburant, utilisée lors de la suppression d'un mouvement."""
+    suivi = _suivi_carburant_du_mois(date_mouvement, creer=False)
+    if not suivi or suivi.valide:
+        return False
+    suivi.montant = max(0, float(suivi.montant) - montant)
+    return True
 
 
 def _parse_date(value):
@@ -270,6 +309,7 @@ def carburant():
         demandes=demandes,
         demande_en_attente=demande_en_attente,
         today=date.today().isoformat(),
+        prix_carburant=PRIX_CARBURANT,
     )
 
 
@@ -298,16 +338,55 @@ def carburant_mouvement_nouveau():
         flash("Impossible d'enregistrer cette sortie : la quantité dépasse le stock disponible.", "danger")
         return redirect(url_for("consommables.carburant"))
 
-    db.session.add(MouvementCarburant(
-        date=_parse_date(request.form.get("date")) or date.today(),
+    date_valeur = _parse_date(request.form.get("date")) or date.today()
+
+    type_gaz = None
+    quantite_litres = None
+    montant = None
+    if type_mouvement == "reception":
+        type_gaz_brut = request.form.get("type_gaz") or ""
+        quantite_litres_brute = request.form.get("quantite_litres", "").strip()
+        if type_gaz_brut or quantite_litres_brute:
+            if type_gaz_brut not in PRIX_CARBURANT:
+                flash("Type de gaz invalide.", "danger")
+                return redirect(url_for("consommables.carburant"))
+            try:
+                quantite_litres = float(quantite_litres_brute)
+                if quantite_litres <= 0:
+                    raise ValueError
+            except ValueError:
+                flash("La quantité de gaz doit être un nombre positif.", "danger")
+                return redirect(url_for("consommables.carburant"))
+            type_gaz = type_gaz_brut
+            montant = round(quantite_litres * PRIX_CARBURANT[type_gaz], 2)
+
+    mouvement = MouvementCarburant(
+        date=date_valeur,
         type_mouvement=type_mouvement,
         quantite=quantite,
         beneficiaire=request.form.get("beneficiaire", "").strip() or None,
         notes=request.form.get("notes", "").strip() or None,
+        type_gaz=type_gaz,
+        quantite_litres=quantite_litres,
+        montant=montant,
         enregistre_par_id=current_user.id,
-    ))
-    db.session.commit()
-    flash("Mouvement de carburant enregistré.", "success")
+    )
+    db.session.add(mouvement)
+
+    if montant:
+        if _appliquer_montant_carburant(date_valeur, montant):
+            flash(f"Mouvement enregistré. {montant:.0f} KMF ajoutés au Suivi mensuel (Carburant).", "success")
+        else:
+            flash(
+                "Mouvement enregistré, mais le Suivi mensuel de Carburant pour ce mois est déjà validé : "
+                "ajoutez le montant manuellement après déverrouillage.",
+                "warning",
+            )
+        db.session.commit()
+    else:
+        db.session.commit()
+        flash("Mouvement de carburant enregistré.", "success")
+
     return redirect(url_for("consommables.carburant"))
 
 
@@ -319,6 +398,15 @@ def carburant_mouvement_supprimer(mouvement_id):
         return redirect(url_for("consommables.carburant"))
 
     mouvement = db.get_or_404(MouvementCarburant, mouvement_id)
+
+    if mouvement.montant:
+        if not _retirer_montant_carburant(mouvement.date, float(mouvement.montant)):
+            flash(
+                "Mouvement supprimé, mais le Suivi mensuel de Carburant pour ce mois est déjà validé : "
+                "retirez le montant manuellement après déverrouillage.",
+                "warning",
+            )
+
     db.session.delete(mouvement)
     db.session.commit()
     flash("Mouvement supprimé.", "info")

@@ -447,6 +447,9 @@ class MouvementCarburant(db.Model):
     quantite = db.Column(db.Integer, nullable=False)
     beneficiaire = db.Column(db.String(150))
     notes = db.Column(db.Text)
+    type_gaz = db.Column(db.String(10))  # "essence" ou "diesel", pour une réception chiffrée
+    quantite_litres = db.Column(db.Numeric(10, 2))
+    montant = db.Column(db.Numeric(12, 2))  # quantite_litres × prix au litre, reflété dans le Suivi mensuel
     enregistre_par_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     created_at = db.Column(db.DateTime, default=datetime.now)
 

@@ -87,6 +87,16 @@ STATUTS_DEMANDE_APPAREIL = {
     "rejetee": "Rejetée",
 }
 
+TYPES_GAZ = {
+    "essence": "Essence",
+    "diesel": "Diesel",
+}
+
+PRIX_CARBURANT = {
+    "essence": 750,
+    "diesel": 600,
+}
+
 TYPES_HISTORIQUE_APPAREIL = {
     "creation": {"label": "Ajouté", "icone": "bi-plus-circle", "couleur": "primary"},
     "attribution": {"label": "Attribution", "icone": "bi-person-check", "couleur": "primary"},
