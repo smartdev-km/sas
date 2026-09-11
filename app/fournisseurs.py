@@ -56,6 +56,7 @@ def nouveau():
             date_signature=_parse_date(request.form.get("date_signature")),
             montant_marche=_parse_decimal(request.form.get("montant_marche")),
             montant_acompte_initial=_parse_decimal(request.form.get("montant_acompte_initial")),
+            date_facture_initiale=_parse_date(request.form.get("date_facture_initiale")),
             date_versement_initial=_parse_date(request.form.get("date_versement_initial")),
             actif=True,
         )
@@ -84,6 +85,7 @@ def modifier(fournisseur_id):
         fournisseur.date_signature = _parse_date(request.form.get("date_signature"))
         fournisseur.montant_marche = _parse_decimal(request.form.get("montant_marche"))
         fournisseur.montant_acompte_initial = _parse_decimal(request.form.get("montant_acompte_initial"))
+        fournisseur.date_facture_initiale = _parse_date(request.form.get("date_facture_initiale"))
         fournisseur.date_versement_initial = _parse_date(request.form.get("date_versement_initial"))
         db.session.commit()
         flash("Fournisseur modifié avec succès.", "success")
@@ -95,6 +97,7 @@ def modifier(fournisseur_id):
         "date_signature": fournisseur.date_signature.isoformat() if fournisseur.date_signature else "",
         "montant_marche": fournisseur.montant_marche,
         "montant_acompte_initial": fournisseur.montant_acompte_initial,
+        "date_facture_initiale": fournisseur.date_facture_initiale.isoformat() if fournisseur.date_facture_initiale else "",
         "date_versement_initial": fournisseur.date_versement_initial.isoformat() if fournisseur.date_versement_initial else "",
     }
     return render_template("fournisseurs/form.html", fournisseur=fournisseur, form=form)
@@ -149,7 +152,7 @@ def _calculer_mouvement(fournisseur):
             "numero": compteur,
             "facture": None,
             "reference": "Acompte de démarrage",
-            "date_facture": None,
+            "date_facture": fournisseur.date_facture_initiale,
             "date_paiement": fournisseur.date_versement_initial,
             "montant_net": montant_acompte_initial,
             "solde_marche_restant": montant_marche - cumul_paye,

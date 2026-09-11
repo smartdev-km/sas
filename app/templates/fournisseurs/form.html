@@ -33,6 +33,10 @@
                     <input type="number" step="1" min="0" class="form-control" id="montant_acompte_initial" name="montant_acompte_initial" value="{{ form.montant_acompte_initial if form.montant_acompte_initial is not none else '' }}">
                 </div>
                 <div class="col-12 col-sm-6">
+                    <label class="form-label" for="date_facture_initiale">Date de la facture (acompte)</label>
+                    <input type="date" class="form-control" id="date_facture_initiale" name="date_facture_initiale" value="{{ form.date_facture_initiale or '' }}">
+                </div>
+                <div class="col-12 col-sm-6">
                     <label class="form-label" for="date_versement_initial">Date de versement de l'acompte</label>
                     <input type="date" class="form-control" id="date_versement_initial" name="date_versement_initial" value="{{ form.date_versement_initial or '' }}">
                 </div>
