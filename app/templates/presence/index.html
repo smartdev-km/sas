@@ -170,6 +170,13 @@
                     </table>
                 </div>
 
+                <div class="d-flex justify-content-end mt-4 d-none d-print-flex">
+                    <div class="text-center" style="min-width: 220px;">
+                        <div class="text-muted small">La Présidente - Directrice Générale</div>
+                        <div class="border-top pt-1 small" style="margin-top: 3rem;">Mme Faouzia VITRY</div>
+                    </div>
+                </div>
+
                 <p class="text-muted small text-center mt-4 mb-0 d-none d-print-block">
                     Document généré le {{ now.strftime("%d/%m/%Y à %H:%M") }}
                     {% if current_user.is_authenticated %}par {{ current_user.nom }}{% endif %}.
