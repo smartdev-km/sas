@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Situation de présence{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 d-print-none">
+    <div>
+        <h1 class="h3 mb-0">Situation de présence des employés</h1>
+        <p class="text-muted mb-0">Jours travaillés et absences cumulés sur les appels clôturés du mois</p>
+    </div>
+    <div class="d-flex gap-2 align-items-end">
+        <form method="get" class="d-flex gap-2 align-items-end">
+            <div>
+                <label class="form-label small mb-1">Mois</label>
+                <select class="form-select form-select-sm" name="mois" onchange="this.form.submit()">
+                    {% for i in range(1, 13) %}
+                        <option value="{{ i }}" {% if i == mois %}selected{% endif %}>{{ mois_fr[i - 1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label small mb-1">Année</label>
+                <select class="form-select form-select-sm" name="annee" onchange="this.form.submit()">
+                    {% for a in annees %}
+                        <option value="{{ a }}" {% if a == annee %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+        <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
+            <i class="bi bi-printer"></i> Imprimer
+        </button>
+    </div>
+</div>
+
+<div class="text-center mb-4 d-none d-print-block sas-print-header">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Société de projet Village des jeux">
+    <p class="text-muted mb-0">Situation de présence des employés — {{ mois_label }}</p>
+</div>
+
+<div class="row g-3 text-center mb-3">
+    <div class="col-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Employés actifs</div>
+                <div class="fw-semibold fs-5">{{ nb_employes_actifs }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Jours d'appel clôturés</div>
+                <div class="fw-semibold fs-5">{{ nb_jours_ouvres_mois }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Taux de présence moyen</div>
+                <div class="fw-semibold fs-5">{{ (taux_moyen ~ "%") if taux_moyen is not none else "-" }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Employé</th>
+                    <th>Matricule</th>
+                    <th>Poste</th>
+                    <th class="text-end">Jours travaillés</th>
+                    <th class="text-end">Jours d'absence</th>
+                    <th class="text-end">Dont justifiées</th>
+                    <th class="text-end">Taux de présence</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ligne in situation_presence %}
+                <tr>
+                    <td class="fw-semibold">{{ ligne.employe.nom }}</td>
+                    <td>{{ ligne.employe.matricule or "-" }}</td>
+                    <td>{{ ligne.employe.poste or "-" }}</td>
+                    <td class="text-end">{{ ligne.jours_travailles }}</td>
+                    <td class="text-end">{{ ligne.jours_absence }}</td>
+                    <td class="text-end">
+                        {% if ligne.jours_absence_justifies %}
+                            <span class="badge text-bg-info">{{ ligne.jours_absence_justifies }}</span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="text-end">{{ (ligne.taux ~ "%") if ligne.taux is not none else "-" }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-3">Aucun employé actif.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="d-flex justify-content-end mt-4 d-none d-print-flex">
+    <div class="text-center" style="min-width: 220px;">
+        <div class="text-muted small">La Présidente - Directrice Générale</div>
+        <div class="border-top pt-1 small" style="margin-top: 3rem;">Mme Faouzia VITRY</div>
+    </div>
+</div>
+
+<p class="text-muted small text-center mt-4 mb-0 d-none d-print-block">
+    Document généré le {{ now.strftime("%d/%m/%Y à %H:%M") }}
+    {% if current_user.is_authenticated %}par {{ current_user.nom }}{% endif %}.
+</p>
+{% endblock %}

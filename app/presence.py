@@ -173,6 +173,40 @@ def statistiques_annuelles_employe(employe_id, annee):
     }
 
 
+def _calculer_situation_presence(mois, annee):
+    """Situation de présence de tous les employés suivis, pour un mois donné."""
+    employes_pour_presence = _employes_pour_presence()
+
+    situation_presence = []
+    for employe in employes_pour_presence:
+        jours_travailles, jours_absence = calculer_presence_mensuelle(employe.id, mois, annee)
+        jours_travailles = jours_travailles or 0
+        jours_absence = jours_absence or 0
+        total = jours_travailles + jours_absence
+        situation_presence.append({
+            "employe": employe,
+            "jours_travailles": jours_travailles,
+            "jours_absence": jours_absence,
+            "jours_absence_justifies": jours_absence_justifies(employe.id, mois, annee),
+            "taux": round(jours_travailles / total * 100, 1) if total else None,
+        })
+
+    nb_jours_ouvres_mois = SessionPresence.query.filter(
+        SessionPresence.statut == "fermee",
+        extract("year", SessionPresence.date) == annee,
+        extract("month", SessionPresence.date) == mois,
+    ).count()
+    taux_connus = [l["taux"] for l in situation_presence if l["taux"] is not None]
+    taux_moyen = round(sum(taux_connus) / len(taux_connus), 1) if taux_connus else None
+
+    return {
+        "situation_presence": situation_presence,
+        "nb_jours_ouvres_mois": nb_jours_ouvres_mois,
+        "taux_moyen": taux_moyen,
+        "nb_employes_actifs": len(employes_pour_presence),
+    }
+
+
 def _synchroniser_bulletins(mois, annee, employe_id=None):
     """Met à jour les jours travaillés/absence des bulletins déjà générés pour ce mois
     (uniquement ceux non encore payés, qui restent modifiables)."""
@@ -225,27 +259,7 @@ def index():
 
     mois_actuel = date.today().month
     annee_actuelle = date.today().year
-    situation_presence = []
-    for employe in employes_pour_presence:
-        jours_travailles, jours_absence = calculer_presence_mensuelle(employe.id, mois_actuel, annee_actuelle)
-        jours_travailles = jours_travailles or 0
-        jours_absence = jours_absence or 0
-        total = jours_travailles + jours_absence
-        situation_presence.append({
-            "employe": employe,
-            "jours_travailles": jours_travailles,
-            "jours_absence": jours_absence,
-            "jours_absence_justifies": jours_absence_justifies(employe.id, mois_actuel, annee_actuelle),
-            "taux": round(jours_travailles / total * 100, 1) if total else None,
-        })
-
-    nb_jours_ouvres_mois = SessionPresence.query.filter(
-        SessionPresence.statut == "fermee",
-        extract("year", SessionPresence.date) == annee_actuelle,
-        extract("month", SessionPresence.date) == mois_actuel,
-    ).count()
-    taux_connus = [l["taux"] for l in situation_presence if l["taux"] is not None]
-    taux_moyen = round(sum(taux_connus) / len(taux_connus), 1) if taux_connus else None
+    situation = _calculer_situation_presence(mois_actuel, annee_actuelle)
 
     return render_template(
         "presence/index.html",
@@ -255,13 +269,34 @@ def index():
         today=date.today(),
         heure_debut_defaut=heure_debut_defaut,
         heure_fin_defaut=heure_fin_defaut,
-        nb_jours_ouvres_mois=nb_jours_ouvres_mois,
-        taux_moyen=taux_moyen,
+        nb_jours_ouvres_mois=situation["nb_jours_ouvres_mois"],
+        taux_moyen=situation["taux_moyen"],
         now=maintenant,
         horaire=horaire,
         jours_semaine=JOURS_SEMAINE,
-        situation_presence=situation_presence,
+        situation_presence=situation["situation_presence"],
         mois_label=f"{MOIS_FR[mois_actuel - 1]} {annee_actuelle}",
+    )
+
+
+@presence_bp.route("/situation")
+@role_required("presence", "presence_situation")
+def situation():
+    today = date.today()
+    annee = request.args.get("annee", today.year, type=int)
+    mois = request.args.get("mois", today.month, type=int)
+
+    resultat = _calculer_situation_presence(mois, annee)
+
+    return render_template(
+        "presence/situation.html",
+        mois=mois,
+        annee=annee,
+        mois_fr=MOIS_FR,
+        annees=range(today.year - 2, today.year + 2),
+        mois_label=f"{MOIS_FR[mois - 1]} {annee}",
+        now=datetime.now(),
+        **resultat,
     )
 
 
