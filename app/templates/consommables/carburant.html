@@ -130,7 +130,7 @@
                                 </td>
                                 <td class="text-muted small">
                                     {% if m.montant %}
-                                        <span class="badge text-bg-light border">{{ 'Essence' if m.type_gaz == 'essence' else 'Diesel' }} · {{ m.quantite_litres|int }} L · {{ m.montant|kmf }}</span>
+                                        <span class="badge text-bg-light border">{{ 'Essence' if m.type_gaz == 'essence' else 'Gazoil' }} · {{ m.quantite_litres|int }} L · {{ m.montant|kmf }}</span>
                                     {% endif %}
                                     {{ m.beneficiaire or "-" }}{% if m.notes %} · {{ m.notes }}{% endif %}
                                 </td>
@@ -191,7 +191,7 @@
                                         <label class="form-label small mb-1">Type de gaz</label>
                                         <select class="form-select form-select-sm" name="type_gaz" id="mvt-type-gaz">
                                             <option value="">—</option>
-                                            {% for valeur, libelle in [('essence', 'Essence'), ('diesel', 'Diesel')] %}
+                                            {% for valeur, libelle in [('essence', 'Essence'), ('diesel', 'Gazoil')] %}
                                                 <option value="{{ valeur }}" data-prix="{{ prix_carburant[valeur] }}">{{ libelle }} ({{ prix_carburant[valeur] }} KMF/L)</option>
                                             {% endfor %}
                                         </select>

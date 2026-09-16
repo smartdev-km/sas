@@ -89,12 +89,12 @@ STATUTS_DEMANDE_APPAREIL = {
 
 TYPES_GAZ = {
     "essence": "Essence",
-    "diesel": "Diesel",
+    "diesel": "Gazoil",
 }
 
 PRIX_CARBURANT = {
     "essence": 750,
-    "diesel": 600,
+    "diesel": 650,
 }
 
 TYPES_HISTORIQUE_APPAREIL = {
