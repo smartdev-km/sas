@@ -94,6 +94,68 @@
     </div>
 </div>
 
+{% if garantie %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h6 mb-3">Garantie de bonne exécution (5%)</h2>
+        <div class="row g-3 align-items-center">
+            <div class="col-6 col-md-3">
+                <div class="text-muted small">Montant retenu</div>
+                <div class="fw-semibold">{{ garantie.montant|kmf }}</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="text-muted small">95% du marché atteint le</div>
+                <div class="fw-semibold">{{ garantie.date_seuil_atteint.strftime("%d/%m/%Y") if garantie.date_seuil_atteint else "-" }}</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="text-muted small">Date de libération (+1 an)</div>
+                <div class="fw-semibold">{{ garantie.date_liberation.strftime("%d/%m/%Y") if garantie.date_liberation else "-" }}</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="text-muted small">Statut</div>
+                <div>
+                    {% if garantie.statut == 'livree' %}
+                        <span class="badge text-bg-success">Livrée le {{ garantie.livree_le.strftime("%d/%m/%Y") }}</span>
+                    {% elif garantie.statut == 'disponible' %}
+                        <span class="badge text-bg-warning">Disponible depuis le {{ garantie.date_liberation.strftime("%d/%m/%Y") }}</span>
+                    {% elif garantie.statut == 'en_attente_date' %}
+                        <span class="badge text-bg-info">En attente de la date de libération</span>
+                    {% else %}
+                        <span class="badge text-bg-secondary">Seuil des 95% non atteint</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if garantie.statut == 'en_attente_seuil' %}
+        <p class="text-muted small mt-3 mb-0">
+            Il reste {{ garantie.montant_restant_avant_seuil|kmf }} à payer avant d'atteindre 95% du montant du marché.
+        </p>
+        {% endif %}
+
+        {% if current_user.role == 'admin' %}
+            {% if garantie.statut != 'livree' %}
+            <form method="post" action="{{ url_for('fournisseurs.garantie_livrer', fournisseur_id=fournisseur.id) }}" class="d-flex gap-2 align-items-end mt-3 d-print-none">
+                <div>
+                    <label class="form-label small mb-1">Date de livraison</label>
+                    <input type="date" class="form-control form-control-sm" name="date_livraison" value="{{ today }}">
+                </div>
+                <button type="submit" class="btn btn-sm btn-outline-success">
+                    <i class="bi bi-check-lg"></i> Marquer comme livrée
+                </button>
+            </form>
+            {% else %}
+            <form method="post" action="{{ url_for('fournisseurs.garantie_annuler', fournisseur_id=fournisseur.id) }}" class="mt-3 d-print-none" onsubmit="return confirm('Annuler la livraison de la garantie ?');">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-counterclockwise"></i> Annuler la livraison
+                </button>
+            </form>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
 {% if current_user.role != 'admin' %}
 <div class="card mb-4 d-print-none">
     <div class="card-body">

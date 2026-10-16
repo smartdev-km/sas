@@ -51,6 +51,7 @@ class Fournisseur(db.Model):
     montant_acompte_initial = db.Column(db.Numeric(14, 2))
     date_facture_initiale = db.Column(db.Date)
     date_versement_initial = db.Column(db.Date)
+    garantie_livree_le = db.Column(db.Date)
     actif = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

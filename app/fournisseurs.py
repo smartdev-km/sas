@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
@@ -180,13 +180,63 @@ def _calculer_mouvement(fournisseur):
     return lignes
 
 
+def _ajouter_un_an(valeur):
+    try:
+        return valeur.replace(year=valeur.year + 1)
+    except ValueError:
+        # 29 février : on retombe sur le 1er mars de l'année suivante.
+        return valeur.replace(month=3, day=1, year=valeur.year + 1)
+
+
+def _garantie_bonne_execution(fournisseur, lignes):
+    """Garantie de bonne exécution : 5% du montant du marché, retenus et livrés au
+    fournisseur un an après qu'il a touché 95% du montant total du marché."""
+    montant_marche = float(fournisseur.montant_marche) if fournisseur.montant_marche else 0.0
+    if montant_marche <= 0:
+        return None
+
+    montant_garantie = round(montant_marche * 0.05, 2)
+    seuil_95 = montant_marche * 0.95
+
+    cumul = 0.0
+    date_seuil_atteint = None
+    for ligne in lignes:
+        cumul += ligne["montant_net"]
+        date_mouvement = ligne["date_paiement"] or ligne["date_facture"]
+        if date_seuil_atteint is None and cumul >= seuil_95 and date_mouvement:
+            date_seuil_atteint = date_mouvement
+
+    date_liberation = _ajouter_un_an(date_seuil_atteint) if date_seuil_atteint else None
+    livree_le = fournisseur.garantie_livree_le
+
+    if livree_le:
+        statut = "livree"
+    elif date_liberation and date.today() >= date_liberation:
+        statut = "disponible"
+    elif date_liberation:
+        statut = "en_attente_date"
+    else:
+        statut = "en_attente_seuil"
+
+    return {
+        "montant": montant_garantie,
+        "montant_restant_avant_seuil": max(seuil_95 - cumul, 0) if date_seuil_atteint is None else 0,
+        "date_seuil_atteint": date_seuil_atteint,
+        "date_liberation": date_liberation,
+        "livree_le": livree_le,
+        "statut": statut,
+    }
+
+
 @fournisseurs_bp.route("/<int:fournisseur_id>/mouvement")
 @role_required("fournisseurs")
 def mouvement(fournisseur_id):
     fournisseur = db.get_or_404(Fournisseur, fournisseur_id)
     lignes = _calculer_mouvement(fournisseur)
+    garantie = _garantie_bonne_execution(fournisseur, lignes)
     return render_template(
-        "fournisseurs/mouvement.html", fournisseur=fournisseur, lignes=lignes, now=datetime.now(),
+        "fournisseurs/mouvement.html", fournisseur=fournisseur, lignes=lignes, garantie=garantie,
+        now=datetime.now(), today=date.today().isoformat(),
     )
 
 
@@ -289,6 +339,37 @@ def devalider_facture(fournisseur_id, facture_id):
         facture.valide_le = None
         db.session.commit()
         flash("Facture déverrouillée, elle peut de nouveau être modifiée.", "success")
+
+    return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
+
+
+@fournisseurs_bp.route("/<int:fournisseur_id>/garantie/livrer", methods=["POST"])
+@admin_required
+def garantie_livrer(fournisseur_id):
+    fournisseur = db.get_or_404(Fournisseur, fournisseur_id)
+
+    if fournisseur.garantie_livree_le:
+        flash("La garantie de bonne exécution est déjà marquée comme livrée.", "info")
+        return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
+
+    date_livraison = _parse_date(request.form.get("date_livraison")) or date.today()
+    fournisseur.garantie_livree_le = date_livraison
+    db.session.commit()
+    flash("Garantie de bonne exécution marquée comme livrée.", "success")
+    return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
+
+
+@fournisseurs_bp.route("/<int:fournisseur_id>/garantie/annuler", methods=["POST"])
+@admin_required
+def garantie_annuler(fournisseur_id):
+    fournisseur = db.get_or_404(Fournisseur, fournisseur_id)
+
+    if not fournisseur.garantie_livree_le:
+        flash("La garantie de bonne exécution n'est pas marquée comme livrée.", "info")
+    else:
+        fournisseur.garantie_livree_le = None
+        db.session.commit()
+        flash("Livraison de la garantie annulée.", "success")
 
     return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
 
