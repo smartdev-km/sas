@@ -234,8 +234,15 @@ def mouvement(fournisseur_id):
     fournisseur = db.get_or_404(Fournisseur, fournisseur_id)
     lignes = _calculer_mouvement(fournisseur)
     garantie = _garantie_bonne_execution(fournisseur, lignes)
+
+    montant_restant_a_payer = None
+    if fournisseur.montant_marche:
+        montant_paye = fournisseur.montant_acompte or 0.0
+        montant_restant_a_payer = max((float(fournisseur.montant_marche) * 0.95) - montant_paye, 0)
+
     return render_template(
         "fournisseurs/mouvement.html", fournisseur=fournisseur, lignes=lignes, garantie=garantie,
+        montant_restant_a_payer=montant_restant_a_payer,
         now=datetime.now(), today=date.today().isoformat(),
     )
 
