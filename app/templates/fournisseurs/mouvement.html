@@ -64,7 +64,15 @@
 
 <div class="card mb-4">
     <div class="card-body">
-        <h2 class="h6 mb-3">{{ fournisseur.nom_societe }}</h2>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <h2 class="h4 mb-0">{{ fournisseur.nom_societe }}</h2>
+            {% if garantie %}
+            <div class="px-3 py-2 rounded text-center" style="background-color: #d1e7dd;">
+                <div class="text-success small">Montant retenu (garantie 5%)</div>
+                <div class="fw-bold fs-5 text-success">{{ garantie.montant|kmf }}</div>
+            </div>
+            {% endif %}
+        </div>
         <div class="row g-3 sas-fournisseur-resume">
             <div class="col-6 col-md-2">
                 <div class="text-muted small">N° du marché</div>
@@ -90,12 +98,6 @@
                 <div class="text-muted small">Date de versement</div>
                 <div class="fw-semibold">{{ fournisseur.date_versement.strftime("%d/%m/%Y") if fournisseur.date_versement else "-" }}</div>
             </div>
-            {% if garantie %}
-            <div class="col-6 col-md-2">
-                <div class="text-muted small">Montant retenu (garantie 5%)</div>
-                <div class="fw-semibold">{{ garantie.montant|kmf }}</div>
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>
