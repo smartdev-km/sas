@@ -15,6 +15,11 @@ if not _database_url:
 # versions récentes de SQLAlchemy refusent : il faut "postgresql://".
 if _database_url.startswith("postgres://"):
     _database_url = _database_url.replace("postgres://", "postgresql://", 1)
+# Forcer explicitement le driver psycopg2 : sans suffixe "+psycopg2", certaines
+# versions de SQLAlchemy retiennent par défaut le driver psycopg (v3), qui
+# n'est pas installé ici, et le démarrage plante avec "No module named 'psycopg'".
+if _database_url.startswith("postgresql://"):
+    _database_url = _database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
 
 
 class Config:
