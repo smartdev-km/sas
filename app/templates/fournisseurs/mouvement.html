@@ -76,7 +76,7 @@
                 {% if garantie %}
                 <div class="px-3 py-2 rounded text-center" style="background-color: #d1e7dd;">
                     <div class="text-success small">Montant retenu (garantie 5%)</div>
-                    <div class="fw-bold fs-5 text-success">{{ garantie.montant|kmf }}</div>
+                    <div class="fw-bold fs-5 text-success">{{ (0 if garantie.statut == 'livree' else garantie.montant)|kmf }}</div>
                 </div>
                 {% endif %}
             </div>
@@ -212,7 +212,7 @@
             </thead>
             <tbody>
                 {% for ligne in lignes %}
-                <tr class="{% if ligne.est_acompte %}table-light fst-italic{% endif %}">
+                <tr class="{% if ligne.est_acompte %}table-light fst-italic{% elif ligne.est_garantie %}table-success fst-italic{% endif %}">
                     <td>{{ ligne.numero }}</td>
                     <td>{{ ligne.reference or "-" }}</td>
                     <td>{{ ligne.date_facture.strftime("%d/%m/%Y") if ligne.date_facture else "-" }}</td>
@@ -221,7 +221,7 @@
                     <td class="text-end">{{ ligne.solde_marche_restant|nombre }}</td>
                     <td class="text-end">{{ ligne.taux_execution ~ "%" if ligne.taux_execution is not none else "-" }}</td>
                     <td class="text-end d-print-none">
-                        {% if not ligne.est_acompte %}
+                        {% if not ligne.est_acompte and not ligne.est_garantie %}
                             {% if ligne.facture.valide %}
                                 {% if current_user.role == 'admin' %}
                                 <form method="post" action="{{ url_for('fournisseurs.devalider_facture', fournisseur_id=fournisseur.id, facture_id=ligne.facture.id) }}" class="d-inline" onsubmit="return confirm('Déverrouiller cette facture ? Elle redeviendra modifiable comme avant la validation.');">
@@ -273,7 +273,7 @@
     Document généré le {{ now.strftime("%d/%m/%Y à %H:%M") }}.
 </p>
 
-{% for ligne in lignes if not ligne.est_acompte and not ligne.facture.valide %}
+{% for ligne in lignes if not ligne.est_acompte and not ligne.est_garantie and not ligne.facture.valide %}
 <div class="modal fade d-print-none" id="modifier-{{ ligne.facture.id }}" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">

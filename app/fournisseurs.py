@@ -235,6 +235,20 @@ def mouvement(fournisseur_id):
     lignes = _calculer_mouvement(fournisseur)
     garantie = _garantie_bonne_execution(fournisseur, lignes)
 
+    if garantie and garantie["statut"] == "livree":
+        lignes.append({
+            "numero": len(lignes),
+            "facture": None,
+            "reference": "Garantie de bonne exécution (5%)",
+            "date_facture": None,
+            "date_paiement": garantie["livree_le"],
+            "montant_net": garantie["montant"],
+            "solde_marche_restant": 0,
+            "taux_execution": 100.0,
+            "est_acompte": False,
+            "est_garantie": True,
+        })
+
     montant_restant_a_payer = None
     if fournisseur.montant_marche:
         montant_paye = fournisseur.montant_acompte or 0.0
