@@ -111,6 +111,10 @@ def toggle_actif(fournisseur_id):
         return redirect(url_for("fournisseurs.liste"))
 
     fournisseur = db.get_or_404(Fournisseur, fournisseur_id)
+    if fournisseur.garantie_livree_le:
+        flash("Ce marché est terminé (garantie livrée), son statut ne peut plus être modifié.", "warning")
+        return redirect(url_for("fournisseurs.liste"))
+
     fournisseur.actif = not fournisseur.actif
     db.session.commit()
     flash(f"Fournisseur {'réactivé' if fournisseur.actif else 'désactivé'}.", "info")

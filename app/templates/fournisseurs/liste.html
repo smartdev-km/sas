@@ -65,7 +65,7 @@
                         <a href="{{ url_for('fournisseurs.modifier', fournisseur_id=f.id) }}" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-pencil"></i>
                         </a>
-                        {% if current_user.role != 'comptable' %}
+                        {% if current_user.role != 'comptable' and not f.garantie_livree_le %}
                         <form method="post" action="{{ url_for('fournisseurs.toggle_actif', fournisseur_id=f.id) }}" class="d-inline">
                             <button type="submit" class="btn btn-sm btn-outline-warning" title="{{ 'Désactiver' if f.actif else 'Réactiver' }}">
                                 <i class="bi {{ 'bi-pause-circle' if f.actif else 'bi-play-circle' }}"></i>
