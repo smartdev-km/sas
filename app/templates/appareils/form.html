@@ -45,6 +45,10 @@
                             <input type="text" class="form-control" id="numero_serie" name="numero_serie" value="{{ form.numero_serie or '' }}">
                         </div>
                         <div class="col-12 col-sm-6">
+                            <label class="form-label" for="prix">Prix (KMF)</label>
+                            <input type="number" step="1" min="0" class="form-control" id="prix" name="prix" value="{{ form.prix if form.prix is not none else '' }}">
+                        </div>
+                        <div class="col-12 col-sm-6">
                             <label class="form-label" for="date_attribution">Date d'attribution</label>
                             <input type="date" class="form-control" id="date_attribution" name="date_attribution" value="{{ form.date_attribution or '' }}">
                         </div>

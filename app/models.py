@@ -352,6 +352,7 @@ class Appareil(db.Model):
     marque = db.Column(db.String(100))
     modele = db.Column(db.String(100))
     numero_serie = db.Column(db.String(100))
+    prix = db.Column(db.Numeric(12, 2))
     employe_id = db.Column(db.Integer, db.ForeignKey("employes.id"), nullable=True)
     statut = db.Column(db.String(20), nullable=False, default="en_service")
     date_attribution = db.Column(db.Date)

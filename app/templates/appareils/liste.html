@@ -55,6 +55,7 @@
                     <th>Type</th>
                     <th>Marque / Modèle</th>
                     <th>N° série</th>
+                    <th class="text-end">Prix</th>
                     {% if filtres.statut != 'en_stock' %}<th>Attribué à</th>{% endif %}
                     <th>Statut</th>
                     <th class="text-end">Actions</th>
@@ -66,6 +67,7 @@
                     <td class="fw-semibold">{{ a.type_appareil }}</td>
                     <td>{{ [a.marque, a.modele] | select | join(' ') or "-" }}</td>
                     <td>{{ a.numero_serie or "-" }}</td>
+                    <td class="text-end">{{ a.prix|kmf if a.prix is not none else "-" }}</td>
                     {% if filtres.statut != 'en_stock' %}
                     <td>
                         {% if a.employe %}
@@ -150,7 +152,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="{{ 5 if filtres.statut == 'en_stock' else 6 }}" class="text-center text-muted py-4">Aucun appareil enregistré.</td>
+                    <td colspan="{{ 6 if filtres.statut == 'en_stock' else 7 }}" class="text-center text-muted py-4">Aucun appareil enregistré.</td>
                 </tr>
                 {% endfor %}
             </tbody>

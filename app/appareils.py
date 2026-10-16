@@ -20,6 +20,16 @@ def _parse_date(value):
         return None
 
 
+def _parse_decimal(value):
+    value = (value or "").strip()
+    if not value:
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
 def _employe_id_courant():
     """Retourne l'id Employe de l'utilisateur connecté (lui-même, ou l'employé lié
     pour un compte comptable/secrétaire)."""
@@ -95,6 +105,7 @@ def nouveau():
             marque=request.form.get("marque", "").strip() or None,
             modele=request.form.get("modele", "").strip() or None,
             numero_serie=request.form.get("numero_serie", "").strip() or None,
+            prix=_parse_decimal(request.form.get("prix")),
             employe_id=request.form.get("employe_id", type=int) or None,
             date_attribution=_parse_date(request.form.get("date_attribution")),
             notes=request.form.get("notes", "").strip() or None,
@@ -140,6 +151,7 @@ def modifier(appareil_id):
         appareil.marque = request.form.get("marque", "").strip() or None
         appareil.modele = request.form.get("modele", "").strip() or None
         appareil.numero_serie = request.form.get("numero_serie", "").strip() or None
+        appareil.prix = _parse_decimal(request.form.get("prix"))
         appareil.employe_id = nouvel_employe_id
         appareil.date_attribution = _parse_date(request.form.get("date_attribution"))
         appareil.notes = request.form.get("notes", "").strip() or None
@@ -159,6 +171,7 @@ def modifier(appareil_id):
         "marque": appareil.marque or "",
         "modele": appareil.modele or "",
         "numero_serie": appareil.numero_serie or "",
+        "prix": appareil.prix,
         "employe_id": appareil.employe_id,
         "date_attribution": appareil.date_attribution.isoformat() if appareil.date_attribution else "",
         "notes": appareil.notes or "",
@@ -357,6 +370,15 @@ def _valider_formulaire(form):
     erreurs = []
     if not form.get("type_appareil", "").strip():
         erreurs.append("Le type d'appareil est obligatoire.")
+
+    prix_brut = form.get("prix", "").strip()
+    if prix_brut:
+        try:
+            if float(prix_brut) < 0:
+                raise ValueError
+        except ValueError:
+            erreurs.append("Le prix est invalide.")
+
     return erreurs
 
 
