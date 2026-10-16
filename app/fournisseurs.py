@@ -384,21 +384,24 @@ def garantie_annuler(fournisseur_id):
 
 
 def _verifier_plafond_marche(fournisseur, montant_facture, facture_id_exclue=None):
-    """Empêche le cumul (acompte + factures) de dépasser le montant du marché."""
+    """Empêche le cumul (acompte + factures) de dépasser 95% du montant du marché :
+    les 5% restants sont la garantie de bonne exécution, livrée séparément."""
     if not fournisseur.montant_marche:
         return None
 
     montant_marche = float(fournisseur.montant_marche)
+    seuil_95 = montant_marche * 0.95
     acompte_initial = float(fournisseur.montant_acompte_initial) if fournisseur.montant_acompte_initial else 0.0
     total_autres_factures = sum(
         float(f.montant_net_paye) for f in fournisseur.factures if f.id != facture_id_exclue
     )
     cumul_apres = acompte_initial + total_autres_factures + montant_facture
 
-    if cumul_apres > montant_marche:
+    if cumul_apres > seuil_95:
         return (
             f"Montant refusé : le cumul payé atteindrait {cumul_apres:,.0f} KMF, "
-            f"ce qui dépasse le montant du marché ({montant_marche:,.0f} KMF)."
+            f"ce qui dépasse 95% du montant du marché ({seuil_95:,.0f} KMF). "
+            f"Les 5% restants sont la garantie de bonne exécution, à valider depuis cette section."
         ).replace(",", " ")
     return None
 
@@ -418,16 +421,23 @@ def _valider_formulaire(form, fournisseur=None):
     if montant_acompte_initial is not None and montant_marche is None:
         erreurs.append("Le montant du marché est requis pour saisir un montant d'acompte.")
     elif montant_acompte_initial is not None and montant_marche is not None:
+        seuil_95 = montant_marche * 0.95
         total_factures = sum(float(f.montant_net_paye) for f in fournisseur.factures) if fournisseur else 0.0
-        if montant_acompte_initial + total_factures > montant_marche:
+        if montant_acompte_initial + total_factures > seuil_95:
             if total_factures:
                 erreurs.append(
                     (
                         f"Le montant de l'acompte, cumulé aux factures déjà enregistrées "
-                        f"({total_factures:,.0f} KMF), ne peut pas dépasser le montant du marché."
+                        f"({total_factures:,.0f} KMF), ne peut pas dépasser 95% du montant du marché "
+                        f"({seuil_95:,.0f} KMF) — les 5% restants sont la garantie de bonne exécution."
                     ).replace(",", " ")
                 )
             else:
-                erreurs.append("Le montant de l'acompte ne peut pas dépasser le montant du marché.")
+                erreurs.append(
+                    (
+                        f"Le montant de l'acompte ne peut pas dépasser 95% du montant du marché "
+                        f"({seuil_95:,.0f} KMF) — les 5% restants sont la garantie de bonne exécution."
+                    ).replace(",", " ")
+                )
 
     return erreurs
