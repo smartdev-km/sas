@@ -90,11 +90,17 @@
                 <div class="text-muted small">Date de versement</div>
                 <div class="fw-semibold">{{ fournisseur.date_versement.strftime("%d/%m/%Y") if fournisseur.date_versement else "-" }}</div>
             </div>
+            {% if garantie %}
+            <div class="col-6 col-md-2">
+                <div class="text-muted small">Montant retenu (garantie 5%)</div>
+                <div class="fw-semibold">{{ garantie.montant|kmf }}</div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
 
-{% if garantie %}
+{% if garantie and garantie.statut != 'en_attente_seuil' %}
 <div class="card mb-4">
     <div class="card-body">
         <h2 class="h6 mb-3">Garantie de bonne exécution (5%)</h2>
@@ -118,20 +124,12 @@
                         <span class="badge text-bg-success">Livrée le {{ garantie.livree_le.strftime("%d/%m/%Y") }}</span>
                     {% elif garantie.statut == 'disponible' %}
                         <span class="badge text-bg-warning">Disponible depuis le {{ garantie.date_liberation.strftime("%d/%m/%Y") }}</span>
-                    {% elif garantie.statut == 'en_attente_date' %}
-                        <span class="badge text-bg-info">En attente de la date de libération</span>
                     {% else %}
-                        <span class="badge text-bg-secondary">Seuil des 95% non atteint</span>
+                        <span class="badge text-bg-info">En attente de la date de libération</span>
                     {% endif %}
                 </div>
             </div>
         </div>
-
-        {% if garantie.statut == 'en_attente_seuil' %}
-        <p class="text-muted small mt-3 mb-0">
-            Il reste {{ garantie.montant_restant_avant_seuil|kmf }} à payer avant d'atteindre 95% du montant du marché.
-        </p>
-        {% endif %}
 
         {% if current_user.role == 'admin' %}
             {% if garantie.statut != 'livree' %}
