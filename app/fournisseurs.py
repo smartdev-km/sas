@@ -74,7 +74,7 @@ def modifier(fournisseur_id):
     fournisseur = db.get_or_404(Fournisseur, fournisseur_id)
 
     if request.method == "POST":
-        erreurs = _valider_formulaire(request.form)
+        erreurs = _valider_formulaire(request.form, fournisseur=fournisseur)
         if erreurs:
             for erreur in erreurs:
                 flash(erreur, "danger")
@@ -247,14 +247,17 @@ def nouvelle_facture(fournisseur_id):
         flash("Un compte admin ne peut pas ajouter de facture.", "warning")
         return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
 
-    db.get_or_404(Fournisseur, fournisseur_id)
+    fournisseur = db.get_or_404(Fournisseur, fournisseur_id)
     date_facture = _parse_date(request.form.get("date_facture"))
     montant_net_paye = _parse_decimal(request.form.get("montant_net_paye"))
+    erreur_plafond = _verifier_plafond_marche(fournisseur, montant_net_paye) if montant_net_paye else None
 
     if not date_facture:
         flash("La date de la facture est invalide ou manquante.", "danger")
     elif montant_net_paye is None or montant_net_paye <= 0:
         flash("Le montant net payé de la facture est invalide.", "danger")
+    elif erreur_plafond:
+        flash(erreur_plafond, "danger")
     else:
         db.session.add(FactureFournisseur(
             fournisseur_id=fournisseur_id,
@@ -280,11 +283,17 @@ def modifier_facture(fournisseur_id, facture_id):
 
     date_facture = _parse_date(request.form.get("date_facture"))
     montant_net_paye = _parse_decimal(request.form.get("montant_net_paye"))
+    erreur_plafond = (
+        _verifier_plafond_marche(facture.fournisseur, montant_net_paye, facture_id_exclue=facture.id)
+        if montant_net_paye else None
+    )
 
     if not date_facture:
         flash("La date de la facture est invalide ou manquante.", "danger")
     elif montant_net_paye is None or montant_net_paye <= 0:
         flash("Le montant net payé de la facture est invalide.", "danger")
+    elif erreur_plafond:
+        flash(erreur_plafond, "danger")
     else:
         facture.reference = request.form.get("reference", "").strip() or None
         facture.date_facture = date_facture
@@ -374,7 +383,27 @@ def garantie_annuler(fournisseur_id):
     return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
 
 
-def _valider_formulaire(form):
+def _verifier_plafond_marche(fournisseur, montant_facture, facture_id_exclue=None):
+    """Empêche le cumul (acompte + factures) de dépasser le montant du marché."""
+    if not fournisseur.montant_marche:
+        return None
+
+    montant_marche = float(fournisseur.montant_marche)
+    acompte_initial = float(fournisseur.montant_acompte_initial) if fournisseur.montant_acompte_initial else 0.0
+    total_autres_factures = sum(
+        float(f.montant_net_paye) for f in fournisseur.factures if f.id != facture_id_exclue
+    )
+    cumul_apres = acompte_initial + total_autres_factures + montant_facture
+
+    if cumul_apres > montant_marche:
+        return (
+            f"Montant refusé : le cumul payé atteindrait {cumul_apres:,.0f} KMF, "
+            f"ce qui dépasse le montant du marché ({montant_marche:,.0f} KMF)."
+        ).replace(",", " ")
+    return None
+
+
+def _valider_formulaire(form, fournisseur=None):
     erreurs = []
     if not form.get("nom_societe", "").strip():
         erreurs.append("Le nom de la société est obligatoire.")
@@ -386,9 +415,19 @@ def _valider_formulaire(form):
 
     montant_marche = _parse_decimal(form.get("montant_marche"))
     montant_acompte_initial = _parse_decimal(form.get("montant_acompte_initial"))
-    if montant_acompte_initial is not None and montant_marche is not None and montant_acompte_initial > montant_marche:
-        erreurs.append("Le montant de l'acompte ne peut pas dépasser le montant du marché.")
     if montant_acompte_initial is not None and montant_marche is None:
         erreurs.append("Le montant du marché est requis pour saisir un montant d'acompte.")
+    elif montant_acompte_initial is not None and montant_marche is not None:
+        total_factures = sum(float(f.montant_net_paye) for f in fournisseur.factures) if fournisseur else 0.0
+        if montant_acompte_initial + total_factures > montant_marche:
+            if total_factures:
+                erreurs.append(
+                    (
+                        f"Le montant de l'acompte, cumulé aux factures déjà enregistrées "
+                        f"({total_factures:,.0f} KMF), ne peut pas dépasser le montant du marché."
+                    ).replace(",", " ")
+                )
+            else:
+                erreurs.append("Le montant de l'acompte ne peut pas dépasser le montant du marché.")
 
     return erreurs
