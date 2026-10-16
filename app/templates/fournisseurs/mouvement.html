@@ -110,7 +110,7 @@
     </div>
 </div>
 
-{% if garantie and garantie.statut != 'en_attente_seuil' %}
+{% if garantie and garantie.statut != 'en_attente_seuil' and current_user.role == 'admin' %}
 <div class="card mb-4">
     <div class="card-body">
         <h2 class="h6 mb-3">Garantie de bonne exécution (5%)</h2>
