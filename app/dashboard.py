@@ -123,14 +123,38 @@ def index():
     }
 
     dernieres_depenses = Depense.query.order_by(Depense.date.desc(), Depense.id.desc()).limit(10).all()
-    dernieres_factures_fournisseurs = (
+
+    mouvements_fournisseurs = []
+    for f in (
         FactureFournisseur.query.join(Fournisseur)
         .order_by(FactureFournisseur.date_facture.desc(), FactureFournisseur.id.desc())
         .limit(10)
         .all()
-    )
+    ):
+        mouvements_fournisseurs.append({
+            "date": f.date_facture,
+            "fournisseur_id": f.fournisseur_id,
+            "fournisseur_nom": f.fournisseur.nom_societe,
+            "montant": float(f.montant_net_paye),
+            "est_garantie": False,
+        })
+    for fr in (
+        Fournisseur.query.filter(Fournisseur.garantie_livree_le.isnot(None))
+        .order_by(Fournisseur.garantie_livree_le.desc())
+        .limit(10)
+        .all()
+    ):
+        mouvements_fournisseurs.append({
+            "date": fr.garantie_livree_le,
+            "fournisseur_id": fr.id,
+            "fournisseur_nom": fr.nom_societe,
+            "montant": float(fr.montant_marche) * 0.05 if fr.montant_marche else 0.0,
+            "est_garantie": True,
+        })
+    mouvements_fournisseurs.sort(key=lambda m: m["date"] or date.min, reverse=True)
+    mouvements_fournisseurs = mouvements_fournisseurs[:10]
 
     return render_template(
         "dashboard/index.html", kpis=kpis, chart_data=chart_data,
-        dernieres_depenses=dernieres_depenses, dernieres_factures_fournisseurs=dernieres_factures_fournisseurs,
+        dernieres_depenses=dernieres_depenses, mouvements_fournisseurs=mouvements_fournisseurs,
     )

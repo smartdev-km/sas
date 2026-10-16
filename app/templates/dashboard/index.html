@@ -86,19 +86,22 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for f in dernieres_factures_fournisseurs %}
+                            {% for m in mouvements_fournisseurs %}
                             <tr>
-                                <td>{{ f.date_facture.strftime("%d/%m/%Y") if f.date_facture else "-" }}</td>
+                                <td>{{ m.date.strftime("%d/%m/%Y") if m.date else "-" }}</td>
                                 <td>
                                     {% if current_user.role in ('admin', 'comptable') %}
-                                    <a href="{{ url_for('fournisseurs.mouvement', fournisseur_id=f.fournisseur_id) }}" class="text-decoration-none">
-                                        {{ f.fournisseur.nom_societe }}
+                                    <a href="{{ url_for('fournisseurs.mouvement', fournisseur_id=m.fournisseur_id) }}" class="text-decoration-none">
+                                        {{ m.fournisseur_nom }}
                                     </a>
                                     {% else %}
-                                    {{ f.fournisseur.nom_societe }}
+                                    {{ m.fournisseur_nom }}
+                                    {% endif %}
+                                    {% if m.est_garantie %}
+                                    <span class="badge text-bg-success ms-1">Garantie de bonne exécution (5%)</span>
                                     {% endif %}
                                 </td>
-                                <td class="text-end text-primary fw-semibold">{{ f.montant_net_paye|kmf }}</td>
+                                <td class="text-end text-primary fw-semibold">{{ m.montant|kmf }}</td>
                             </tr>
                             {% else %}
                             <tr>
