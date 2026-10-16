@@ -269,6 +269,10 @@ def nouvelle_facture(fournisseur_id):
         return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
 
     fournisseur = db.get_or_404(Fournisseur, fournisseur_id)
+    if not fournisseur.actif:
+        flash("Ce fournisseur est inactif, la fiche de suivi est en lecture seule.", "warning")
+        return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
+
     date_facture = _parse_date(request.form.get("date_facture"))
     montant_net_paye = _parse_decimal(request.form.get("montant_net_paye"))
     erreur_plafond = _verifier_plafond_marche(fournisseur, montant_net_paye) if montant_net_paye else None
@@ -297,6 +301,10 @@ def nouvelle_facture(fournisseur_id):
 @role_required("fournisseurs")
 def modifier_facture(fournisseur_id, facture_id):
     facture = db.get_or_404(FactureFournisseur, facture_id)
+
+    if not facture.fournisseur.actif:
+        flash("Ce fournisseur est inactif, la fiche de suivi est en lecture seule.", "warning")
+        return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
 
     if facture.valide:
         flash("Cette facture est validée, elle ne peut plus être modifiée.", "danger")
@@ -331,6 +339,10 @@ def modifier_facture(fournisseur_id, facture_id):
 def supprimer_facture(fournisseur_id, facture_id):
     facture = db.get_or_404(FactureFournisseur, facture_id)
 
+    if not facture.fournisseur.actif:
+        flash("Ce fournisseur est inactif, la fiche de suivi est en lecture seule.", "warning")
+        return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
+
     if facture.valide:
         flash("Cette facture est validée, elle ne peut plus être supprimée.", "danger")
         return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
@@ -345,6 +357,10 @@ def supprimer_facture(fournisseur_id, facture_id):
 @admin_required
 def valider_facture(fournisseur_id, facture_id):
     facture = db.get_or_404(FactureFournisseur, facture_id)
+
+    if not facture.fournisseur.actif:
+        flash("Ce fournisseur est inactif, la fiche de suivi est en lecture seule.", "warning")
+        return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
 
     if facture.valide:
         flash("Cette facture est déjà validée.", "info")
@@ -362,6 +378,10 @@ def valider_facture(fournisseur_id, facture_id):
 def devalider_facture(fournisseur_id, facture_id):
     facture = db.get_or_404(FactureFournisseur, facture_id)
 
+    if not facture.fournisseur.actif:
+        flash("Ce fournisseur est inactif, la fiche de suivi est en lecture seule.", "warning")
+        return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
+
     if not facture.valide:
         flash("Cette facture n'est pas validée.", "info")
     else:
@@ -378,6 +398,10 @@ def devalider_facture(fournisseur_id, facture_id):
 def garantie_livrer(fournisseur_id):
     fournisseur = db.get_or_404(Fournisseur, fournisseur_id)
 
+    if not fournisseur.actif:
+        flash("Ce fournisseur est inactif, la fiche de suivi est en lecture seule.", "warning")
+        return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
+
     if fournisseur.garantie_livree_le:
         flash("La garantie de bonne exécution est déjà marquée comme livrée.", "info")
         return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
@@ -393,6 +417,10 @@ def garantie_livrer(fournisseur_id):
 @admin_required
 def garantie_annuler(fournisseur_id):
     fournisseur = db.get_or_404(Fournisseur, fournisseur_id)
+
+    if not fournisseur.actif:
+        flash("Ce fournisseur est inactif, la fiche de suivi est en lecture seule.", "warning")
+        return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
 
     if not fournisseur.garantie_livree_le:
         flash("La garantie de bonne exécution n'est pas marquée comme livrée.", "info")
