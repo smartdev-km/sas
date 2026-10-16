@@ -164,7 +164,7 @@
 </div>
 {% endif %}
 
-{% if current_user.role != 'admin' %}
+{% if current_user.role != 'admin' and not (garantie and garantie.statut == 'livree') %}
 <div class="card mb-4 d-print-none">
     <div class="card-body">
         <h2 class="h6 mb-3">Ajouter une facture</h2>
