@@ -14,6 +14,8 @@ services:
     envVars:
       - key: FLASK_APP
         value: run.py
+      - key: PYTHON_VERSION
+        value: 3.13.3
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
