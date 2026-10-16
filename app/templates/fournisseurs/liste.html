@@ -50,7 +50,9 @@
                     <td class="text-end">{{ f.montant_marche|kmf if f.montant_marche is not none else "-" }}</td>
                     <td class="text-end">{{ f.taux_acompte ~ "%" if f.taux_acompte is not none else "-" }}</td>
                     <td>
-                        {% if f.actif %}
+                        {% if f.garantie_livree_le %}
+                            <span class="badge text-bg-primary">Terminé</span>
+                        {% elif f.actif %}
                             <span class="badge text-bg-success">Actif</span>
                         {% else %}
                             <span class="badge text-bg-secondary">Inactif</span>

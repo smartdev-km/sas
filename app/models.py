@@ -72,7 +72,10 @@ class Fournisseur(db.Model):
 
     @property
     def taux_acompte(self):
-        """Taux de l'acompte cumulé rapporté au montant du marché (grandit avec chaque facture payée)."""
+        """Taux de l'acompte cumulé rapporté au montant du marché (grandit avec chaque facture payée),
+        atteint 100% une fois la garantie de bonne exécution (5%) livrée."""
+        if self.garantie_livree_le:
+            return 100.0
         montant = self.montant_acompte
         if not self.montant_marche or montant is None:
             return None
