@@ -54,6 +54,8 @@ def liste():
 
     total_filtre = query.with_entities(func.coalesce(func.sum(Depense.montant), 0)).scalar()
 
+    depenses_impression = query.order_by(Depense.date.desc(), Depense.id.desc()).all()
+
     pagination = query.order_by(Depense.date.desc(), Depense.id.desc()).paginate(
         page=page, per_page=20, error_out=False
     )
@@ -62,14 +64,22 @@ def liste():
         s.depense_id for s in Salaire.query.filter(Salaire.depense_id.isnot(None)).all()
     }
 
+    categorie_label = ""
+    if categorie:
+        plan = PlanComptable.query.filter_by(nom=categorie).first()
+        categorie_label = f"{plan.numero} — {plan.nom}" if plan else categorie
+
     return render_template(
         "depenses/liste.html",
         depenses=pagination.items,
+        depenses_impression=depenses_impression,
         pagination=pagination,
         categories=_categories_actives(),
         plan_comptable=PlanComptable.query.order_by(PlanComptable.numero).all(),
         depense_ids_salaire=depense_ids_salaire,
         total_filtre=float(total_filtre),
+        categorie_label=categorie_label,
+        now=datetime.now(),
         filtres={
             "date_debut": request.args.get("date_debut", ""),
             "date_fin": request.args.get("date_fin", ""),
