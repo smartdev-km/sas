@@ -448,7 +448,7 @@ def _suggerer_numero_lettre():
 
 
 @fournisseurs_bp.route("/<int:fournisseur_id>/factures/<int:facture_id>/ordre-virement", methods=["GET", "POST"])
-@admin_required
+@role_required("fournisseurs")
 def ordre_virement(fournisseur_id, facture_id):
     facture = db.get_or_404(FactureFournisseur, facture_id)
     fournisseur = facture.fournisseur
@@ -460,6 +460,10 @@ def ordre_virement(fournisseur_id, facture_id):
     config = _config_ordre_virement()
 
     if request.method == "POST":
+        if current_user.role != "admin":
+            flash("Seul un compte admin peut modifier l'ordre de virement.", "warning")
+            return redirect(url_for("fournisseurs.ordre_virement", fournisseur_id=fournisseur_id, facture_id=facture_id))
+
         facture.numero_lettre = request.form.get("numero_lettre", "").strip() or None
         facture.description_paiement = request.form.get("description_paiement", "").strip() or None
         config.compte_source_intitule = request.form.get("compte_source_intitule", "").strip() or None

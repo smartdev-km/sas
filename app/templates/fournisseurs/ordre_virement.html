@@ -5,20 +5,25 @@
     .sas-ov-page {
         max-width: 900px;
         margin: 0 auto;
-        font-size: 0.95rem;
+        font-size: 0.92rem;
+        line-height: 1.35;
+    }
+
+    .sas-ov-page p {
+        margin-bottom: 0.6rem;
     }
 
     .sas-ov-letterhead {
         display: flex;
         align-items: flex-start;
-        gap: 1.5rem;
+        gap: 1.25rem;
         border-bottom: 2px solid var(--sas-dark);
-        padding-bottom: 1rem;
-        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
     }
 
     .sas-ov-letterhead img {
-        height: 70px;
+        height: 55px;
     }
 
     .sas-ov-letterhead .sas-ov-droite {
@@ -27,24 +32,29 @@
     }
 
     .sas-ov-table td {
-        padding: 0.15rem 0;
+        padding: 0.1rem 0;
         vertical-align: top;
     }
 
     .sas-ov-signatures td {
         border: 1px solid #adb5bd;
-        padding: 0.75rem;
+        padding: 0.5rem 0.75rem;
         width: 50%;
+    }
+
+    .sas-ov-signature-space {
+        height: 40px;
     }
 
     @media print {
         @page {
             size: A4;
-            margin: 1.5cm;
+            margin: 1.2cm;
         }
 
         .sas-ov-page {
-            font-size: 0.92rem;
+            font-size: 0.86rem;
+            line-height: 1.3;
         }
     }
 </style>
@@ -62,6 +72,7 @@
     </button>
 </div>
 
+{% if current_user.role == 'admin' %}
 <div class="card mb-4 d-print-none">
     <div class="card-body">
         <h2 class="h6 mb-3">Paramètres du document</h2>
@@ -107,6 +118,7 @@
         {% endif %}
     </div>
 </div>
+{% endif %}
 
 <div class="sas-ov-page">
     <div class="sas-ov-letterhead">
@@ -125,14 +137,14 @@
         <div>Moroni, le {{ date_du_jour }}</div>
     </div>
 
-    <div class="mb-4">
+    <div class="mb-3">
         <div>Monsieur</div>
         <div>Le Gouverneur de la Banque Centrale</div>
         <div>Moroni – Place de France</div>
         <div>Union des Comores</div>
     </div>
 
-    <table class="sas-ov-table mb-4">
+    <table class="sas-ov-table mb-3">
         <tr>
             <td style="width: 70px;" class="fw-semibold">Objet :</td>
             <td>
@@ -158,25 +170,25 @@
         <tr><td class="fw-semibold">Code swift :</td><td>{{ fournisseur.code_swift or "-" }}</td></tr>
     </table>
 
-    <ol>
-        <li class="mb-2">
+    <ol class="mb-2 ps-3">
+        <li class="mb-1">
             <u>Montant net à virer</u> : {{ montant_lettres }} ({{ facture.montant_net_paye|nombre }} KMF).
         </li>
-        <li class="mb-2">
+        <li class="mb-1">
             <u>Motif de virement</u> : Paiement de la facture Réf : {{ facture.reference or "-" }} du {{ facture.date_facture.strftime("%d/%m/%Y") }}
             du marché {{ fournisseur.numero_marche or "-" }} – {{ description_paiement }}.
         </li>
     </ol>
 
-    <p>Veuillez agréer, Monsieur le Directeur Général, l'assurance de nos considérations distinguées.</p>
+    <p class="mb-3">Veuillez agréer, Monsieur le Directeur Général, l'assurance de nos considérations distinguées.</p>
 
-    <table class="sas-ov-table sas-ov-signatures mt-4" style="width: 100%; border-collapse: collapse;">
+    <table class="sas-ov-table sas-ov-signatures" style="width: 100%; border-collapse: collapse;">
         <tr>
             <td>Pour le Conseil de surveillance</td>
             <td class="text-center">
                 <div>{{ config.titre_signataire_conseil or "-" }}</div>
                 <div class="fw-semibold">{{ config.nom_signataire_conseil or "-" }}</div>
-                <div style="height: 70px;"></div>
+                <div class="sas-ov-signature-space"></div>
             </td>
         </tr>
         <tr>
@@ -184,7 +196,7 @@
             <td class="text-center">
                 <div>La présidente – Directrice Générale</div>
                 <div class="fw-semibold">Mme Faouzia VITRY</div>
-                <div style="height: 70px;"></div>
+                <div class="sas-ov-signature-space"></div>
             </td>
         </tr>
     </table>
