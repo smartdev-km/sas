@@ -6,11 +6,21 @@
         <h1 class="h3 mb-0">Consommables</h1>
         <p class="text-muted mb-0">Suivi des tickets de carburant</p>
     </div>
-    {% if current_user.role == 'admin' %}
-    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modal-seuil-carburant">
-        <i class="bi bi-gear"></i> Paramètres
-    </button>
-    {% endif %}
+    <div class="d-flex gap-2">
+        {% if current_user.role != 'admin' %}
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modal-reception">
+            <i class="bi bi-cart-plus"></i> Réception
+        </button>
+        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modal-utilisation-carburant">
+            <i class="bi bi-box-arrow-up"></i> Utilisation
+        </button>
+        {% endif %}
+        {% if current_user.role == 'admin' %}
+        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modal-seuil-carburant">
+            <i class="bi bi-gear"></i> Paramètres
+        </button>
+        {% endif %}
+    </div>
 </div>
 
 <ul class="nav nav-pills mb-4">
@@ -155,73 +165,6 @@
             </div>
         </div>
 
-        {% if current_user.role != 'admin' %}
-        <div class="card mt-3">
-            <div class="card-body">
-                <h2 class="h6 mb-3">Enregistrer un mouvement</h2>
-                <form method="post" action="{{ url_for('consommables.carburant_mouvement_nouveau') }}" class="row g-2 align-items-end" id="form-mouvement-carburant">
-                    <div class="col-12 col-sm-3">
-                        <label class="form-label small mb-1">Date</label>
-                        <input type="date" class="form-control form-control-sm" name="date" value="{{ today }}" required>
-                    </div>
-                    <div class="col-12 col-sm-3">
-                        <label class="form-label small mb-1">Type</label>
-                        <select class="form-select form-select-sm" name="type_mouvement" id="mvt-type" onchange="document.getElementById('bloc-mvt-gaz').classList.toggle('d-none', this.value !== 'reception')">
-                            <option value="reception">Réception (achat)</option>
-                            <option value="utilisation">Utilisation</option>
-                        </select>
-                    </div>
-                    <div class="col-12 col-sm-2">
-                        <label class="form-label small mb-1">Quantité (tickets)</label>
-                        <input type="number" step="1" min="1" class="form-control form-control-sm" name="quantite" required>
-                    </div>
-                    <div class="col-12 col-sm-4">
-                        <label class="form-label small mb-1">Bénéficiaire / véhicule</label>
-                        <input type="text" class="form-control form-control-sm" name="beneficiaire" placeholder="Optionnel">
-                    </div>
-
-                    <div class="col-12" id="bloc-mvt-gaz">
-                        <div class="card bg-body-secondary border-0">
-                            <div class="card-body py-2">
-                                <p class="text-muted small mb-2">
-                                    Optionnel : si cet achat correspond à un plein de carburant, le montant est calculé automatiquement et ajouté au budget Consommables.
-                                </p>
-                                <div class="row g-2 align-items-end">
-                                    <div class="col-12 col-sm-4">
-                                        <label class="form-label small mb-1">Type de gaz</label>
-                                        <select class="form-select form-select-sm" name="type_gaz" id="mvt-type-gaz">
-                                            <option value="">—</option>
-                                            {% for valeur, libelle in [('essence', 'Essence'), ('diesel', 'Gazoil')] %}
-                                                <option value="{{ valeur }}" data-prix="{{ prix_carburant[valeur] }}">{{ libelle }} ({{ prix_carburant[valeur] }} KMF/L)</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-12 col-sm-4">
-                                        <label class="form-label small mb-1">Quantité (litres)</label>
-                                        <input type="number" step="0.1" min="0" class="form-control form-control-sm" name="quantite_litres" id="mvt-quantite-litres">
-                                    </div>
-                                    <div class="col-12 col-sm-4">
-                                        <label class="form-label small mb-1">Montant estimé</label>
-                                        <div class="form-control-plaintext form-control-sm fw-semibold mb-0" id="mvt-montant-estime">—</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-12">
-                        <label class="form-label small mb-1">Notes</label>
-                        <input type="text" class="form-control form-control-sm" name="notes" placeholder="Optionnel">
-                    </div>
-                    <div class="col-12">
-                        <button type="submit" class="btn btn-sm btn-primary">
-                            <i class="bi bi-plus-lg"></i> Enregistrer
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        {% endif %}
     </div>
 
     <div class="col-12 col-lg-5">
@@ -254,6 +197,110 @@
         </div>
     </div>
 </div>
+
+{% if current_user.role != 'admin' %}
+<div class="modal fade" id="modal-reception" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('consommables.carburant_mouvement_nouveau') }}">
+                <div class="modal-header">
+                    <h3 class="modal-title h6 mb-0">Enregistrer une réception de tickets</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="type_mouvement" value="reception">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small mb-1">Date</label>
+                            <input type="date" class="form-control form-control-sm" name="date" value="{{ today }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small mb-1">Quantité (tickets)</label>
+                            <input type="number" step="1" min="1" class="form-control form-control-sm" name="quantite" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small mb-1">Fournisseur / notes</label>
+                            <input type="text" class="form-control form-control-sm" name="beneficiaire" placeholder="Optionnel">
+                        </div>
+                    </div>
+
+                    <hr>
+                    <p class="text-muted small mb-2">
+                        Optionnel : si cette réception correspond à un plein de carburant chiffré, le montant est calculé automatiquement et ajouté au budget Consommables.
+                    </p>
+                    <div class="row g-2 align-items-end">
+                        <div class="col-12 col-sm-5">
+                            <label class="form-label small mb-1">Type de gaz</label>
+                            <select class="form-select form-select-sm" name="type_gaz" id="mvt-type-gaz">
+                                <option value="">—</option>
+                                {% for valeur, libelle in [('essence', 'Essence'), ('diesel', 'Gazoil')] %}
+                                    <option value="{{ valeur }}" data-prix="{{ prix_carburant[valeur] }}">{{ libelle }} ({{ prix_carburant[valeur] }} KMF/L)</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-4">
+                            <label class="form-label small mb-1">Quantité (litres)</label>
+                            <input type="number" step="0.1" min="0" class="form-control form-control-sm" name="quantite_litres" id="mvt-quantite-litres">
+                        </div>
+                        <div class="col-12 col-sm-3">
+                            <label class="form-label small mb-1">Montant estimé</label>
+                            <div class="form-control-plaintext form-control-sm fw-semibold mb-0" id="mvt-montant-estime">—</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-2">
+                        <label class="form-label small mb-1">Notes</label>
+                        <input type="text" class="form-control form-control-sm" name="notes" placeholder="Optionnel">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-cart-plus"></i> Enregistrer la réception</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-utilisation-carburant" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('consommables.carburant_mouvement_nouveau') }}">
+                <div class="modal-header">
+                    <h3 class="modal-title h6 mb-0">Enregistrer une utilisation</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="type_mouvement" value="utilisation">
+                    <p class="text-muted small">Stock disponible : {{ stock }} ticket(s).</p>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small mb-1">Date</label>
+                            <input type="date" class="form-control form-control-sm" name="date" value="{{ today }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small mb-1">Quantité (tickets)</label>
+                            <input type="number" step="1" min="1" max="{{ stock }}" class="form-control form-control-sm" name="quantite" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small mb-1">Bénéficiaire / véhicule</label>
+                            <input type="text" class="form-control form-control-sm" name="beneficiaire" placeholder="Optionnel">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small mb-1">Notes</label>
+                            <input type="text" class="form-control form-control-sm" name="notes" placeholder="Optionnel">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-box-arrow-up"></i> Enregistrer la sortie</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 {% if current_user.role == 'admin' %}
 <div class="modal fade" id="modal-seuil-carburant" tabindex="-1">
