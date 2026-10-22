@@ -6,6 +6,11 @@
         <h1 class="h3 mb-0">Consommables</h1>
         <p class="text-muted mb-0">Inventaire des fournitures, produits d'entretien et matériel de bureau</p>
     </div>
+    {% if current_user.role != 'admin' %}
+    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-nouvel-article">
+        <i class="bi bi-plus-lg"></i> Ajouter un article à l'inventaire
+    </button>
+    {% endif %}
 </div>
 
 <ul class="nav nav-pills mb-4">
@@ -121,37 +126,6 @@
 <form id="form-supprimer-article-{{ ligne.article.id }}" method="post" action="{{ url_for('consommables.article_supprimer', article_id=ligne.article.id) }}"></form>
 {% endfor %}
 
-{% if current_user.role != 'admin' %}
-<div class="card mb-4">
-    <div class="card-body">
-        <h2 class="h6 mb-3">Ajouter un article à l'inventaire</h2>
-        <form method="post" action="{{ url_for('consommables.article_nouveau') }}" class="row g-2 align-items-end">
-            <div class="col-12 col-sm-4">
-                <label class="form-label small mb-1">Nom</label>
-                <input type="text" name="nom" class="form-control form-control-sm" placeholder="Ex : Ramette de papier A4" required>
-            </div>
-            <div class="col-12 col-sm-4">
-                <label class="form-label small mb-1">Catégorie</label>
-                <select class="form-select form-select-sm" name="categorie" required>
-                    {% for valeur, libelle in categories.items() %}
-                    <option value="{{ valeur }}">{{ libelle }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-12 col-sm-3">
-                <label class="form-label small mb-1">Seuil d'alerte (optionnel)</label>
-                <input type="number" step="1" min="0" name="seuil_alerte" class="form-control form-control-sm" placeholder="0">
-            </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-plus-lg"></i> Ajouter
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-{% endif %}
-
 <div class="card">
     <div class="card-header">
         <h2 class="h6 mb-0">Mouvements récents</h2>
@@ -207,6 +181,45 @@
 {% for m in mouvements %}
 <form id="form-supprimer-mouvement-{{ m.id }}" method="post" action="{{ url_for('consommables.article_mouvement_supprimer', mouvement_id=m.id) }}"></form>
 {% endfor %}
+
+{% if current_user.role != 'admin' %}
+<div class="modal fade" id="modal-nouvel-article" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('consommables.article_nouveau') }}">
+                <div class="modal-header">
+                    <h3 class="modal-title h6 mb-0">Ajouter un article à l'inventaire</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <label class="form-label small mb-1">Nom</label>
+                            <input type="text" name="nom" class="form-control form-control-sm" placeholder="Ex : Ramette de papier A4" required>
+                        </div>
+                        <div class="col-12 col-sm-7">
+                            <label class="form-label small mb-1">Catégorie</label>
+                            <select class="form-select form-select-sm" name="categorie" required>
+                                {% for valeur, libelle in categories.items() %}
+                                <option value="{{ valeur }}">{{ libelle }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-5">
+                            <label class="form-label small mb-1">Seuil d'alerte (optionnel)</label>
+                            <input type="number" step="1" min="0" name="seuil_alerte" class="form-control form-control-sm" placeholder="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <div class="modal fade" id="modal-achat" tabindex="-1">
     <div class="modal-dialog">
