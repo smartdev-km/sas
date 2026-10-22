@@ -56,6 +56,12 @@ class Fournisseur(db.Model):
     actif = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Coordonnées bancaires du fournisseur, pour générer l'ordre de virement.
+    banque_nom = db.Column(db.String(150))
+    compte_nom = db.Column(db.String(150))
+    compte_numero = db.Column(db.String(100))
+    code_swift = db.Column(db.String(30))
+
     @property
     def montant_acompte(self):
         """Total cumulé versé au fournisseur : acompte initial + montant net payé de toutes ses factures."""
@@ -99,9 +105,26 @@ class FactureFournisseur(db.Model):
     valide_le = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Renseignés lors de la génération de l'ordre de virement correspondant.
+    numero_lettre = db.Column(db.String(50))
+    description_paiement = db.Column(db.Text)
+
     fournisseur = db.relationship("Fournisseur", backref=db.backref(
         "factures", lazy=True, cascade="all, delete-orphan", order_by="FactureFournisseur.date_facture"
     ))
+
+
+class ConfigOrdreVirement(db.Model):
+    """Configuration unique (singleton) des informations fixes de l'ordre de virement :
+    compte à débiter de la société, et signataire « Conseil de surveillance »."""
+
+    __tablename__ = "config_ordre_virement"
+
+    id = db.Column(db.Integer, primary_key=True)
+    compte_source_intitule = db.Column(db.String(200), default="CONSTRUCTION DES VILLAS DES JEUX DES ILES")
+    compte_source_numero = db.Column(db.String(50), default="9357")
+    titre_signataire_conseil = db.Column(db.String(150), default="Le Président de l'UCCIA")
+    nom_signataire_conseil = db.Column(db.String(150), default="M Chamsouddine AHMED")
 
 
 class Depense(db.Model):

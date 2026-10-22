@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Ordre de virement — {{ fournisseur.nom_societe }}{% endblock %}
+{% block head %}
+<style>
+    .sas-ov-page {
+        max-width: 900px;
+        margin: 0 auto;
+        font-size: 0.95rem;
+    }
+
+    .sas-ov-letterhead {
+        display: flex;
+        align-items: flex-start;
+        gap: 1.5rem;
+        border-bottom: 2px solid var(--sas-dark);
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .sas-ov-letterhead img {
+        height: 70px;
+    }
+
+    .sas-ov-letterhead .sas-ov-droite {
+        flex: 1;
+        text-align: center;
+    }
+
+    .sas-ov-table td {
+        padding: 0.15rem 0;
+        vertical-align: top;
+    }
+
+    .sas-ov-signatures td {
+        border: 1px solid #adb5bd;
+        padding: 0.75rem;
+        width: 50%;
+    }
+
+    @media print {
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+
+        .sas-ov-page {
+            font-size: 0.92rem;
+        }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 d-print-none">
+    <div>
+        <h1 class="h3 mb-0">Ordre de virement</h1>
+        <p class="text-muted mb-0">
+            <a href="{{ url_for('fournisseurs.mouvement', fournisseur_id=fournisseur.id) }}" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Retour à la fiche de suivi</a>
+        </p>
+    </div>
+    <button type="button" class="btn btn-primary" onclick="window.print()">
+        <i class="bi bi-printer"></i> Imprimer / Télécharger
+    </button>
+</div>
+
+<div class="card mb-4 d-print-none">
+    <div class="card-body">
+        <h2 class="h6 mb-3">Paramètres du document</h2>
+        <form method="post">
+            <div class="row g-3">
+                <div class="col-12 col-sm-4">
+                    <label class="form-label small mb-1">N° de référence</label>
+                    <input type="text" class="form-control form-control-sm" name="numero_lettre" value="{{ numero_lettre }}">
+                </div>
+                <div class="col-12 col-sm-4">
+                    <label class="form-label small mb-1">Compte à débiter (intitulé)</label>
+                    <input type="text" class="form-control form-control-sm" name="compte_source_intitule" value="{{ config.compte_source_intitule or '' }}">
+                </div>
+                <div class="col-12 col-sm-4">
+                    <label class="form-label small mb-1">N° du compte à débiter</label>
+                    <input type="text" class="form-control form-control-sm" name="compte_source_numero" value="{{ config.compte_source_numero or '' }}">
+                </div>
+                <div class="col-12">
+                    <label class="form-label small mb-1">Objet / motif du paiement</label>
+                    <textarea class="form-control form-control-sm" name="description_paiement" rows="2">{{ description_paiement }}</textarea>
+                    <div class="form-text">Complète automatiquement « Paiement de la facture Réf : {{ facture.reference or '…' }} du {{ facture.date_facture.strftime("%d/%m/%Y") }} du marché {{ fournisseur.numero_marche or '…' }}, … »</div>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <label class="form-label small mb-1">Titre du signataire (Conseil de surveillance)</label>
+                    <input type="text" class="form-control form-control-sm" name="titre_signataire_conseil" value="{{ config.titre_signataire_conseil or '' }}">
+                </div>
+                <div class="col-12 col-sm-6">
+                    <label class="form-label small mb-1">Nom du signataire (Conseil de surveillance)</label>
+                    <input type="text" class="form-control form-control-sm" name="nom_signataire_conseil" value="{{ config.nom_signataire_conseil or '' }}">
+                </div>
+            </div>
+            <div class="mt-3">
+                <button type="submit" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-check-lg"></i> Enregistrer
+                </button>
+            </div>
+        </form>
+        {% if not (fournisseur.banque_nom and fournisseur.compte_nom and fournisseur.compte_numero and fournisseur.code_swift) %}
+        <p class="text-warning small mt-3 mb-0">
+            <i class="bi bi-exclamation-triangle"></i> Les coordonnées bancaires du fournisseur sont incomplètes —
+            complétez-les depuis <a href="{{ url_for('fournisseurs.modifier', fournisseur_id=fournisseur.id) }}">Modifier le fournisseur</a>.
+        </p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="sas-ov-page">
+    <div class="sas-ov-letterhead">
+        <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Société de projet Village des jeux">
+        <div class="sas-ov-droite">
+            <div class="fw-bold fs-5">UNION DES COMORES</div>
+            <div class="small">Union – Solidarité – Développement</div>
+            <div class="small">----------------------------</div>
+            <div class="fw-semibold">Société de projet - Village des jeux - SAS</div>
+            <div class="small">----------------------</div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between flex-wrap gap-2 mb-4">
+        <div>N°/{{ numero_lettre }}</div>
+        <div>Moroni, le {{ date_du_jour }}</div>
+    </div>
+
+    <div class="mb-4">
+        <div>Monsieur</div>
+        <div>Le Gouverneur de la Banque Centrale</div>
+        <div>Moroni – Place de France</div>
+        <div>Union des Comores</div>
+    </div>
+
+    <table class="sas-ov-table mb-4">
+        <tr>
+            <td style="width: 70px;" class="fw-semibold">Objet :</td>
+            <td>
+                Paiement de la facture Réf : {{ facture.reference or "-" }} du {{ facture.date_facture.strftime("%d/%m/%Y") }}
+                du marché {{ fournisseur.numero_marche or "-" }}, {{ description_paiement }}.<br>
+                (Montant: {{ facture.montant_net_paye|nombre }} kmf)
+            </td>
+        </tr>
+    </table>
+
+    <p>Monsieur,</p>
+
+    <p>
+        Nous vous demandons de bien vouloir autoriser vos services compétents de débiter notre compte intitulé
+        « {{ config.compte_source_intitule or "-" }} », Numéro de compte {{ config.compte_source_numero or "-" }},
+        au profit du compte de l'entreprise « {{ fournisseur.nom_societe }} » dont les coordonnées sont les suivants :
+    </p>
+
+    <table class="sas-ov-table mb-3">
+        <tr><td class="fw-semibold" style="width: 220px;">Banque de Compte :</td><td>{{ fournisseur.banque_nom or "-" }}</td></tr>
+        <tr><td class="fw-semibold">Nom du Compte :</td><td>{{ fournisseur.compte_nom or "-" }}</td></tr>
+        <tr><td class="fw-semibold">Compte Bancaire :</td><td>{{ fournisseur.compte_numero or "-" }}</td></tr>
+        <tr><td class="fw-semibold">Code swift :</td><td>{{ fournisseur.code_swift or "-" }}</td></tr>
+    </table>
+
+    <ol>
+        <li class="mb-2">
+            <u>Montant net à virer</u> : {{ montant_lettres }} ({{ facture.montant_net_paye|nombre }} KMF).
+        </li>
+        <li class="mb-2">
+            <u>Motif de virement</u> : Paiement de la facture Réf : {{ facture.reference or "-" }} du {{ facture.date_facture.strftime("%d/%m/%Y") }}
+            du marché {{ fournisseur.numero_marche or "-" }} – {{ description_paiement }}.
+        </li>
+    </ol>
+
+    <p>Veuillez agréer, Monsieur le Directeur Général, l'assurance de nos considérations distinguées.</p>
+
+    <table class="sas-ov-table sas-ov-signatures mt-4" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td>Pour le Conseil de surveillance</td>
+            <td class="text-center">
+                <div>{{ config.titre_signataire_conseil or "-" }}</div>
+                <div class="fw-semibold">{{ config.nom_signataire_conseil or "-" }}</div>
+                <div style="height: 70px;"></div>
+            </td>
+        </tr>
+        <tr>
+            <td>Pour la Société Projet Village SVP</td>
+            <td class="text-center">
+                <div>La présidente – Directrice Générale</div>
+                <div class="fw-semibold">Mme Faouzia VITRY</div>
+                <div style="height: 70px;"></div>
+            </td>
+        </tr>
+    </table>
+</div>
+{% endblock %}

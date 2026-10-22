@@ -226,6 +226,9 @@
                         {% elif not ligne.est_acompte and not ligne.est_garantie %}
                             {% if ligne.facture.valide %}
                                 {% if current_user.role == 'admin' %}
+                                <a href="{{ url_for('fournisseurs.ordre_virement', fournisseur_id=fournisseur.id, facture_id=ligne.facture.id) }}" class="btn btn-sm btn-outline-primary" title="Télécharger l'ordre de virement">
+                                    <i class="bi bi-file-earmark-arrow-down"></i>
+                                </a>
                                 <form method="post" action="{{ url_for('fournisseurs.devalider_facture', fournisseur_id=fournisseur.id, facture_id=ligne.facture.id) }}" class="d-inline" onsubmit="return confirm('Déverrouiller cette facture ? Elle redeviendra modifiable comme avant la validation.');">
                                     <button type="submit" class="btn btn-sm btn-outline-secondary" title="Déverrouiller">
                                         <i class="bi bi-lock-fill"></i>

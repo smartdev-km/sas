@@ -51,6 +51,27 @@
                     <div class="form-control-plaintext fw-semibold">{{ fournisseur.montant_acompte|kmf }} <span class="text-muted fw-normal">({{ fournisseur.taux_acompte }}% du marché)</span></div>
                 </div>
                 {% endif %}
+                <div class="col-12">
+                    <hr class="my-2">
+                    <h2 class="h6 mb-0">Coordonnées bancaires du fournisseur</h2>
+                    <p class="text-muted small mb-0">Utilisées pour générer l'ordre de virement une fois une facture validée.</p>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <label class="form-label" for="banque_nom">Banque de compte</label>
+                    <input type="text" class="form-control" id="banque_nom" name="banque_nom" value="{{ form.get('banque_nom', '') }}" placeholder="Ex : EXIM BANK COMORES SA">
+                </div>
+                <div class="col-12 col-sm-6">
+                    <label class="form-label" for="compte_nom">Nom du compte</label>
+                    <input type="text" class="form-control" id="compte_nom" name="compte_nom" value="{{ form.get('compte_nom', '') }}">
+                </div>
+                <div class="col-12 col-sm-6">
+                    <label class="form-label" for="compte_numero">Numéro de compte bancaire</label>
+                    <input type="text" class="form-control" id="compte_numero" name="compte_numero" value="{{ form.get('compte_numero', '') }}">
+                </div>
+                <div class="col-12 col-sm-6">
+                    <label class="form-label" for="code_swift">Code swift</label>
+                    <input type="text" class="form-control" id="code_swift" name="code_swift" value="{{ form.get('code_swift', '') }}">
+                </div>
             </div>
             <div class="d-flex gap-2 mt-4">
                 <button type="submit" class="btn btn-primary">

@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
@@ -5,7 +6,9 @@ from flask_login import current_user
 from app.decorators import role_required, admin_required
 
 from app import db
-from app.models import Fournisseur, FactureFournisseur
+from app.models import Fournisseur, FactureFournisseur, ConfigOrdreVirement
+from app.num2words_fr import montant_en_lettres_kmf
+from app.constants import MOIS_FR
 
 fournisseurs_bp = Blueprint("fournisseurs", __name__, url_prefix="/fournisseurs")
 
@@ -65,6 +68,10 @@ def nouveau():
             date_facture_initiale=_parse_date(request.form.get("date_facture_initiale")),
             date_versement_initial=_parse_date(request.form.get("date_versement_initial")),
             taux_garantie=_parse_taux_garantie(request.form),
+            banque_nom=request.form.get("banque_nom", "").strip() or None,
+            compte_nom=request.form.get("compte_nom", "").strip() or None,
+            compte_numero=request.form.get("compte_numero", "").strip() or None,
+            code_swift=request.form.get("code_swift", "").strip() or None,
             actif=True,
         )
         db.session.add(fournisseur)
@@ -95,6 +102,10 @@ def modifier(fournisseur_id):
         fournisseur.date_facture_initiale = _parse_date(request.form.get("date_facture_initiale"))
         fournisseur.date_versement_initial = _parse_date(request.form.get("date_versement_initial"))
         fournisseur.taux_garantie = _parse_taux_garantie(request.form)
+        fournisseur.banque_nom = request.form.get("banque_nom", "").strip() or None
+        fournisseur.compte_nom = request.form.get("compte_nom", "").strip() or None
+        fournisseur.compte_numero = request.form.get("compte_numero", "").strip() or None
+        fournisseur.code_swift = request.form.get("code_swift", "").strip() or None
         db.session.commit()
         flash("Fournisseur modifié avec succès.", "success")
         return redirect(url_for("fournisseurs.liste"))
@@ -108,6 +119,10 @@ def modifier(fournisseur_id):
         "date_facture_initiale": fournisseur.date_facture_initiale.isoformat() if fournisseur.date_facture_initiale else "",
         "date_versement_initial": fournisseur.date_versement_initial.isoformat() if fournisseur.date_versement_initial else "",
         "taux_garantie": fournisseur.taux_garantie,
+        "banque_nom": fournisseur.banque_nom or "",
+        "compte_nom": fournisseur.compte_nom or "",
+        "compte_numero": fournisseur.compte_numero or "",
+        "code_swift": fournisseur.code_swift or "",
     }
     return render_template("fournisseurs/form.html", fournisseur=fournisseur, form=form)
 
@@ -408,6 +423,72 @@ def devalider_facture(fournisseur_id, facture_id):
         flash("Facture déverrouillée, elle peut de nouveau être modifiée.", "success")
 
     return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
+
+
+def _config_ordre_virement():
+    config = ConfigOrdreVirement.query.first()
+    if not config:
+        config = ConfigOrdreVirement()
+        db.session.add(config)
+        db.session.commit()
+    return config
+
+
+def _suggerer_numero_lettre():
+    annee = date.today().year
+    pattern = re.compile(rf"^(\d+)/{annee}/SPV-SAS/BCC$")
+    max_seq = 0
+    for (numero,) in db.session.query(FactureFournisseur.numero_lettre).filter(
+        FactureFournisseur.numero_lettre.isnot(None)
+    ).all():
+        m = pattern.match(numero or "")
+        if m:
+            max_seq = max(max_seq, int(m.group(1)))
+    return f"{max_seq + 1:03d}/{annee}/SPV-SAS/BCC"
+
+
+@fournisseurs_bp.route("/<int:fournisseur_id>/factures/<int:facture_id>/ordre-virement", methods=["GET", "POST"])
+@admin_required
+def ordre_virement(fournisseur_id, facture_id):
+    facture = db.get_or_404(FactureFournisseur, facture_id)
+    fournisseur = facture.fournisseur
+
+    if not facture.valide:
+        flash("Cette facture doit être validée avant de générer l'ordre de virement.", "warning")
+        return redirect(url_for("fournisseurs.mouvement", fournisseur_id=fournisseur_id))
+
+    config = _config_ordre_virement()
+
+    if request.method == "POST":
+        facture.numero_lettre = request.form.get("numero_lettre", "").strip() or None
+        facture.description_paiement = request.form.get("description_paiement", "").strip() or None
+        config.compte_source_intitule = request.form.get("compte_source_intitule", "").strip() or None
+        config.compte_source_numero = request.form.get("compte_source_numero", "").strip() or None
+        config.titre_signataire_conseil = request.form.get("titre_signataire_conseil", "").strip() or None
+        config.nom_signataire_conseil = request.form.get("nom_signataire_conseil", "").strip() or None
+        db.session.commit()
+        flash("Ordre de virement mis à jour.", "success")
+        return redirect(url_for("fournisseurs.ordre_virement", fournisseur_id=fournisseur_id, facture_id=facture_id))
+
+    numero_lettre = facture.numero_lettre or _suggerer_numero_lettre()
+    description_paiement = facture.description_paiement or (
+        f"relative au paiement de la facture auprès de {fournisseur.nom_societe}"
+    )
+    montant = float(facture.montant_net_paye)
+    today = date.today()
+    date_du_jour = f"{today.day} {MOIS_FR[today.month - 1].lower()} {today.year}"
+
+    return render_template(
+        "fournisseurs/ordre_virement.html",
+        fournisseur=fournisseur,
+        facture=facture,
+        config=config,
+        numero_lettre=numero_lettre,
+        description_paiement=description_paiement,
+        montant=montant,
+        montant_lettres=montant_en_lettres_kmf(montant),
+        date_du_jour=date_du_jour,
+    )
 
 
 @fournisseurs_bp.route("/<int:fournisseur_id>/garantie/livrer", methods=["POST"])
