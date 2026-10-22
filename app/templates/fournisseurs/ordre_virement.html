@@ -72,53 +72,57 @@
     </button>
 </div>
 
-{% if current_user.role == 'admin' %}
+{% set lecture_seule = current_user.role != 'admin' %}
 <div class="card mb-4 d-print-none">
     <div class="card-body">
-        <h2 class="h6 mb-3">Paramètres du document</h2>
+        <h2 class="h6 mb-3">
+            Paramètres du document
+            {% if lecture_seule %}<span class="badge text-bg-secondary">Lecture seule</span>{% endif %}
+        </h2>
         <form method="post">
             <div class="row g-3">
                 <div class="col-12 col-sm-4">
                     <label class="form-label small mb-1">N° de référence</label>
-                    <input type="text" class="form-control form-control-sm" name="numero_lettre" value="{{ numero_lettre }}">
+                    <input type="text" class="form-control form-control-sm" name="numero_lettre" value="{{ numero_lettre }}" {{ "readonly" if lecture_seule }}>
                 </div>
                 <div class="col-12 col-sm-4">
                     <label class="form-label small mb-1">Compte à débiter (intitulé)</label>
-                    <input type="text" class="form-control form-control-sm" name="compte_source_intitule" value="{{ config.compte_source_intitule or '' }}">
+                    <input type="text" class="form-control form-control-sm" name="compte_source_intitule" value="{{ config.compte_source_intitule or '' }}" {{ "readonly" if lecture_seule }}>
                 </div>
                 <div class="col-12 col-sm-4">
                     <label class="form-label small mb-1">N° du compte à débiter</label>
-                    <input type="text" class="form-control form-control-sm" name="compte_source_numero" value="{{ config.compte_source_numero or '' }}">
+                    <input type="text" class="form-control form-control-sm" name="compte_source_numero" value="{{ config.compte_source_numero or '' }}" {{ "readonly" if lecture_seule }}>
                 </div>
                 <div class="col-12">
                     <label class="form-label small mb-1">Objet / motif du paiement</label>
-                    <textarea class="form-control form-control-sm" name="description_paiement" rows="2">{{ description_paiement }}</textarea>
+                    <textarea class="form-control form-control-sm" name="description_paiement" rows="2" {{ "readonly" if lecture_seule }}>{{ description_paiement }}</textarea>
                     <div class="form-text">Complète automatiquement « Paiement de la facture Réf : {{ facture.reference or '…' }} du {{ facture.date_facture.strftime("%d/%m/%Y") }} du marché {{ fournisseur.numero_marche or '…' }}, … »</div>
                 </div>
                 <div class="col-12 col-sm-6">
                     <label class="form-label small mb-1">Titre du signataire (Conseil de surveillance)</label>
-                    <input type="text" class="form-control form-control-sm" name="titre_signataire_conseil" value="{{ config.titre_signataire_conseil or '' }}">
+                    <input type="text" class="form-control form-control-sm" name="titre_signataire_conseil" value="{{ config.titre_signataire_conseil or '' }}" {{ "readonly" if lecture_seule }}>
                 </div>
                 <div class="col-12 col-sm-6">
                     <label class="form-label small mb-1">Nom du signataire (Conseil de surveillance)</label>
-                    <input type="text" class="form-control form-control-sm" name="nom_signataire_conseil" value="{{ config.nom_signataire_conseil or '' }}">
+                    <input type="text" class="form-control form-control-sm" name="nom_signataire_conseil" value="{{ config.nom_signataire_conseil or '' }}" {{ "readonly" if lecture_seule }}>
                 </div>
             </div>
+            {% if not lecture_seule %}
             <div class="mt-3">
                 <button type="submit" class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-check-lg"></i> Enregistrer
                 </button>
             </div>
+            {% endif %}
         </form>
         {% if not (fournisseur.banque_nom and fournisseur.compte_nom and fournisseur.compte_numero and fournisseur.code_swift) %}
         <p class="text-warning small mt-3 mb-0">
-            <i class="bi bi-exclamation-triangle"></i> Les coordonnées bancaires du fournisseur sont incomplètes —
-            complétez-les depuis <a href="{{ url_for('fournisseurs.modifier', fournisseur_id=fournisseur.id) }}">Modifier le fournisseur</a>.
+            <i class="bi bi-exclamation-triangle"></i> Les coordonnées bancaires du fournisseur sont incomplètes
+            {% if not lecture_seule %}— complétez-les depuis <a href="{{ url_for('fournisseurs.modifier', fournisseur_id=fournisseur.id) }}">Modifier le fournisseur</a>{% endif %}.
         </p>
         {% endif %}
     </div>
 </div>
-{% endif %}
 
 <div class="sas-ov-page">
     <div class="sas-ov-letterhead">
