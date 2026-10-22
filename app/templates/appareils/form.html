@@ -26,7 +26,7 @@
                         <div class="col-12 col-sm-6">
                             <label class="form-label" for="employe_id">Attribué à</label>
                             <select class="form-select" id="employe_id" name="employe_id">
-                                <option value="">En stock (non attribué)</option>
+                                <option value="">Non attribué</option>
                                 {% for e in employes %}
                                     <option value="{{ e.id }}" {% if form.employe_id == e.id %}selected{% endif %}>{{ e.nom }}</option>
                                 {% endfor %}

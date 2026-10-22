@@ -17,7 +17,7 @@
             <dt class="col-4 text-muted fw-normal">Marque / Modèle</dt>
             <dd class="col-8">{{ [ancien.marque, ancien.modele] | select | join(' ') or "-" }}</dd>
             <dt class="col-4 text-muted fw-normal">Attribué à</dt>
-            <dd class="col-8">{{ ancien.employe.nom if ancien.employe else "En stock" }}</dd>
+            <dd class="col-8">{{ ancien.employe.nom if ancien.employe else "Non attribué" }}</dd>
             {% if ancien.notes %}
             <dt class="col-4 text-muted fw-normal">Notes</dt>
             <dd class="col-8" style="white-space: pre-line;">{{ ancien.notes }}</dd>
@@ -58,7 +58,7 @@
                 </div>
             </div>
             <p class="text-muted small mt-3 mb-0">
-                Le nouvel appareil sera automatiquement attribué à <strong>{{ ancien.employe.nom if ancien.employe else "personne (en stock)" }}</strong>
+                Le nouvel appareil sera automatiquement attribué à <strong>{{ ancien.employe.nom if ancien.employe else "personne (non attribué)" }}</strong>
                 et l'ancien sera marqué comme <span class="badge text-bg-secondary">Remplacé</span>.
             </p>
             <div class="d-flex gap-2 mt-3">

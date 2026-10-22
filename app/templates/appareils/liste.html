@@ -21,7 +21,7 @@
     {% endfor %}
     <li class="nav-item">
         <a class="nav-link {% if filtres.statut == 'en_stock' %}active{% endif %}" href="{{ url_for('appareils.liste', statut='en_stock', employe_id=filtres.employe_id) }}">
-            En stock <span class="badge text-bg-secondary ms-1">{{ compteurs['en_stock'] }}</span>
+            Non attribués <span class="badge text-bg-secondary ms-1">{{ compteurs['en_stock'] }}</span>
         </a>
     </li>
 </ul>
@@ -73,14 +73,12 @@
                         {% if a.employe %}
                             <a href="{{ url_for('salaires.employe_detail', employe_id=a.employe.id) }}" class="text-decoration-none">{{ a.employe.nom }}</a>
                         {% else %}
-                            <span class="text-muted">En stock</span>
+                            <span class="text-muted">Non attribué</span>
                         {% endif %}
                     </td>
                     {% endif %}
                     <td>
-                        {% if a.statut == 'en_service' and not a.employe_id %}
-                            <span class="badge text-bg-info">En stock</span>
-                        {% elif a.statut == 'en_service' %}
+                        {% if a.statut == 'en_service' %}
                             <span class="badge text-bg-success">{{ statuts[a.statut] }}</span>
                         {% elif a.statut == 'endommage' %}
                             <span class="badge text-bg-danger">{{ statuts[a.statut] }}</span>

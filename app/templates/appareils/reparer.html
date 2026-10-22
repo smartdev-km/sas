@@ -17,7 +17,7 @@
             <dt class="col-4 text-muted fw-normal">Marque / Modèle</dt>
             <dd class="col-8">{{ [appareil.marque, appareil.modele] | select | join(' ') or "-" }}</dd>
             <dt class="col-4 text-muted fw-normal">Attribué actuellement à</dt>
-            <dd class="col-8">{{ appareil.employe.nom if appareil.employe else "En stock" }}</dd>
+            <dd class="col-8">{{ appareil.employe.nom if appareil.employe else "Non attribué" }}</dd>
         </dl>
     </div>
 </div>
@@ -35,7 +35,7 @@
                 <label class="form-label d-block">Une fois réparé, l'appareil sera :</label>
                 <div class="form-check">
                     <input class="form-check-input" type="radio" name="attribution" id="attribution-stock" value="stock" {% if form.attribution != 'employe' %}checked{% endif %} onchange="document.getElementById('bloc-employe').classList.add('d-none')">
-                    <label class="form-check-label" for="attribution-stock">Remis en stock (non attribué)</label>
+                    <label class="form-check-label" for="attribution-stock">Non attribué</label>
                 </div>
                 <div class="form-check">
                     <input class="form-check-input" type="radio" name="attribution" id="attribution-employe" value="employe" {% if form.attribution == 'employe' %}checked{% endif %} onchange="document.getElementById('bloc-employe').classList.remove('d-none')">

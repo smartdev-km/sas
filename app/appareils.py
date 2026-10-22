@@ -114,7 +114,7 @@ def nouveau():
         db.session.add(appareil)
         db.session.flush()
 
-        description = f"Attribué à {appareil.employe.nom}" if appareil.employe_id else "Ajouté en stock"
+        description = f"Attribué à {appareil.employe.nom}" if appareil.employe_id else "Ajouté — non attribué"
         _log_historique(appareil.id, "creation", description)
 
         db.session.commit()
@@ -160,7 +160,7 @@ def modifier(appareil_id):
             if nouvel_employe_id:
                 _log_historique(appareil.id, "attribution", f"Attribué à {appareil.employe.nom}")
             else:
-                _log_historique(appareil.id, "attribution", "Retiré de son attribution — remis en stock")
+                _log_historique(appareil.id, "attribution", "Retiré de son attribution — non attribué")
 
         db.session.commit()
         flash("Appareil modifié avec succès.", "success")
@@ -288,7 +288,7 @@ def reparer(appareil_id):
         if attribution == "employe":
             nouvel_employe_id = request.form.get("employe_id", type=int)
             if not nouvel_employe_id:
-                flash("Sélectionnez un employé, ou choisissez « Remettre en stock ».", "danger")
+                flash("Sélectionnez un employé, ou choisissez « Non attribué ».", "danger")
                 return render_template("appareils/reparer.html", appareil=appareil, employes=employes, form=request.form)
 
         appareil.statut = "en_service"
@@ -303,7 +303,7 @@ def reparer(appareil_id):
         if nouvel_employe_id:
             description += f" — Attribué à {appareil.employe.nom}"
         else:
-            description += " — Remis en stock"
+            description += " — Non attribué"
         _log_historique(appareil.id, "reparation", description)
 
         if montant_reparation > 0:
