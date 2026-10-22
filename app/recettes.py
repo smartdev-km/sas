@@ -7,6 +7,7 @@ from app import db
 from app.decorators import role_required
 from app.models import Depense, TransactionBancaire
 from app.constants import MOIS_FR
+from app.compte_bancaire import _solde_avant
 
 recettes_bp = Blueprint("recettes", __name__, url_prefix="/recettes")
 
@@ -50,17 +51,29 @@ def index():
         periode = 3
 
     mois, annee = today.month, today.year
-    lignes = []
+    lignes_mois = []
     for _ in range(periode):
         totaux = _totaux_mois(mois, annee)
-        lignes.append({
+        lignes_mois.append({
             "mois": mois,
             "annee": annee,
             "label": f"{MOIS_FR[mois - 1]} {annee}",
             **totaux,
         })
         mois, annee = _mois_precedent(mois, annee)
-    lignes.reverse()
+    lignes_mois.reverse()
+
+    premier_mois, premiere_annee = lignes_mois[0]["mois"], lignes_mois[0]["annee"]
+    solde_ouverture = _solde_avant(date(premiere_annee, premier_mois, 1))
+
+    ligne_ouverture = {
+        "label": "Solde d'ouverture",
+        "recettes": solde_ouverture,
+        "depenses": 0.0,
+        "solde": solde_ouverture,
+        "est_ouverture": True,
+    }
+    lignes = [ligne_ouverture] + lignes_mois
 
     total_recettes = sum(l["recettes"] for l in lignes)
     total_depenses = sum(l["depenses"] for l in lignes)
@@ -68,11 +81,13 @@ def index():
     return render_template(
         "recettes/index.html",
         lignes=lignes,
+        lignes_mois=lignes_mois,
         periode=periode,
         periodes=PERIODES_VALIDES,
+        solde_ouverture=solde_ouverture,
         total_recettes=total_recettes,
         total_depenses=total_depenses,
         total_solde=total_recettes - total_depenses,
-        periode_label=f"{lignes[0]['label']} – {lignes[-1]['label']}" if lignes else "",
+        periode_label=f"{lignes_mois[0]['label']} – {lignes_mois[-1]['label']}" if lignes_mois else "",
         now=datetime.now(),
     )

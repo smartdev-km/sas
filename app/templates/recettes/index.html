@@ -34,7 +34,15 @@
 </div>
 
 <div class="row g-3 text-center mb-3">
-    <div class="col-4">
+    <div class="col-6 col-md-3">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Solde d'ouverture</div>
+                <div class="fw-semibold fs-5">{{ solde_ouverture|kmf }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
         <div class="card h-100">
             <div class="card-body py-2">
                 <div class="text-muted small">Total recettes</div>
@@ -42,7 +50,7 @@
             </div>
         </div>
     </div>
-    <div class="col-4">
+    <div class="col-6 col-md-3">
         <div class="card h-100">
             <div class="card-body py-2">
                 <div class="text-muted small">Total dépenses</div>
@@ -50,15 +58,16 @@
             </div>
         </div>
     </div>
-    <div class="col-4">
+    <div class="col-6 col-md-3">
         <div class="card h-100">
             <div class="card-body py-2">
-                <div class="text-muted small">Solde net</div>
+                <div class="text-muted small">Solde de clôture</div>
                 <div class="fw-semibold fs-5 {{ 'text-success' if total_solde >= 0 else 'text-danger' }}">{{ total_solde|kmf }}</div>
             </div>
         </div>
     </div>
 </div>
+<p class="text-muted small d-print-none">Le solde d'ouverture (avant le début de la période) est inclus dans le total des recettes et dans le solde de clôture.</p>
 
 <div class="card mb-4 d-print-none">
     <div class="card-body">
@@ -75,15 +84,15 @@
                     <th>Mois</th>
                     <th class="text-end">Recettes (entrées banque)</th>
                     <th class="text-end">Dépenses</th>
-                    <th class="text-end">Solde net</th>
+                    <th class="text-end">Solde</th>
                 </tr>
             </thead>
             <tbody>
                 {% for ligne in lignes %}
-                <tr>
+                <tr class="{% if ligne.est_ouverture %}table-light fst-italic{% endif %}">
                     <td class="fw-semibold">{{ ligne.label }}</td>
                     <td class="text-end text-success">{{ ligne.recettes|kmf }}</td>
-                    <td class="text-end text-danger">{{ ligne.depenses|kmf }}</td>
+                    <td class="text-end {{ 'text-danger' if ligne.depenses else 'text-muted' }}">{{ ligne.depenses|kmf }}</td>
                     <td class="text-end {{ 'text-success' if ligne.solde >= 0 else 'text-danger' }}">{{ ligne.solde|kmf }}</td>
                 </tr>
                 {% else %}
@@ -120,15 +129,15 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
-    const lignes = {{ lignes | tojson }};
+    const lignesMois = {{ lignes_mois | tojson }};
 
     new Chart(document.getElementById('chartRecettes'), {
         type: 'bar',
         data: {
-            labels: lignes.map((l) => l.label),
+            labels: lignesMois.map((l) => l.label),
             datasets: [
-                { label: 'Recettes', data: lignes.map((l) => l.recettes), backgroundColor: '#198754' },
-                { label: 'Dépenses', data: lignes.map((l) => l.depenses), backgroundColor: '#dc3545' },
+                { label: 'Recettes', data: lignesMois.map((l) => l.recettes), backgroundColor: '#198754' },
+                { label: 'Dépenses', data: lignesMois.map((l) => l.depenses), backgroundColor: '#dc3545' },
             ],
         },
         options: {
