@@ -117,8 +117,8 @@
         </form>
         {% if not (fournisseur.banque_nom and fournisseur.compte_nom and fournisseur.compte_numero and fournisseur.code_swift) %}
         <p class="text-warning small mt-3 mb-0">
-            <i class="bi bi-exclamation-triangle"></i> Les coordonnées bancaires du fournisseur sont incomplètes
-            {% if not lecture_seule %}— complétez-les depuis <a href="{{ url_for('fournisseurs.modifier', fournisseur_id=fournisseur.id) }}">Modifier le fournisseur</a>{% endif %}.
+            <i class="bi bi-exclamation-triangle"></i> Les coordonnées bancaires du fournisseur sont incomplètes —
+            complétez-les depuis <a href="{{ url_for('fournisseurs.modifier', fournisseur_id=fournisseur.id) }}">Modifier le fournisseur</a>.
         </p>
         {% endif %}
     </div>
