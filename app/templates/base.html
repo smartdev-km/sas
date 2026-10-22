@@ -52,6 +52,11 @@
                     {% if current_user.role == 'admin' and nb_transactions_a_valider %}<span class="badge text-bg-warning">{{ nb_transactions_a_valider }}</span>{% endif %}
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.blueprint == 'recettes' %}active{% endif %}" href="{{ url_for('recettes.index') }}">
+                    <i class="bi bi-graph-up-arrow"></i> Recettes
+                </a>
+            </li>
             {% endif %}
             {% if current_user.role in ('admin', 'secretaire') %}
             <li class="nav-item">

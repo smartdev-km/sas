@@ -7,7 +7,7 @@ from flask_login import login_required, current_user
 # Seul "admin" peut lancer/gérer les appels de présence ("presence") ; comptable et
 # secrétaire doivent en revanche confirmer leur propre présence comme un employé.
 ROLE_MODULES = {
-    "comptable": {"dashboard", "depenses", "compte_bancaire", "fournisseurs", "salaires_paiement"},
+    "comptable": {"dashboard", "depenses", "compte_bancaire", "fournisseurs", "salaires_paiement", "recettes"},
     "secretaire": {"dashboard", "salaires", "consommables", "agenda", "appareils", "presence_situation"},
     "agent_commercial": {"dashboard", "commercial"},
 }

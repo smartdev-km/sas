@@ -56,6 +56,7 @@ def create_app(config_class=Config):
     from app.dashboard import dashboard_bp
     from app.depenses import depenses_bp
     from app.compte_bancaire import compte_bancaire_bp
+    from app.recettes import recettes_bp
     from app.fournisseurs import fournisseurs_bp
     from app.salaires import salaires_bp
     from app.rapports import rapports_bp
@@ -71,6 +72,7 @@ def create_app(config_class=Config):
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(depenses_bp)
     app.register_blueprint(compte_bancaire_bp)
+    app.register_blueprint(recettes_bp)
     app.register_blueprint(fournisseurs_bp)
     app.register_blueprint(salaires_bp)
     app.register_blueprint(agenda_bp)
