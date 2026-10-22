@@ -52,132 +52,143 @@
     </div>
 </div>
 
-<div class="card mb-3">
-    <div class="card-body d-flex justify-content-between align-items-center py-2 flex-wrap gap-2">
-        <div class="btn-group" role="group">
-            <a href="{{ url_for('consommables.liste') }}" class="btn btn-sm {{ 'btn-primary' if not categorie_filtre else 'btn-outline-secondary' }}">Toutes</a>
-            {% for valeur, libelle in categories.items() %}
-            <a href="{{ url_for('consommables.liste', categorie=valeur) }}" class="btn btn-sm {{ 'btn-primary' if categorie_filtre == valeur else 'btn-outline-secondary' }}">{{ libelle }}</a>
-            {% endfor %}
-        </div>
-        <span class="fw-semibold">Prix total (achats) : {{ prix_total_general|kmf }}</span>
-    </div>
-</div>
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-articles" type="button" role="tab">Articles</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-mouvements" type="button" role="tab">Mouvements récents</button>
+    </li>
+</ul>
 
-<div class="card mb-4">
-    <div class="table-responsive">
-        <table class="table table-hover mb-0 align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>Article</th>
-                    <th>Catégorie</th>
-                    <th class="text-end">Acheté</th>
-                    <th class="text-end">Utilisé</th>
-                    <th class="text-end">Reste</th>
-                    <th class="text-end">Prix total</th>
-                    <th class="text-end">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ligne in lignes %}
-                <tr class="{% if ligne.stock_bas %}table-warning{% endif %}">
-                    <td class="fw-semibold">{{ ligne.article.nom }}</td>
-                    <td class="text-muted small">{{ categories.get(ligne.article.categorie, ligne.article.categorie) }}</td>
-                    <td class="text-end">{{ ligne.achete }}</td>
-                    <td class="text-end">{{ ligne.utilise }}</td>
-                    <td class="text-end">
-                        {{ ligne.reste }}
-                        {% if ligne.stock_bas %}<i class="bi bi-exclamation-triangle text-warning ms-1" title="Stock bas"></i>{% endif %}
-                    </td>
-                    <td class="text-end">{{ ligne.prix_total|kmf }}</td>
-                    <td class="text-end">
-                        {% if current_user.role != 'admin' %}
-                        <div class="d-flex gap-1 justify-content-end">
-                            <button type="button" class="btn btn-sm btn-outline-success" title="Enregistrer un achat"
-                                    data-bs-toggle="modal" data-bs-target="#modal-achat"
-                                    onclick="document.getElementById('form-achat').action='{{ url_for('consommables.article_mouvement_nouveau', article_id=ligne.article.id) }}'; document.getElementById('achat-article-nom').textContent='{{ ligne.article.nom }}';">
-                                <i class="bi bi-cart-plus"></i>
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-danger" title="Enregistrer une utilisation"
-                                    data-bs-toggle="modal" data-bs-target="#modal-utilisation"
-                                    onclick="document.getElementById('form-utilisation').action='{{ url_for('consommables.article_mouvement_nouveau', article_id=ligne.article.id) }}'; document.getElementById('utilisation-article-nom').textContent='{{ ligne.article.nom }}'; document.getElementById('utilisation-stock').textContent='{{ ligne.reste }}';">
-                                <i class="bi bi-box-arrow-up"></i>
-                            </button>
-                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Supprimer cet article" form="form-supprimer-article-{{ ligne.article.id }}" onclick="return confirm('Supprimer « {{ ligne.article.nom }} » ? Impossible si des mouvements existent déjà pour cet article.');">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="tab-articles" role="tabpanel">
+        <div class="card mb-3">
+            <div class="card-body d-flex justify-content-between align-items-center py-2 flex-wrap gap-2">
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('consommables.liste') }}" class="btn btn-sm {{ 'btn-primary' if not categorie_filtre else 'btn-outline-secondary' }}">Toutes</a>
+                    {% for valeur, libelle in categories.items() %}
+                    <a href="{{ url_for('consommables.liste', categorie=valeur) }}" class="btn btn-sm {{ 'btn-primary' if categorie_filtre == valeur else 'btn-outline-secondary' }}">{{ libelle }}</a>
+                    {% endfor %}
+                </div>
+                <span class="fw-semibold">Prix total (achats) : {{ prix_total_general|kmf }}</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Article</th>
+                            <th>Catégorie</th>
+                            <th class="text-end">Acheté</th>
+                            <th class="text-end">Utilisé</th>
+                            <th class="text-end">Reste</th>
+                            <th class="text-end">Prix total</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ligne in lignes %}
+                        <tr class="{% if ligne.stock_bas %}table-warning{% endif %}">
+                            <td class="fw-semibold">{{ ligne.article.nom }}</td>
+                            <td class="text-muted small">{{ categories.get(ligne.article.categorie, ligne.article.categorie) }}</td>
+                            <td class="text-end">{{ ligne.achete }}</td>
+                            <td class="text-end">{{ ligne.utilise }}</td>
+                            <td class="text-end">
+                                {{ ligne.reste }}
+                                {% if ligne.stock_bas %}<i class="bi bi-exclamation-triangle text-warning ms-1" title="Stock bas"></i>{% endif %}
+                            </td>
+                            <td class="text-end">{{ ligne.prix_total|kmf }}</td>
+                            <td class="text-end">
+                                {% if current_user.role != 'admin' %}
+                                <div class="d-flex gap-1 justify-content-end">
+                                    <button type="button" class="btn btn-sm btn-outline-success" title="Enregistrer un achat"
+                                            data-bs-toggle="modal" data-bs-target="#modal-achat"
+                                            onclick="document.getElementById('form-achat').action='{{ url_for('consommables.article_mouvement_nouveau', article_id=ligne.article.id) }}'; document.getElementById('achat-article-nom').textContent='{{ ligne.article.nom }}';">
+                                        <i class="bi bi-cart-plus"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Enregistrer une utilisation"
+                                            data-bs-toggle="modal" data-bs-target="#modal-utilisation"
+                                            onclick="document.getElementById('form-utilisation').action='{{ url_for('consommables.article_mouvement_nouveau', article_id=ligne.article.id) }}'; document.getElementById('utilisation-article-nom').textContent='{{ ligne.article.nom }}'; document.getElementById('utilisation-stock').textContent='{{ ligne.reste }}';">
+                                        <i class="bi bi-box-arrow-up"></i>
+                                    </button>
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="Supprimer cet article" form="form-supprimer-article-{{ ligne.article.id }}" onclick="return confirm('Supprimer « {{ ligne.article.nom }} » ? Impossible si des mouvements existent déjà pour cet article.');">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                                {% else %}
+                                <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
                         {% else %}
-                        <span class="text-muted small">—</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="7" class="text-center text-muted py-4">Aucun article dans l'inventaire.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">Aucun article dans l'inventaire.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="tab-mouvements" role="tabpanel">
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Article</th>
+                            <th>Type</th>
+                            <th class="text-end">Quantité</th>
+                            <th class="text-end">Prix unitaire</th>
+                            <th class="text-end">Montant</th>
+                            <th>Notes</th>
+                            {% if current_user.role != 'admin' %}<th class="text-end">Actions</th>{% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in mouvements %}
+                        <tr>
+                            <td>{{ m.date.strftime("%d/%m/%Y") }}</td>
+                            <td class="fw-semibold">{{ m.article.nom }}</td>
+                            <td>
+                                {% if m.type_mouvement == 'achat' %}
+                                    <span class="badge text-bg-success">Achat</span>
+                                {% else %}
+                                    <span class="badge text-bg-secondary">Utilisation</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">{{ m.quantite }}</td>
+                            <td class="text-end">{{ m.prix_unitaire|kmf if m.prix_unitaire is not none else "-" }}</td>
+                            <td class="text-end">{{ m.montant|kmf if m.montant is not none else "-" }}</td>
+                            <td class="text-muted small">{{ m.beneficiaire or m.notes or "-" }}</td>
+                            {% if current_user.role != 'admin' %}
+                            <td class="text-end">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Supprimer" form="form-supprimer-mouvement-{{ m.id }}" onclick="return confirm('Supprimer ce mouvement ?');">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">Aucun mouvement enregistré.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
 {% for ligne in lignes %}
 <form id="form-supprimer-article-{{ ligne.article.id }}" method="post" action="{{ url_for('consommables.article_supprimer', article_id=ligne.article.id) }}"></form>
 {% endfor %}
-
-<div class="card">
-    <div class="card-header">
-        <h2 class="h6 mb-0">Mouvements récents</h2>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-sm table-hover mb-0 align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>Date</th>
-                    <th>Article</th>
-                    <th>Type</th>
-                    <th class="text-end">Quantité</th>
-                    <th class="text-end">Prix unitaire</th>
-                    <th class="text-end">Montant</th>
-                    <th>Notes</th>
-                    {% if current_user.role != 'admin' %}<th class="text-end">Actions</th>{% endif %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for m in mouvements %}
-                <tr>
-                    <td>{{ m.date.strftime("%d/%m/%Y") }}</td>
-                    <td class="fw-semibold">{{ m.article.nom }}</td>
-                    <td>
-                        {% if m.type_mouvement == 'achat' %}
-                            <span class="badge text-bg-success">Achat</span>
-                        {% else %}
-                            <span class="badge text-bg-secondary">Utilisation</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-end">{{ m.quantite }}</td>
-                    <td class="text-end">{{ m.prix_unitaire|kmf if m.prix_unitaire is not none else "-" }}</td>
-                    <td class="text-end">{{ m.montant|kmf if m.montant is not none else "-" }}</td>
-                    <td class="text-muted small">{{ m.beneficiaire or m.notes or "-" }}</td>
-                    {% if current_user.role != 'admin' %}
-                    <td class="text-end">
-                        <button type="submit" class="btn btn-sm btn-outline-secondary" title="Supprimer" form="form-supprimer-mouvement-{{ m.id }}" onclick="return confirm('Supprimer ce mouvement ?');">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </td>
-                    {% endif %}
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="8" class="text-center text-muted py-4">Aucun mouvement enregistré.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
 {% for m in mouvements %}
 <form id="form-supprimer-mouvement-{{ m.id }}" method="post" action="{{ url_for('consommables.article_mouvement_supprimer', mouvement_id=m.id) }}"></form>
 {% endfor %}
