@@ -80,4 +80,69 @@
         </table>
     </div>
 </div>
+
+<div class="card mb-4 mt-4">
+    <div class="card-body">
+        <h2 class="h6 mb-3">Demander une absence autorisée</h2>
+        <p class="text-muted small mb-3">
+            Pour une sortie anticipée, une arrivée tardive ou toute autre absence ponctuelle sur un jour précis, à une heure donnée.
+        </p>
+        <form method="post" action="{{ url_for('presence.demander_absence_autorisee') }}" class="row g-3">
+            <div class="col-12 col-sm-6">
+                <label class="form-label" for="absence_date">Date *</label>
+                <input type="date" class="form-control" id="absence_date" name="date" value="{{ today.isoformat() }}" required>
+            </div>
+            <div class="col-12 col-sm-6">
+                <label class="form-label" for="absence_heure">Heure *</label>
+                <input type="time" class="form-control" id="absence_heure" name="heure" required>
+            </div>
+            <div class="col-12">
+                <label class="form-label" for="absence_motif">Motif *</label>
+                <textarea class="form-control" id="absence_motif" name="motif" rows="2" required></textarea>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-send"></i> Envoyer la demande
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Heure</th>
+                    <th>Motif</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for absence in absences_autorisees %}
+                <tr>
+                    <td>{{ absence.date.strftime("%d/%m/%Y") }}</td>
+                    <td>{{ absence.heure.strftime("%H:%M") }}</td>
+                    <td class="text-muted small">{{ absence.motif }}</td>
+                    <td>
+                        {% if absence.statut == 'validee' %}
+                            <span class="badge text-bg-success">{{ statuts[absence.statut] }}</span>
+                        {% elif absence.statut == 'refusee' %}
+                            <span class="badge text-bg-danger">{{ statuts[absence.statut] }}</span>
+                        {% else %}
+                            <span class="badge text-bg-warning">{{ statuts[absence.statut] }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">Aucune demande d'absence autorisée envoyée.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

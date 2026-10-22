@@ -5,7 +5,7 @@ from flask_login import current_user
 from sqlalchemy import extract
 
 from app import db
-from app.models import SessionPresence, Presence, Employe, Salaire, HoraireProgramme, DemandeAbsence, User
+from app.models import SessionPresence, Presence, Employe, Salaire, HoraireProgramme, DemandeAbsence, User, AbsenceAutorisee
 from app.decorators import role_required, confirmation_presence_required, admin_required
 from app.constants import MOIS_FR, MOTIFS_ABSENCE, STATUTS_DEMANDE_ABSENCE
 
@@ -144,6 +144,28 @@ def jours_absence_justifies(employe_id, mois, annee):
     return justifiees
 
 
+def calculer_presence_semaine(employe_id, date_debut, date_fin):
+    """Retourne (jours_travailles, jours_absence) à partir des sessions clôturées de la
+    semaine (date_debut à date_fin inclus)."""
+    sessions_semaine = SessionPresence.query.filter(
+        SessionPresence.statut == "fermee",
+        SessionPresence.date >= date_debut,
+        SessionPresence.date <= date_fin,
+    ).all()
+
+    if not sessions_semaine:
+        return None, None
+
+    session_ids = [s.id for s in sessions_semaine]
+    jours_travailles = Presence.query.filter(
+        Presence.employe_id == employe_id,
+        Presence.session_id.in_(session_ids),
+        Presence.heure_sortie.isnot(None),
+    ).count()
+    jours_absence = len(sessions_semaine) - jours_travailles
+    return jours_travailles, jours_absence
+
+
 def statistiques_annuelles_employe(employe_id, annee):
     """Évolution mensuelle (jours travaillés/absence) et taux de présence sur l'année."""
     evolution = []
@@ -207,6 +229,52 @@ def _calculer_situation_presence(mois, annee):
     }
 
 
+def _calculer_situation_presence_semaine(date_debut, date_fin):
+    """Situation de présence de tous les employés suivis, pour une semaine donnée
+    (date_debut à date_fin inclus)."""
+    employes_pour_presence = _employes_pour_presence()
+
+    situation_presence = []
+    for employe in employes_pour_presence:
+        jours_travailles, jours_absence = calculer_presence_semaine(employe.id, date_debut, date_fin)
+        jours_travailles = jours_travailles or 0
+        jours_absence = jours_absence or 0
+        total = jours_travailles + jours_absence
+        situation_presence.append({
+            "employe": employe,
+            "jours_travailles": jours_travailles,
+            "jours_absence": jours_absence,
+            "taux": round(jours_travailles / total * 100, 1) if total else None,
+        })
+
+    nb_jours_ouvres_semaine = SessionPresence.query.filter(
+        SessionPresence.statut == "fermee",
+        SessionPresence.date >= date_debut,
+        SessionPresence.date <= date_fin,
+    ).count()
+    taux_connus = [l["taux"] for l in situation_presence if l["taux"] is not None]
+    taux_moyen = round(sum(taux_connus) / len(taux_connus), 1) if taux_connus else None
+
+    absences_autorisees_semaine = (
+        AbsenceAutorisee.query.join(Employe)
+        .filter(
+            AbsenceAutorisee.date >= date_debut,
+            AbsenceAutorisee.date <= date_fin,
+            AbsenceAutorisee.statut == "validee",
+        )
+        .order_by(AbsenceAutorisee.date, AbsenceAutorisee.heure)
+        .all()
+    )
+
+    return {
+        "situation_presence": situation_presence,
+        "nb_jours_ouvres_semaine": nb_jours_ouvres_semaine,
+        "taux_moyen": taux_moyen,
+        "nb_employes_actifs": len(employes_pour_presence),
+        "absences_autorisees_semaine": absences_autorisees_semaine,
+    }
+
+
 def _synchroniser_bulletins(mois, annee, employe_id=None):
     """Met à jour les jours travaillés/absence des bulletins déjà générés pour ce mois
     (uniquement ceux non encore payés, qui restent modifiables)."""
@@ -261,6 +329,13 @@ def index():
     annee_actuelle = date.today().year
     situation = _calculer_situation_presence(mois_actuel, annee_actuelle)
 
+    absences_autorisees = (
+        AbsenceAutorisee.query.join(Employe)
+        .order_by(AbsenceAutorisee.date.desc(), AbsenceAutorisee.id.desc())
+        .limit(50)
+        .all()
+    )
+
     return render_template(
         "presence/index.html",
         sessions=sessions,
@@ -276,6 +351,9 @@ def index():
         jours_semaine=JOURS_SEMAINE,
         situation_presence=situation["situation_presence"],
         mois_label=f"{MOIS_FR[mois_actuel - 1]} {annee_actuelle}",
+        employes_pour_presence=employes_pour_presence,
+        absences_autorisees=absences_autorisees,
+        statuts_absence=STATUTS_DEMANDE_ABSENCE,
     )
 
 
@@ -295,6 +373,32 @@ def situation():
         mois_fr=MOIS_FR,
         annees=range(today.year - 2, today.year + 2),
         mois_label=f"{MOIS_FR[mois - 1]} {annee}",
+        now=datetime.now(),
+        **resultat,
+    )
+
+
+@presence_bp.route("/rapport-hebdomadaire")
+@role_required("presence", "presence_situation")
+def rapport_hebdomadaire():
+    today = date.today()
+    try:
+        date_ref = date.fromisoformat(request.args.get("date_ref", ""))
+    except ValueError:
+        date_ref = today
+
+    date_debut = date_ref - timedelta(days=date_ref.weekday())
+    date_fin = date_debut + timedelta(days=6)
+
+    resultat = _calculer_situation_presence_semaine(date_debut, date_fin)
+
+    return render_template(
+        "presence/rapport_hebdomadaire.html",
+        date_debut=date_debut,
+        date_fin=date_fin,
+        semaine_label=f"Semaine du {date_debut.strftime('%d/%m/%Y')} au {date_fin.strftime('%d/%m/%Y')}",
+        date_ref_precedente=(date_debut - timedelta(days=7)).isoformat(),
+        date_ref_suivante=(date_debut + timedelta(days=7)).isoformat(),
         now=datetime.now(),
         **resultat,
     )
@@ -557,9 +661,13 @@ def mes_demandes():
     demandes = DemandeAbsence.query.filter_by(employe_id=employe_id).order_by(
         DemandeAbsence.date_debut.desc()
     ).all()
+    absences_autorisees = AbsenceAutorisee.query.filter_by(employe_id=employe_id).order_by(
+        AbsenceAutorisee.date.desc(), AbsenceAutorisee.id.desc()
+    ).all()
     return render_template(
         "presence/mes_demandes.html", demandes=demandes,
         motifs=MOTIFS_ABSENCE, statuts=STATUTS_DEMANDE_ABSENCE, today=date.today(),
+        absences_autorisees=absences_autorisees,
     )
 
 
@@ -600,3 +708,105 @@ def demande_refuser(demande_id):
     db.session.commit()
     flash("Demande refusée.", "info")
     return redirect(url_for("presence.demandes"))
+
+
+# --- Absences autorisées (heure + motif) ---------------------------------
+
+def _parse_absence_autorisee_form(form):
+    erreurs = []
+    try:
+        date_absence = date.fromisoformat(form.get("date", ""))
+    except ValueError:
+        date_absence = None
+        erreurs.append("La date est invalide ou manquante.")
+    try:
+        heure = time.fromisoformat(form.get("heure", ""))
+    except ValueError:
+        heure = None
+        erreurs.append("L'heure est invalide ou manquante.")
+    motif = form.get("motif", "").strip()
+    if not motif:
+        erreurs.append("Le motif est obligatoire.")
+    return date_absence, heure, motif, erreurs
+
+
+@presence_bp.route("/absences-autorisees/nouvelle", methods=["POST"])
+@admin_required
+def absence_autorisee_nouvelle():
+    employe_id = request.form.get("employe_id", type=int)
+    employe = db.get_or_404(Employe, employe_id) if employe_id else None
+    date_absence, heure, motif, erreurs = _parse_absence_autorisee_form(request.form)
+
+    if not employe:
+        erreurs.append("Merci de sélectionner un employé.")
+
+    if erreurs:
+        for erreur in erreurs:
+            flash(erreur, "danger")
+    else:
+        db.session.add(AbsenceAutorisee(
+            employe_id=employe.id, date=date_absence, heure=heure, motif=motif,
+            statut="validee", traite_le=datetime.now(),
+        ))
+        db.session.commit()
+        flash(f"Absence autorisée enregistrée pour {employe.nom}.", "success")
+
+    return redirect(url_for("presence.index"))
+
+
+@presence_bp.route("/absences-autorisees/<int:absence_id>/valider", methods=["POST"])
+@admin_required
+def absence_autorisee_valider(absence_id):
+    absence = db.get_or_404(AbsenceAutorisee, absence_id)
+    absence.statut = "validee"
+    absence.traite_le = datetime.now()
+    db.session.commit()
+    flash("Absence autorisée validée.", "success")
+    return redirect(url_for("presence.index"))
+
+
+@presence_bp.route("/absences-autorisees/<int:absence_id>/refuser", methods=["POST"])
+@admin_required
+def absence_autorisee_refuser(absence_id):
+    absence = db.get_or_404(AbsenceAutorisee, absence_id)
+    absence.statut = "refusee"
+    absence.traite_le = datetime.now()
+    db.session.commit()
+    flash("Absence autorisée refusée.", "info")
+    return redirect(url_for("presence.index"))
+
+
+@presence_bp.route("/absences-autorisees/<int:absence_id>/supprimer", methods=["POST"])
+@admin_required
+def absence_autorisee_supprimer(absence_id):
+    absence = db.get_or_404(AbsenceAutorisee, absence_id)
+    db.session.delete(absence)
+    db.session.commit()
+    flash("Absence autorisée supprimée.", "info")
+    return redirect(url_for("presence.index"))
+
+
+@presence_bp.route("/demander-absence-autorisee", methods=["POST"])
+@confirmation_presence_required
+def demander_absence_autorisee():
+    employe_id = _employe_id_courant()
+    if employe_id is None:
+        flash(
+            "Votre compte n'est pas lié à une fiche employé, impossible de soumettre une "
+            "demande. Contactez un administrateur (Salaires → Employés → Accès).",
+            "warning",
+        )
+        return redirect(url_for("dashboard.index"))
+
+    date_absence, heure, motif, erreurs = _parse_absence_autorisee_form(request.form)
+    if erreurs:
+        for erreur in erreurs:
+            flash(erreur, "danger")
+    else:
+        db.session.add(AbsenceAutorisee(
+            employe_id=employe_id, date=date_absence, heure=heure, motif=motif,
+        ))
+        db.session.commit()
+        flash("Demande d'absence autorisée envoyée, en attente de validation.", "success")
+
+    return redirect(url_for("presence.mes_demandes"))

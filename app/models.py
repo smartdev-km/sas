@@ -368,6 +368,25 @@ class DemandeAbsence(db.Model):
     employe = db.relationship("Employe", backref=db.backref("demandes_absence", lazy=True))
 
 
+class AbsenceAutorisee(db.Model):
+    """Absence autorisée ponctuelle (ex. sortie anticipée, arrivée tardive) sur un jour
+    précis, avec l'heure concernée et le motif. Ajoutée directement par l'admin (déjà
+    validée), ou demandée par l'employé puis validée/refusée par l'admin."""
+
+    __tablename__ = "absences_autorisees"
+
+    id = db.Column(db.Integer, primary_key=True)
+    employe_id = db.Column(db.Integer, db.ForeignKey("employes.id"), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    heure = db.Column(db.Time, nullable=False)
+    motif = db.Column(db.Text, nullable=False)
+    statut = db.Column(db.String(20), nullable=False, default="en_attente")
+    traite_le = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    employe = db.relationship("Employe", backref=db.backref("absences_autorisees", lazy=True))
+
+
 class ConnexionLog(db.Model):
     __tablename__ = "connexions_log"
 

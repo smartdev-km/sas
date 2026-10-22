@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Rapport hebdomadaire{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 d-print-none">
+    <div>
+        <h1 class="h3 mb-0">Rapport hebdomadaire de présence</h1>
+        <p class="text-muted mb-0">
+            <a href="{{ url_for('presence.index') }}" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Retour à Présence</a>
+        </p>
+    </div>
+    <div class="d-flex gap-2 align-items-end">
+        <a href="{{ url_for('presence.rapport_hebdomadaire', date_ref=date_ref_precedente) }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-chevron-left"></i> Semaine précédente
+        </a>
+        <a href="{{ url_for('presence.rapport_hebdomadaire', date_ref=date_ref_suivante) }}" class="btn btn-outline-secondary btn-sm">
+            Semaine suivante <i class="bi bi-chevron-right"></i>
+        </a>
+        <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
+            <i class="bi bi-printer"></i> Imprimer
+        </button>
+    </div>
+</div>
+
+<div class="text-center mb-4 d-none d-print-block sas-print-header">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Société de projet Village des jeux">
+    <p class="text-muted mb-0">Rapport hebdomadaire de présence — {{ semaine_label }}</p>
+</div>
+
+<p class="text-muted d-print-none">{{ semaine_label }}</p>
+
+<div class="row g-3 text-center mb-3">
+    <div class="col-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Employés actifs</div>
+                <div class="fw-semibold fs-5">{{ nb_employes_actifs }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Jours d'appel clôturés</div>
+                <div class="fw-semibold fs-5">{{ nb_jours_ouvres_semaine }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Taux de présence moyen</div>
+                <div class="fw-semibold fs-5">{{ (taux_moyen ~ "%") if taux_moyen is not none else "-" }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Employé</th>
+                    <th>Matricule</th>
+                    <th>Poste</th>
+                    <th class="text-end">Jours travaillés</th>
+                    <th class="text-end">Jours d'absence</th>
+                    <th class="text-end">Taux de présence</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ligne in situation_presence %}
+                <tr>
+                    <td class="fw-semibold">{{ ligne.employe.nom }}</td>
+                    <td>{{ ligne.employe.matricule or "-" }}</td>
+                    <td>{{ ligne.employe.poste or "-" }}</td>
+                    <td class="text-end">{{ ligne.jours_travailles }}</td>
+                    <td class="text-end">{{ ligne.jours_absence }}</td>
+                    <td class="text-end">{{ (ligne.taux ~ "%") if ligne.taux is not none else "-" }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-3">Aucun employé actif.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<h2 class="h6 mb-2">Absences autorisées de la semaine</h2>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Employé</th>
+                    <th>Heure</th>
+                    <th>Motif</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for absence in absences_autorisees_semaine %}
+                <tr>
+                    <td class="fw-semibold">{{ absence.date.strftime("%d/%m/%Y") }}</td>
+                    <td>{{ absence.employe.nom }}</td>
+                    <td>{{ absence.heure.strftime("%H:%M") }}</td>
+                    <td>{{ absence.motif }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-3">Aucune absence autorisée cette semaine.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="d-flex justify-content-end mt-4 d-none d-print-flex">
+    <div class="text-center" style="min-width: 220px;">
+        <div class="text-muted small">La Présidente - Directrice Générale</div>
+        <div class="border-top pt-1 small" style="margin-top: 3rem;">Mme Faouzia VITRY</div>
+    </div>
+</div>
+
+<p class="text-muted small text-center mt-4 mb-0 d-none d-print-block">
+    Document généré le {{ now.strftime("%d/%m/%Y à %H:%M") }}
+    {% if current_user.is_authenticated %}par {{ current_user.nom }}{% endif %}.
+</p>
+{% endblock %}
