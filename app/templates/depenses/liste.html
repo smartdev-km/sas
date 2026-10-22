@@ -45,7 +45,7 @@
 </div>
 
 {% if budget_alloue %}
-<div class="row g-3 mb-3">
+<div class="row g-3 mb-3 d-print-none">
     <div class="col-12 col-sm-4">
         <div class="card h-100">
             <div class="card-body py-2">
@@ -209,6 +209,16 @@
                     <td colspan="4" class="text-end">Total</td>
                     <td class="text-end">{{ total_filtre|kmf }}</td>
                 </tr>
+                {% if budget_alloue %}
+                <tr>
+                    <td colspan="4" class="text-end text-muted">Budget dépensé (validé)</td>
+                    <td class="text-end text-muted">{{ budget_depense|kmf }}</td>
+                </tr>
+                <tr class="fw-bold">
+                    <td colspan="4" class="text-end">Budget restant</td>
+                    <td class="text-end {{ 'text-danger' if budget_restant < 0 else 'text-success' }}">{{ budget_restant|kmf }}</td>
+                </tr>
+                {% endif %}
             </tfoot>
         </table>
     </div>
