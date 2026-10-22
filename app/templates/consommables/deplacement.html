@@ -18,13 +18,13 @@
         <a class="nav-link" href="{{ url_for('consommables.liste') }}">Inventaire</a>
     </li>
     <li class="nav-item">
+        <a class="nav-link active" href="{{ url_for('consommables.deplacement') }}">Déplacement</a>
+    </li>
+    <li class="nav-item">
         <a class="nav-link d-flex align-items-center gap-2" href="{{ url_for('consommables.carburant') }}">
             Carburant
             {% if stock_bas %}<span class="badge text-bg-warning"><i class="bi bi-exclamation-triangle"></i></span>{% endif %}
         </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link active" href="{{ url_for('consommables.deplacement') }}">Déplacement</a>
     </li>
 </ul>
 
