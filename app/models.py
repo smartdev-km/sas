@@ -138,6 +138,16 @@ class PlanComptable(db.Model):
         return f"<PlanComptable {self.numero} {self.nom}>"
 
 
+class ConfigBudgetDepenses(db.Model):
+    """Configuration unique (singleton) du budget global des dépenses de l'entreprise
+    (hors marchés fournisseurs, suivis séparément)."""
+
+    __tablename__ = "config_budget_depenses"
+
+    id = db.Column(db.Integer, primary_key=True)
+    montant = db.Column(db.Numeric(14, 2), nullable=False, default=0)
+
+
 class CompteBancaireConfig(db.Model):
     """Configuration unique (singleton) du compte bancaire : solde avant la première transaction suivie."""
 

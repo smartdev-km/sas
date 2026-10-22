@@ -6,7 +6,7 @@ from app.decorators import role_required, admin_required
 from sqlalchemy import func
 
 from app import db
-from app.models import Depense, TransactionBancaire, PlanComptable, Salaire
+from app.models import Depense, TransactionBancaire, PlanComptable, Salaire, ConfigBudgetDepenses
 
 depenses_bp = Blueprint("depenses", __name__, url_prefix="/depenses")
 
@@ -22,6 +22,27 @@ def _parse_date(value):
 
 def _categories_actives():
     return PlanComptable.query.filter_by(actif=True).order_by(PlanComptable.numero).all()
+
+
+def _config_budget():
+    config = ConfigBudgetDepenses.query.first()
+    if not config:
+        config = ConfigBudgetDepenses(montant=0)
+        db.session.add(config)
+        db.session.commit()
+    return config
+
+
+def _calculer_budget():
+    """Budget global des dépenses de l'entreprise : fixé manuellement, indépendant
+    des marchés fournisseurs (suivis séparément dans Fournisseurs)."""
+    budget_alloue = float(_config_budget().montant)
+    budget_depense = float(
+        db.session.query(func.coalesce(func.sum(Depense.montant), 0))
+        .filter(Depense.valide.is_(True))
+        .scalar()
+    )
+    return budget_alloue, budget_depense, budget_alloue - budget_depense
 
 
 def _resoudre_categorie(form):
@@ -69,6 +90,8 @@ def liste():
         plan = PlanComptable.query.filter_by(nom=categorie).first()
         categorie_label = f"{plan.numero} — {plan.nom}" if plan else categorie
 
+    budget_alloue, budget_depense, budget_restant = _calculer_budget()
+
     return render_template(
         "depenses/liste.html",
         depenses=pagination.items,
@@ -79,6 +102,9 @@ def liste():
         depense_ids_salaire=depense_ids_salaire,
         total_filtre=float(total_filtre),
         categorie_label=categorie_label,
+        budget_alloue=budget_alloue,
+        budget_depense=budget_depense,
+        budget_restant=budget_restant,
         now=datetime.now(),
         filtres={
             "date_debut": request.args.get("date_debut", ""),
@@ -339,6 +365,29 @@ def plan_comptable_supprimer(plan_id):
         db.session.commit()
         flash("Catégorie supprimée.", "info")
 
+    return redirect(url_for("depenses.liste"))
+
+
+@depenses_bp.route("/parametres/budget", methods=["POST"])
+@role_required("depenses")
+def budget_modifier():
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas modifier le budget.", "warning")
+        return redirect(url_for("depenses.liste"))
+
+    montant_brut = request.form.get("montant", "").strip()
+    try:
+        montant = float(montant_brut)
+        if montant < 0:
+            raise ValueError
+    except ValueError:
+        flash("Le montant du budget est invalide.", "danger")
+        return redirect(url_for("depenses.liste"))
+
+    config = _config_budget()
+    config.montant = montant
+    db.session.commit()
+    flash("Budget mis à jour.", "success")
     return redirect(url_for("depenses.liste"))
 
 

@@ -44,6 +44,35 @@
     </p>
 </div>
 
+{% if budget_alloue %}
+<div class="row g-3 mb-3 d-print-none">
+    <div class="col-12 col-sm-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Budget alloué</div>
+                <div class="fw-semibold">{{ budget_alloue|kmf }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Dépensé (validé)</div>
+                <div class="fw-semibold">{{ budget_depense|kmf }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Budget restant</div>
+                <div class="fw-semibold {{ 'text-danger' if budget_restant < 0 else 'text-success' }}">{{ budget_restant|kmf }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="card mb-4 d-print-none">
     <div class="card-body">
         <form method="get" class="row g-2 align-items-end">
@@ -222,10 +251,20 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title h6 mb-0">Plan comptable</h3>
+                <h3 class="modal-title h6 mb-0">Paramètres</h3>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+                <ul class="nav nav-tabs mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-plan-comptable" type="button" role="tab">Plan comptable</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-budget" type="button" role="tab">Budget</button>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                <div class="tab-pane fade show active" id="tab-plan-comptable" role="tabpanel">
                 <p class="text-muted small">Numéro d'identification comptable associé à chaque catégorie de dépense (ex. 6222 — Location immobilière).</p>
                 <div class="table-responsive">
                     <table class="table table-sm align-middle">
@@ -302,6 +341,38 @@
                     </div>
                 </form>
                 {% endif %}
+                </div>
+
+                <div class="tab-pane fade" id="tab-budget" role="tabpanel">
+                    <p class="text-muted small">
+                        Budget global des dépenses de l'entreprise, indépendant des marchés fournisseurs
+                        (suivis séparément dans Fournisseurs).
+                    </p>
+                    <dl class="row mb-0 small">
+                        <dt class="col-6 text-muted fw-normal">Budget alloué</dt>
+                        <dd class="col-6 fw-semibold">{{ budget_alloue|kmf }}</dd>
+                        <dt class="col-6 text-muted fw-normal">Dépensé (validé)</dt>
+                        <dd class="col-6 fw-semibold">{{ budget_depense|kmf }}</dd>
+                        <dt class="col-6 text-muted fw-normal">Budget restant</dt>
+                        <dd class="col-6 fw-semibold {{ 'text-danger' if budget_restant < 0 else 'text-success' }}">{{ budget_restant|kmf }}</dd>
+                    </dl>
+
+                    {% if current_user.role != 'admin' %}
+                    <hr>
+                    <form method="post" action="{{ url_for('depenses.budget_modifier') }}" class="row g-2 align-items-end">
+                        <div class="col-8">
+                            <label class="form-label small mb-1">Montant du budget (KMF)</label>
+                            <input type="number" step="1" min="0" class="form-control form-control-sm" name="montant" value="{{ budget_alloue|int }}" required>
+                        </div>
+                        <div class="col-4">
+                            <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                                <i class="bi bi-check-lg"></i> Enregistrer
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fermer</button>
