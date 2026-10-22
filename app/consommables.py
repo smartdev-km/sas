@@ -8,7 +8,7 @@ from app.decorators import role_required, admin_required
 from app import db
 from app.models import (
     Consommable, SuiviConsommable, Depense, ConfigCarburant, MouvementCarburant, DemandeCarburant,
-    ArticleInventaire, MouvementInventaire, MouvementLitresCarburant,
+    ArticleInventaire, MouvementInventaire, MouvementLitresCarburant, Deplacement,
 )
 from app.constants import PRIX_CARBURANT, CATEGORIES_INVENTAIRE, TYPES_GAZ
 
@@ -598,3 +598,90 @@ def carburant_demande_rejeter(demande_id):
         db.session.commit()
         flash("Demande rejetée.", "info")
     return redirect(url_for("consommables.carburant"))
+
+
+# --- Déplacement ------------------------------------------------------------
+
+@consommables_bp.route("/deplacement")
+@role_required("consommables")
+def deplacement():
+    deplacements = Deplacement.query.order_by(Deplacement.date.desc(), Deplacement.id.desc()).limit(100).all()
+    total = sum(float(d.prix) for d in deplacements)
+    budget_alloue, budget_depense, budget_restant = _budget()
+
+    return render_template(
+        "consommables/deplacement.html",
+        deplacements=deplacements,
+        total=total,
+        budget_alloue=budget_alloue,
+        budget_depense=budget_depense,
+        budget_restant=budget_restant,
+        stock_bas=_stock_carburant() <= _config_carburant().seuil_alerte,
+        today=date.today().isoformat(),
+    )
+
+
+@consommables_bp.route("/deplacement/nouveau", methods=["POST"])
+@role_required("consommables")
+def deplacement_nouveau():
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas ajouter de déplacement directement.", "warning")
+        return redirect(url_for("consommables.deplacement"))
+
+    trajet = request.form.get("trajet", "").strip()
+    if not trajet:
+        flash("Le trajet est obligatoire.", "danger")
+        return redirect(url_for("consommables.deplacement"))
+
+    prix_brut = request.form.get("prix", "").strip()
+    try:
+        prix = float(prix_brut)
+        if prix <= 0:
+            raise ValueError
+    except ValueError:
+        flash("Le prix doit être un nombre positif.", "danger")
+        return redirect(url_for("consommables.deplacement"))
+
+    date_valeur = _parse_date(request.form.get("date")) or date.today()
+
+    db.session.add(Deplacement(
+        date=date_valeur,
+        trajet=trajet,
+        prix=prix,
+        notes=request.form.get("notes", "").strip() or None,
+        enregistre_par_id=current_user.id,
+    ))
+
+    if _appliquer_montant("Déplacement", date_valeur, prix):
+        flash("Déplacement enregistré.", "success")
+    else:
+        flash(
+            "Déplacement enregistré, mais le Suivi mensuel de Déplacement pour ce mois est déjà validé : "
+            "ajoutez le montant manuellement après déverrouillage.",
+            "warning",
+        )
+    db.session.commit()
+
+    return redirect(url_for("consommables.deplacement"))
+
+
+@consommables_bp.route("/deplacement/<int:deplacement_id>/supprimer", methods=["POST"])
+@role_required("consommables")
+def deplacement_supprimer(deplacement_id):
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas supprimer de déplacement directement.", "warning")
+        return redirect(url_for("consommables.deplacement"))
+
+    trajet = db.get_or_404(Deplacement, deplacement_id)
+
+    if not _retirer_montant("Déplacement", trajet.date, float(trajet.prix)):
+        flash(
+            "Déplacement supprimé, mais le Suivi mensuel de Déplacement pour ce mois est déjà validé : "
+            "retirez le montant manuellement après déverrouillage.",
+            "warning",
+        )
+
+    db.session.delete(trajet)
+    db.session.commit()
+    flash("Déplacement supprimé.", "info")
+    return redirect(url_for("consommables.deplacement"))

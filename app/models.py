@@ -544,6 +544,22 @@ class MouvementLitresCarburant(db.Model):
     enregistre_par = db.relationship("User")
 
 
+class Deplacement(db.Model):
+    """Trajet (ex. taxi) enregistré directement par le secrétaire, avec son prix."""
+
+    __tablename__ = "deplacements"
+
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False, default=datetime.now)
+    trajet = db.Column(db.String(255), nullable=False)
+    prix = db.Column(db.Numeric(12, 2), nullable=False)
+    notes = db.Column(db.Text)
+    enregistre_par_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    enregistre_par = db.relationship("User")
+
+
 class DemandeCarburant(db.Model):
     """Demande de réapprovisionnement en tickets de carburant."""
 

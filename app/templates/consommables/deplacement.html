@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Déplacement{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Consommables</h1>
+        <p class="text-muted mb-0">Déplacements (ex. taxi) et leur prix</p>
+    </div>
+    {% if current_user.role != 'admin' %}
+    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-nouveau-deplacement">
+        <i class="bi bi-plus-lg"></i> Ajouter un déplacement
+    </button>
+    {% endif %}
+</div>
+
+<ul class="nav nav-pills mb-4">
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('consommables.liste') }}">Inventaire</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link d-flex align-items-center gap-2" href="{{ url_for('consommables.carburant') }}">
+            Carburant
+            {% if stock_bas %}<span class="badge text-bg-warning"><i class="bi bi-exclamation-triangle"></i></span>{% endif %}
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active" href="{{ url_for('consommables.deplacement') }}">Déplacement</a>
+    </li>
+</ul>
+
+<div class="row g-3 mb-3">
+    <div class="col-12 col-sm-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Budget alloué (validé par l'admin)</div>
+                <div class="fw-semibold">{{ budget_alloue|kmf }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Déjà réparti (tous mois)</div>
+                <div class="fw-semibold">{{ budget_depense|kmf }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Budget restant</div>
+                <div class="fw-semibold {{ 'text-danger' if budget_restant < 0 else 'text-success' }}">{{ budget_restant|kmf }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Trajet</th>
+                    <th>Notes</th>
+                    <th class="text-end">Prix</th>
+                    {% if current_user.role != 'admin' %}<th class="text-end">Actions</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in deplacements %}
+                <tr>
+                    <td>{{ d.date.strftime("%d/%m/%Y") }}</td>
+                    <td class="fw-semibold">{{ d.trajet }}</td>
+                    <td class="text-muted small">{{ d.notes or "-" }}</td>
+                    <td class="text-end">{{ d.prix|kmf }}</td>
+                    {% if current_user.role != 'admin' %}
+                    <td class="text-end">
+                        <form method="post" action="{{ url_for('consommables.deplacement_supprimer', deplacement_id=d.id) }}" onsubmit="return confirm('Supprimer ce déplacement ?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">Aucun déplacement enregistré.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if deplacements %}
+            <tfoot>
+                <tr class="table-light fw-semibold">
+                    <td colspan="3">TOTAL</td>
+                    <td class="text-end">{{ total|kmf }}</td>
+                    {% if current_user.role != 'admin' %}<td></td>{% endif %}
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+</div>
+
+{% if current_user.role != 'admin' %}
+<div class="modal fade" id="modal-nouveau-deplacement" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('consommables.deplacement_nouveau') }}">
+                <div class="modal-header">
+                    <h3 class="modal-title h6 mb-0">Ajouter un déplacement</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-2">
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label small mb-1">Date</label>
+                            <input type="date" class="form-control form-control-sm" name="date" value="{{ today }}" required>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label small mb-1">Prix (KMF)</label>
+                            <input type="number" step="1" min="1" class="form-control form-control-sm" name="prix" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small mb-1">Trajet</label>
+                            <input type="text" class="form-control form-control-sm" name="trajet" placeholder="Ex : Moroni — Aéroport" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small mb-1">Notes</label>
+                            <input type="text" class="form-control form-control-sm" name="notes" placeholder="Optionnel">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
