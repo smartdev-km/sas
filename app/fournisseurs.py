@@ -29,6 +29,12 @@ def _parse_decimal(value):
         return None
 
 
+def _parse_taux_garantie(form):
+    """Taux de la garantie de bonne exécution : 5% par défaut si non précisé."""
+    taux = _parse_decimal(form.get("taux_garantie"))
+    return taux if taux is not None else 5.0
+
+
 @fournisseurs_bp.route("/")
 @role_required("fournisseurs")
 def liste():
@@ -58,6 +64,7 @@ def nouveau():
             montant_acompte_initial=_parse_decimal(request.form.get("montant_acompte_initial")),
             date_facture_initiale=_parse_date(request.form.get("date_facture_initiale")),
             date_versement_initial=_parse_date(request.form.get("date_versement_initial")),
+            taux_garantie=_parse_taux_garantie(request.form),
             actif=True,
         )
         db.session.add(fournisseur)
@@ -87,6 +94,7 @@ def modifier(fournisseur_id):
         fournisseur.montant_acompte_initial = _parse_decimal(request.form.get("montant_acompte_initial"))
         fournisseur.date_facture_initiale = _parse_date(request.form.get("date_facture_initiale"))
         fournisseur.date_versement_initial = _parse_date(request.form.get("date_versement_initial"))
+        fournisseur.taux_garantie = _parse_taux_garantie(request.form)
         db.session.commit()
         flash("Fournisseur modifié avec succès.", "success")
         return redirect(url_for("fournisseurs.liste"))
@@ -99,6 +107,7 @@ def modifier(fournisseur_id):
         "montant_acompte_initial": fournisseur.montant_acompte_initial,
         "date_facture_initiale": fournisseur.date_facture_initiale.isoformat() if fournisseur.date_facture_initiale else "",
         "date_versement_initial": fournisseur.date_versement_initial.isoformat() if fournisseur.date_versement_initial else "",
+        "taux_garantie": fournisseur.taux_garantie,
     }
     return render_template("fournisseurs/form.html", fournisseur=fournisseur, form=form)
 
@@ -193,21 +202,23 @@ def _ajouter_un_an(valeur):
 
 
 def _garantie_bonne_execution(fournisseur, lignes):
-    """Garantie de bonne exécution : 5% du montant du marché, retenus et livrés au
-    fournisseur un an après qu'il a touché 95% du montant total du marché."""
+    """Garantie de bonne exécution : taux_garantie % (5% par défaut) du montant du
+    marché, retenus et livrés au fournisseur un an après qu'il a touché le reste
+    (100% − taux_garantie) du montant total du marché."""
     montant_marche = float(fournisseur.montant_marche) if fournisseur.montant_marche else 0.0
     if montant_marche <= 0:
         return None
 
-    montant_garantie = round(montant_marche * 0.05, 2)
-    seuil_95 = montant_marche * 0.95
+    taux_garantie = float(fournisseur.taux_garantie)
+    montant_garantie = round(montant_marche * taux_garantie / 100, 2)
+    seuil = montant_marche * (1 - taux_garantie / 100)
 
     cumul = 0.0
     date_seuil_atteint = None
     for ligne in lignes:
         cumul += ligne["montant_net"]
         date_mouvement = ligne["date_paiement"] or ligne["date_facture"]
-        if date_seuil_atteint is None and cumul >= seuil_95 and date_mouvement:
+        if date_seuil_atteint is None and cumul >= seuil and date_mouvement:
             date_seuil_atteint = date_mouvement
 
     date_liberation = _ajouter_un_an(date_seuil_atteint) if date_seuil_atteint else None
@@ -224,7 +235,8 @@ def _garantie_bonne_execution(fournisseur, lignes):
 
     return {
         "montant": montant_garantie,
-        "montant_restant_avant_seuil": max(seuil_95 - cumul, 0) if date_seuil_atteint is None else 0,
+        "taux": taux_garantie,
+        "montant_restant_avant_seuil": max(seuil - cumul, 0) if date_seuil_atteint is None else 0,
         "date_seuil_atteint": date_seuil_atteint,
         "date_liberation": date_liberation,
         "livree_le": livree_le,
@@ -243,7 +255,7 @@ def mouvement(fournisseur_id):
         lignes.append({
             "numero": len(lignes),
             "facture": None,
-            "reference": "Garantie de bonne exécution (5%)",
+            "reference": f"Garantie de bonne exécution ({garantie['taux']:g}%)",
             "date_facture": None,
             "date_paiement": garantie["livree_le"],
             "montant_net": garantie["montant"],
@@ -256,7 +268,8 @@ def mouvement(fournisseur_id):
     montant_restant_a_payer = None
     if fournisseur.montant_marche:
         montant_paye = fournisseur.montant_acompte or 0.0
-        montant_restant_a_payer = max((float(fournisseur.montant_marche) * 0.95) - montant_paye, 0)
+        seuil = float(fournisseur.montant_marche) * (1 - float(fournisseur.taux_garantie) / 100)
+        montant_restant_a_payer = max(seuil - montant_paye, 0)
 
     return render_template(
         "fournisseurs/mouvement.html", fournisseur=fournisseur, lignes=lignes, garantie=garantie,
@@ -437,24 +450,25 @@ def garantie_annuler(fournisseur_id):
 
 
 def _verifier_plafond_marche(fournisseur, montant_facture, facture_id_exclue=None):
-    """Empêche le cumul (acompte + factures) de dépasser 95% du montant du marché :
-    les 5% restants sont la garantie de bonne exécution, livrée séparément."""
+    """Empêche le cumul (acompte + factures) de dépasser (100% − taux_garantie) du
+    montant du marché : le reste est la garantie de bonne exécution, livrée séparément."""
     if not fournisseur.montant_marche:
         return None
 
     montant_marche = float(fournisseur.montant_marche)
-    seuil_95 = montant_marche * 0.95
+    taux_garantie = float(fournisseur.taux_garantie)
+    seuil = montant_marche * (1 - taux_garantie / 100)
     acompte_initial = float(fournisseur.montant_acompte_initial) if fournisseur.montant_acompte_initial else 0.0
     total_autres_factures = sum(
         float(f.montant_net_paye) for f in fournisseur.factures if f.id != facture_id_exclue
     )
     cumul_apres = acompte_initial + total_autres_factures + montant_facture
 
-    if cumul_apres > seuil_95:
+    if cumul_apres > seuil:
         return (
             f"Montant refusé : le cumul payé atteindrait {cumul_apres:,.0f} KMF, "
-            f"ce qui dépasse 95% du montant du marché ({seuil_95:,.0f} KMF). "
-            f"Les 5% restants sont la garantie de bonne exécution, à valider depuis cette section."
+            f"ce qui dépasse {100 - taux_garantie:g}% du montant du marché ({seuil:,.0f} KMF). "
+            f"Les {taux_garantie:g}% restants sont la garantie de bonne exécution, à valider depuis cette section."
         ).replace(",", " ")
     return None
 
@@ -469,27 +483,34 @@ def _valider_formulaire(form, fournisseur=None):
         if valeur_brute and _parse_decimal(valeur_brute) is None:
             erreurs.append(f"{label} est invalide.")
 
+    taux_garantie_brut = form.get("taux_garantie", "").strip()
+    if taux_garantie_brut:
+        taux_garantie_valeur = _parse_decimal(taux_garantie_brut)
+        if taux_garantie_valeur is None or taux_garantie_valeur < 0 or taux_garantie_valeur > 100:
+            erreurs.append("Le taux de la garantie de bonne exécution doit être compris entre 0 et 100.")
+
     montant_marche = _parse_decimal(form.get("montant_marche"))
     montant_acompte_initial = _parse_decimal(form.get("montant_acompte_initial"))
     if montant_acompte_initial is not None and montant_marche is None:
         erreurs.append("Le montant du marché est requis pour saisir un montant d'acompte.")
     elif montant_acompte_initial is not None and montant_marche is not None:
-        seuil_95 = montant_marche * 0.95
+        taux_garantie = _parse_taux_garantie(form)
+        seuil = montant_marche * (1 - taux_garantie / 100)
         total_factures = sum(float(f.montant_net_paye) for f in fournisseur.factures) if fournisseur else 0.0
-        if montant_acompte_initial + total_factures > seuil_95:
+        if montant_acompte_initial + total_factures > seuil:
             if total_factures:
                 erreurs.append(
                     (
                         f"Le montant de l'acompte, cumulé aux factures déjà enregistrées "
-                        f"({total_factures:,.0f} KMF), ne peut pas dépasser 95% du montant du marché "
-                        f"({seuil_95:,.0f} KMF) — les 5% restants sont la garantie de bonne exécution."
+                        f"({total_factures:,.0f} KMF), ne peut pas dépasser {100 - taux_garantie:g}% du montant du marché "
+                        f"({seuil:,.0f} KMF) — les {taux_garantie:g}% restants sont la garantie de bonne exécution."
                     ).replace(",", " ")
                 )
             else:
                 erreurs.append(
                     (
-                        f"Le montant de l'acompte ne peut pas dépasser 95% du montant du marché "
-                        f"({seuil_95:,.0f} KMF) — les 5% restants sont la garantie de bonne exécution."
+                        f"Le montant de l'acompte ne peut pas dépasser {100 - taux_garantie:g}% du montant du marché "
+                        f"({seuil:,.0f} KMF) — les {taux_garantie:g}% restants sont la garantie de bonne exécution."
                     ).replace(",", " ")
                 )
 

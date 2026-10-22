@@ -69,13 +69,13 @@
             <div class="d-flex flex-wrap gap-2">
                 {% if montant_restant_a_payer is not none %}
                 <div class="px-3 py-2 rounded text-center" style="background-color: #fff3cd;">
-                    <div class="text-warning-emphasis small">Montant restant à payer (hors 5%)</div>
+                    <div class="text-warning-emphasis small">Montant restant à payer (hors {{ fournisseur.taux_garantie }}%)</div>
                     <div class="fw-bold fs-5 text-warning-emphasis">{{ montant_restant_a_payer|kmf }}</div>
                 </div>
                 {% endif %}
                 {% if garantie %}
                 <div class="px-3 py-2 rounded text-center" style="background-color: #d1e7dd;">
-                    <div class="text-success small">Montant retenu (garantie 5%)</div>
+                    <div class="text-success small">Montant retenu (garantie {{ garantie.taux }}%)</div>
                     <div class="fw-bold fs-5 text-success">{{ (0 if garantie.statut == 'livree' else garantie.montant)|kmf }}</div>
                 </div>
                 {% endif %}
@@ -113,14 +113,14 @@
 {% if garantie and garantie.statut != 'en_attente_seuil' and current_user.role == 'admin' %}
 <div class="card mb-4">
     <div class="card-body">
-        <h2 class="h6 mb-3">Garantie de bonne exécution (5%)</h2>
+        <h2 class="h6 mb-3">Garantie de bonne exécution ({{ garantie.taux }}%)</h2>
         <div class="row g-3 align-items-center">
             <div class="col-6 col-md-3">
                 <div class="text-muted small">Montant retenu</div>
                 <div class="fw-semibold">{{ garantie.montant|kmf }}</div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="text-muted small">95% du marché atteint le</div>
+                <div class="text-muted small">{{ 100 - garantie.taux }}% du marché atteint le</div>
                 <div class="fw-semibold">{{ garantie.date_seuil_atteint.strftime("%d/%m/%Y") if garantie.date_seuil_atteint else "-" }}</div>
             </div>
             <div class="col-6 col-md-3">

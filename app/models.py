@@ -51,6 +51,7 @@ class Fournisseur(db.Model):
     montant_acompte_initial = db.Column(db.Numeric(14, 2))
     date_facture_initiale = db.Column(db.Date)
     date_versement_initial = db.Column(db.Date)
+    taux_garantie = db.Column(db.Numeric(5, 2), nullable=False, default=5)
     garantie_livree_le = db.Column(db.Date)
     actif = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -73,7 +74,7 @@ class Fournisseur(db.Model):
     @property
     def taux_acompte(self):
         """Taux de l'acompte cumulé rapporté au montant du marché (grandit avec chaque facture payée),
-        atteint 100% une fois la garantie de bonne exécution (5%) livrée."""
+        atteint 100% une fois la garantie de bonne exécution livrée."""
         if self.garantie_livree_le:
             return 100.0
         montant = self.montant_acompte
