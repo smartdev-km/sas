@@ -6,10 +6,26 @@
         white-space: normal;
         max-width: 260px;
     }
+
+    @media print {
+        @page {
+            size: A4 landscape;
+            margin: 1cm;
+        }
+
+        body {
+            font-size: 0.78rem;
+        }
+
+        table td, table th {
+            padding: 0.25rem 0.4rem !important;
+            font-size: 0.72rem;
+        }
+    }
 </style>
 {% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 d-print-none">
     <div>
         <h1 class="h3 mb-0">Compte Bancaire</h1>
         <p class="text-muted mb-0">Suivi des mouvements du compte de la société</p>
@@ -33,12 +49,20 @@
                 </select>
             </div>
         </form>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+            <i class="bi bi-printer"></i> Imprimer
+        </button>
         {% if current_user.role == 'admin' %}
         <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-parametres">
             <i class="bi bi-gear"></i> Paramètres
         </button>
         {% endif %}
     </div>
+</div>
+
+<div class="text-center mb-4 d-none d-print-block sas-print-header">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Société de projet Village des jeux">
+    <p class="text-muted mb-0">Compte Bancaire — {{ mois_fr[mois - 1] }} {{ annee }}</p>
 </div>
 
 <div class="row g-3 mb-4">
@@ -81,7 +105,7 @@
 </div>
 
 {% if current_user.role != 'admin' %}
-<div class="card mb-4">
+<div class="card mb-4 d-print-none">
     <div class="card-body">
         <h2 class="h6 mb-3">Ajouter une transaction</h2>
         <form method="post" action="{{ url_for('compte_bancaire.nouvelle') }}" class="row g-2 align-items-end">
@@ -137,14 +161,14 @@
                     <th class="text-center bg-success-subtle">Débit</th>
                     <th class="text-center bg-danger-subtle">Crédit</th>
                     <th class="text-center bg-primary-subtle">Solde</th>
-                    <th class="text-end">Actions</th>
+                    <th class="text-end d-print-none">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <tr class="table-light fst-italic">
                     <td colspan="7">Solde d'ouverture</td>
                     <td class="text-center fw-semibold bg-primary-subtle">{{ solde_ouverture|kmf2 }}</td>
-                    <td></td>
+                    <td class="d-print-none"></td>
                 </tr>
                 {% for ligne in lignes %}
                 <tr>
@@ -163,7 +187,7 @@
                     <td class="text-center text-success bg-success-subtle fw-bold">{{ ligne.transaction.montant|kmf2 if ligne.transaction.sens == "debit" else "-" }}</td>
                     <td class="text-center text-danger bg-danger-subtle">{{ ligne.transaction.montant|kmf2 if ligne.transaction.sens == "credit" else "-" }}</td>
                     <td class="text-center fw-semibold bg-primary-subtle">{{ ligne.solde|kmf2 }}</td>
-                    <td class="text-end">
+                    <td class="text-end d-print-none">
                         {% if ligne.origine %}
                             <span class="text-muted small" title="Provient de {{ ligne.origine }}, non modifiable ici">
                                 <i class="bi bi-lock"></i>
@@ -206,6 +230,17 @@
         </table>
     </div>
 </div>
+
+<div class="d-flex justify-content-end mt-4 d-none d-print-flex">
+    <div class="text-center" style="min-width: 220px;">
+        <div class="text-muted small">La Présidente - Directrice Générale</div>
+        <div class="border-top pt-1 small" style="margin-top: 3rem;">Mme Faouzia VITRY</div>
+    </div>
+</div>
+
+<p class="text-muted small text-center mt-4 mb-0 d-none d-print-block">
+    Document généré le {{ now.strftime("%d/%m/%Y à %H:%M") }}.
+</p>
 
 {% if current_user.role == 'admin' %}
 <div class="modal fade" id="modal-parametres" tabindex="-1">

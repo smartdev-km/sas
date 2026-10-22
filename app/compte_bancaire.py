@@ -7,6 +7,7 @@ from sqlalchemy import func
 
 from app import db
 from app.models import TransactionBancaire, CompteBancaireConfig, Depense, Salaire
+from app.constants import MOIS_FR
 
 compte_bancaire_bp = Blueprint("compte_bancaire", __name__, url_prefix="/compte-bancaire")
 
@@ -112,6 +113,8 @@ def liste():
         total_credit=total_credit,
         solde=solde,
         config=_config(),
+        mois_fr=MOIS_FR,
+        now=datetime.now(),
     )
 
 
