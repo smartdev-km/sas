@@ -18,7 +18,7 @@
                 </div>
                 <div class="col-12 col-sm-6">
                     <label class="form-label" for="categorie">Catégorie</label>
-                    <select class="form-select" id="categorie" name="categorie" onchange="document.getElementById('bloc-categorie-autre').classList.toggle('d-none', this.value !== '__autre__')">
+                    <select class="form-select" id="categorie" name="categorie" onchange="document.getElementById('bloc-categorie-autre').classList.toggle('d-none', this.value !== '__autre__'); document.getElementById('bloc-carburant').classList.toggle('d-none', this.value !== 'Carburant');">
                         <option value="">—</option>
                         {% for cat in categories %}
                             <option value="{{ cat.nom }}" {% if form.categorie == cat.nom %}selected{% endif %}>{{ cat.numero }} — {{ cat.nom }}</option>
@@ -29,6 +29,30 @@
                 <div class="col-12 col-sm-6 {% if form.categorie != '__autre__' %}d-none{% endif %}" id="bloc-categorie-autre">
                     <label class="form-label" for="categorie_autre">Préciser la catégorie</label>
                     <input type="text" class="form-control" id="categorie_autre" name="categorie_autre" value="{{ form.categorie_autre or '' }}">
+                </div>
+                <div class="col-12 {% if form.categorie != 'Carburant' %}d-none{% endif %}" id="bloc-carburant">
+                    <div class="card bg-body-secondary border-0">
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">
+                                Alimente automatiquement le suivi en litres de l'onglet Carburant (Consommables).
+                            </p>
+                            <div class="row g-3">
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label" for="type_gaz">Type de gaz *</label>
+                                    <select class="form-select" id="type_gaz" name="type_gaz">
+                                        <option value="">—</option>
+                                        {% for valeur, libelle in types_gaz.items() %}
+                                            <option value="{{ valeur }}" {% if form.type_gaz == valeur %}selected{% endif %}>{{ libelle }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label" for="quantite_litres">Quantité (litres) *</label>
+                                    <input type="number" step="0.1" min="0" class="form-control" id="quantite_litres" name="quantite_litres" value="{{ form.quantite_litres or '' }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="col-12 col-sm-6">
                     <label class="form-label" for="montant">Montant (KMF) *</label>

@@ -6,7 +6,8 @@ from app.decorators import role_required, admin_required
 from sqlalchemy import func
 
 from app import db
-from app.models import Depense, TransactionBancaire, PlanComptable, Salaire, ConfigBudgetDepenses
+from app.models import Depense, TransactionBancaire, PlanComptable, Salaire, ConfigBudgetDepenses, MouvementLitresCarburant
+from app.constants import TYPES_GAZ
 
 depenses_bp = Blueprint("depenses", __name__, url_prefix="/depenses")
 
@@ -51,6 +52,25 @@ def _resoudre_categorie(form):
     if categorie == "__autre__":
         return form.get("categorie_autre", "").strip() or None
     return categorie or None
+
+
+def _synchroniser_achat_litres(depense):
+    """Crée, met à jour ou supprime le mouvement d'achat de litres lié à cette dépense,
+    selon qu'elle est (toujours) de catégorie « Carburant » avec type de gaz et litres renseignés."""
+    mouvement = MouvementLitresCarburant.query.filter_by(depense_id=depense.id, type_mouvement="achat").first()
+
+    if depense.categorie == "Carburant" and depense.type_gaz and depense.quantite_litres:
+        if not mouvement:
+            mouvement = MouvementLitresCarburant(depense_id=depense.id, type_mouvement="achat")
+            db.session.add(mouvement)
+        mouvement.date = depense.date
+        mouvement.type_gaz = depense.type_gaz
+        mouvement.quantite_litres = depense.quantite_litres
+        mouvement.montant = depense.montant
+        mouvement.beneficiaire = depense.beneficiaire
+        mouvement.enregistre_par_id = current_user.id if current_user.is_authenticated else None
+    elif mouvement:
+        db.session.delete(mouvement)
 
 
 @depenses_bp.route("/")
@@ -132,19 +152,25 @@ def nouvelle():
                 categories=_categories_actives(),
                 depense=None,
                 form=request.form,
+                types_gaz=TYPES_GAZ,
             )
 
         mode_paiement = request.form.get("mode_paiement") or "compte_bancaire"
+        categorie = _resoudre_categorie(request.form)
         depense = Depense(
             date=_parse_date(request.form.get("date")),
             montant=request.form.get("montant"),
-            categorie=_resoudre_categorie(request.form),
+            categorie=categorie,
             beneficiaire=request.form.get("beneficiaire", "").strip() or None,
             description=request.form.get("description") or None,
             mode_paiement=mode_paiement,
             reference_paiement=request.form.get("reference_paiement", "").strip() or None if mode_paiement == "compte_bancaire" else None,
+            type_gaz=request.form.get("type_gaz") if categorie == "Carburant" else None,
+            quantite_litres=request.form.get("quantite_litres") if categorie == "Carburant" else None,
         )
         db.session.add(depense)
+        db.session.flush()
+        _synchroniser_achat_litres(depense)
         db.session.commit()
         flash("Dépense ajoutée avec succès.", "success")
         return redirect(url_for("depenses.liste"))
@@ -154,6 +180,7 @@ def nouvelle():
         categories=_categories_actives(),
         depense=None,
         form={},
+        types_gaz=TYPES_GAZ,
     )
 
 
@@ -176,16 +203,21 @@ def modifier(depense_id):
                 categories=_categories_actives(),
                 depense=depense,
                 form=request.form,
+                types_gaz=TYPES_GAZ,
             )
 
         mode_paiement = request.form.get("mode_paiement") or "compte_bancaire"
+        categorie = _resoudre_categorie(request.form)
         depense.date = _parse_date(request.form.get("date"))
         depense.montant = request.form.get("montant")
-        depense.categorie = _resoudre_categorie(request.form)
+        depense.categorie = categorie
         depense.beneficiaire = request.form.get("beneficiaire", "").strip() or None
         depense.description = request.form.get("description") or None
         depense.mode_paiement = mode_paiement
         depense.reference_paiement = request.form.get("reference_paiement", "").strip() or None if mode_paiement == "compte_bancaire" else None
+        depense.type_gaz = request.form.get("type_gaz") if categorie == "Carburant" else None
+        depense.quantite_litres = request.form.get("quantite_litres") if categorie == "Carburant" else None
+        _synchroniser_achat_litres(depense)
         db.session.commit()
         flash("Dépense modifiée avec succès.", "success")
         return redirect(url_for("depenses.liste"))
@@ -205,7 +237,10 @@ def modifier(depense_id):
             "description": depense.description or "",
             "mode_paiement": depense.mode_paiement,
             "reference_paiement": depense.reference_paiement or "",
+            "type_gaz": depense.type_gaz or "",
+            "quantite_litres": depense.quantite_litres,
         },
+        types_gaz=TYPES_GAZ,
     )
 
 
@@ -218,6 +253,7 @@ def supprimer(depense_id):
         flash("Cette dépense est validée, elle ne peut plus être supprimée.", "danger")
         return redirect(url_for("depenses.liste"))
 
+    MouvementLitresCarburant.query.filter_by(depense_id=depense.id).delete(synchronize_session=False)
     db.session.delete(depense)
     db.session.commit()
     flash("Dépense supprimée.", "info")
@@ -411,5 +447,15 @@ def _valider_formulaire(form):
 
     if form.get("categorie") == "__autre__" and not form.get("categorie_autre", "").strip():
         erreurs.append("Merci de préciser la catégorie.")
+
+    if _resoudre_categorie(form) == "Carburant":
+        if form.get("type_gaz") not in TYPES_GAZ:
+            erreurs.append("Le type de gaz est obligatoire pour une dépense de carburant.")
+        try:
+            litres = float(form.get("quantite_litres", "").strip())
+            if litres <= 0:
+                erreurs.append("La quantité de litres doit être supérieure à 0.")
+        except (TypeError, ValueError):
+            erreurs.append("La quantité de litres est obligatoire pour une dépense de carburant.")
 
     return erreurs

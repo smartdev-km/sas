@@ -144,6 +144,11 @@ class Depense(db.Model):
     valide_le = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Renseignés uniquement pour une dépense de catégorie "Carburant" : alimentent
+    # automatiquement le suivi en litres (achat) de l'onglet Carburant.
+    type_gaz = db.Column(db.String(10))  # "essence" ou "diesel"
+    quantite_litres = db.Column(db.Numeric(10, 2))
+
     transaction_bancaire = db.relationship("TransactionBancaire")
 
 
@@ -512,6 +517,30 @@ class MouvementCarburant(db.Model):
     enregistre_par_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     created_at = db.Column(db.DateTime, default=datetime.now)
 
+    enregistre_par = db.relationship("User")
+
+
+class MouvementLitresCarburant(db.Model):
+    """Suivi du carburant en litres (achat/utilisation), séparé du suivi en tickets.
+    Un achat est créé automatiquement quand le RAF ajoute une dépense de catégorie
+    « Carburant » (montant et litres saisis sur la dépense) ; une utilisation est
+    enregistrée manuellement depuis l'onglet Carburant."""
+
+    __tablename__ = "mouvements_litres_carburant"
+
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False, default=datetime.now)
+    type_mouvement = db.Column(db.String(15), nullable=False)  # "achat" ou "utilisation"
+    type_gaz = db.Column(db.String(10), nullable=False)  # "essence" ou "diesel"
+    quantite_litres = db.Column(db.Numeric(10, 2), nullable=False)
+    montant = db.Column(db.Numeric(12, 2))  # pour un achat, repris de la dépense liée
+    depense_id = db.Column(db.Integer, db.ForeignKey("depenses.id"))
+    beneficiaire = db.Column(db.String(150))  # véhicule, pour une utilisation
+    notes = db.Column(db.Text)
+    enregistre_par_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    depense = db.relationship("Depense")
     enregistre_par = db.relationship("User")
 
 

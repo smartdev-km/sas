@@ -8,9 +8,9 @@ from app.decorators import role_required, admin_required
 from app import db
 from app.models import (
     Consommable, SuiviConsommable, Depense, ConfigCarburant, MouvementCarburant, DemandeCarburant,
-    ArticleInventaire, MouvementInventaire,
+    ArticleInventaire, MouvementInventaire, MouvementLitresCarburant,
 )
-from app.constants import PRIX_CARBURANT, CATEGORIES_INVENTAIRE
+from app.constants import PRIX_CARBURANT, CATEGORIES_INVENTAIRE, TYPES_GAZ
 
 consommables_bp = Blueprint("consommables", __name__, url_prefix="/consommables")
 
@@ -322,6 +322,29 @@ def article_mouvement_supprimer(mouvement_id):
 
 # --- Carburant ------------------------------------------------------------
 
+def _resume_litres(type_gaz):
+    achats = (
+        db.session.query(
+            func.coalesce(func.sum(MouvementLitresCarburant.quantite_litres), 0),
+            func.coalesce(func.sum(MouvementLitresCarburant.montant), 0),
+        )
+        .filter_by(type_gaz=type_gaz, type_mouvement="achat")
+        .first()
+    )
+    utilise = db.session.query(func.coalesce(func.sum(MouvementLitresCarburant.quantite_litres), 0)).filter_by(
+        type_gaz=type_gaz, type_mouvement="utilisation"
+    ).scalar()
+
+    achete = float(achats[0])
+    prix_total = float(achats[1])
+    utilise = float(utilise)
+    return {"achete": achete, "prix_total": prix_total, "utilise": utilise, "reste": achete - utilise}
+
+
+def _stock_litres(type_gaz):
+    return _resume_litres(type_gaz)["reste"]
+
+
 @consommables_bp.route("/carburant")
 @role_required("consommables")
 def carburant():
@@ -335,6 +358,16 @@ def carburant():
     demandes = DemandeCarburant.query.order_by(DemandeCarburant.date_demande.desc()).limit(20).all()
     demande_en_attente = DemandeCarburant.query.filter_by(statut="en_attente").first()
 
+    lignes_litres = [
+        {"type_gaz": valeur, "libelle": libelle, **_resume_litres(valeur)}
+        for valeur, libelle in TYPES_GAZ.items()
+    ]
+    mouvements_litres = (
+        MouvementLitresCarburant.query.order_by(MouvementLitresCarburant.date.desc(), MouvementLitresCarburant.id.desc())
+        .limit(50)
+        .all()
+    )
+
     return render_template(
         "consommables/carburant.html",
         stock=stock,
@@ -345,6 +378,9 @@ def carburant():
         demande_en_attente=demande_en_attente,
         today=date.today().isoformat(),
         prix_carburant=PRIX_CARBURANT,
+        lignes_litres=lignes_litres,
+        mouvements_litres=mouvements_litres,
+        types_gaz=TYPES_GAZ,
     )
 
 
@@ -375,52 +411,17 @@ def carburant_mouvement_nouveau():
 
     date_valeur = _parse_date(request.form.get("date")) or date.today()
 
-    type_gaz = None
-    quantite_litres = None
-    montant = None
-    if type_mouvement == "reception":
-        type_gaz_brut = request.form.get("type_gaz") or ""
-        quantite_litres_brute = request.form.get("quantite_litres", "").strip()
-        if type_gaz_brut or quantite_litres_brute:
-            if type_gaz_brut not in PRIX_CARBURANT:
-                flash("Type de gaz invalide.", "danger")
-                return redirect(url_for("consommables.carburant"))
-            try:
-                quantite_litres = float(quantite_litres_brute)
-                if quantite_litres <= 0:
-                    raise ValueError
-            except ValueError:
-                flash("La quantité de gaz doit être un nombre positif.", "danger")
-                return redirect(url_for("consommables.carburant"))
-            type_gaz = type_gaz_brut
-            montant = round(quantite_litres * PRIX_CARBURANT[type_gaz], 2)
-
     mouvement = MouvementCarburant(
         date=date_valeur,
         type_mouvement=type_mouvement,
         quantite=quantite,
         beneficiaire=request.form.get("beneficiaire", "").strip() or None,
         notes=request.form.get("notes", "").strip() or None,
-        type_gaz=type_gaz,
-        quantite_litres=quantite_litres,
-        montant=montant,
         enregistre_par_id=current_user.id,
     )
     db.session.add(mouvement)
-
-    if montant:
-        if _appliquer_montant("Carburant", date_valeur, montant):
-            flash(f"Mouvement enregistré. {montant:.0f} KMF ajoutés au Suivi mensuel (Carburant).", "success")
-        else:
-            flash(
-                "Mouvement enregistré, mais le Suivi mensuel de Carburant pour ce mois est déjà validé : "
-                "ajoutez le montant manuellement après déverrouillage.",
-                "warning",
-            )
-        db.session.commit()
-    else:
-        db.session.commit()
-        flash("Mouvement de carburant enregistré.", "success")
+    db.session.commit()
+    flash("Mouvement de tickets enregistré.", "success")
 
     return redirect(url_for("consommables.carburant"))
 
@@ -441,6 +442,66 @@ def carburant_mouvement_supprimer(mouvement_id):
                 "retirez le montant manuellement après déverrouillage.",
                 "warning",
             )
+
+    db.session.delete(mouvement)
+    db.session.commit()
+    flash("Mouvement supprimé.", "info")
+    return redirect(url_for("consommables.carburant"))
+
+
+@consommables_bp.route("/carburant/litres/utilisation", methods=["POST"])
+@role_required("consommables")
+def carburant_litres_utilisation():
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas enregistrer de mouvement de carburant.", "warning")
+        return redirect(url_for("consommables.carburant"))
+
+    type_gaz = request.form.get("type_gaz")
+    if type_gaz not in TYPES_GAZ:
+        flash("Type de gaz invalide.", "danger")
+        return redirect(url_for("consommables.carburant"))
+
+    quantite_brute = request.form.get("quantite_litres", "").strip()
+    try:
+        quantite_litres = float(quantite_brute)
+        if quantite_litres <= 0:
+            raise ValueError
+    except ValueError:
+        flash("La quantité de litres doit être un nombre positif.", "danger")
+        return redirect(url_for("consommables.carburant"))
+
+    if quantite_litres > _stock_litres(type_gaz):
+        flash("Impossible d'enregistrer cette sortie : la quantité dépasse le stock de litres disponible.", "danger")
+        return redirect(url_for("consommables.carburant"))
+
+    date_valeur = _parse_date(request.form.get("date")) or date.today()
+
+    db.session.add(MouvementLitresCarburant(
+        date=date_valeur,
+        type_mouvement="utilisation",
+        type_gaz=type_gaz,
+        quantite_litres=quantite_litres,
+        beneficiaire=request.form.get("beneficiaire", "").strip() or None,
+        notes=request.form.get("notes", "").strip() or None,
+        enregistre_par_id=current_user.id,
+    ))
+    db.session.commit()
+    flash("Utilisation de carburant (litres) enregistrée.", "success")
+    return redirect(url_for("consommables.carburant"))
+
+
+@consommables_bp.route("/carburant/litres/<int:mouvement_id>/supprimer", methods=["POST"])
+@role_required("consommables")
+def carburant_litres_supprimer(mouvement_id):
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas supprimer de mouvement de carburant.", "warning")
+        return redirect(url_for("consommables.carburant"))
+
+    mouvement = db.get_or_404(MouvementLitresCarburant, mouvement_id)
+
+    if mouvement.type_mouvement == "achat":
+        flash("Cet achat provient d'une dépense « Carburant » ; modifiez-le ou supprimez-le depuis Dépenses.", "warning")
+        return redirect(url_for("consommables.carburant"))
 
     db.session.delete(mouvement)
     db.session.commit()
