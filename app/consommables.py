@@ -6,8 +6,11 @@ from sqlalchemy import func
 from app.decorators import role_required, admin_required
 
 from app import db
-from app.models import Consommable, SuiviConsommable, Depense, ConfigCarburant, MouvementCarburant, DemandeCarburant
-from app.constants import MOIS_FR, PRIX_CARBURANT
+from app.models import (
+    Consommable, SuiviConsommable, Depense, ConfigCarburant, MouvementCarburant, DemandeCarburant,
+    ArticleInventaire, MouvementInventaire,
+)
+from app.constants import PRIX_CARBURANT, CATEGORIES_INVENTAIRE
 
 consommables_bp = Blueprint("consommables", __name__, url_prefix="/consommables")
 
@@ -27,12 +30,14 @@ def _stock_carburant():
     return int(entrees) - int(sorties)
 
 
-def _suivi_carburant_du_mois(date_mouvement, creer=False):
-    consommable = Consommable.query.filter(Consommable.nom.ilike("Carburant")).first()
+def _suivi_du_mois(nom, date_mouvement, creer=False):
+    """Suivi mensuel (interne) utilisé pour refléter le montant d'une catégorie
+    (Carburant, Inventaire...) dans le budget Consommables global."""
+    consommable = Consommable.query.filter(Consommable.nom.ilike(nom)).first()
     if not consommable:
         if not creer:
             return None
-        consommable = Consommable(nom="Carburant", actif=True)
+        consommable = Consommable(nom=nom, actif=True)
         db.session.add(consommable)
         db.session.flush()
 
@@ -48,18 +53,18 @@ def _suivi_carburant_du_mois(date_mouvement, creer=False):
     return suivi
 
 
-def _appliquer_montant_carburant(date_mouvement, montant):
-    """Ajoute le montant calculé au Suivi mensuel (catégorie Carburant). Ignoré si ce mois est déjà validé."""
-    suivi = _suivi_carburant_du_mois(date_mouvement, creer=True)
+def _appliquer_montant(nom, date_mouvement, montant):
+    """Ajoute le montant calculé au Suivi mensuel (catégorie donnée). Ignoré si ce mois est déjà validé."""
+    suivi = _suivi_du_mois(nom, date_mouvement, creer=True)
     if suivi.valide:
         return False
     suivi.montant = float(suivi.montant) + montant
     return True
 
 
-def _retirer_montant_carburant(date_mouvement, montant):
-    """Contrepartie de _appliquer_montant_carburant, utilisée lors de la suppression d'un mouvement."""
-    suivi = _suivi_carburant_du_mois(date_mouvement, creer=False)
+def _retirer_montant(nom, date_mouvement, montant):
+    """Contrepartie de _appliquer_montant, utilisée lors de la suppression d'un mouvement."""
+    suivi = _suivi_du_mois(nom, date_mouvement, creer=False)
     if not suivi or suivi.valide:
         return False
     suivi.montant = max(0, float(suivi.montant) - montant)
@@ -89,199 +94,229 @@ def _budget():
     return alloue, depense, alloue - depense
 
 
+def _resume_article(article):
+    achats = (
+        db.session.query(
+            func.coalesce(func.sum(MouvementInventaire.quantite), 0),
+            func.coalesce(func.sum(MouvementInventaire.montant), 0),
+        )
+        .filter_by(article_id=article.id, type_mouvement="achat")
+        .first()
+    )
+    utilise = db.session.query(func.coalesce(func.sum(MouvementInventaire.quantite), 0)).filter_by(
+        article_id=article.id, type_mouvement="utilisation"
+    ).scalar()
+
+    achete = int(achats[0])
+    prix_total = float(achats[1])
+    utilise = int(utilise)
+    return {"achete": achete, "prix_total": prix_total, "utilise": utilise, "reste": achete - utilise}
+
+
+def _stock_article(article_id):
+    achats = db.session.query(func.coalesce(func.sum(MouvementInventaire.quantite), 0)).filter_by(
+        article_id=article_id, type_mouvement="achat"
+    ).scalar()
+    utilisations = db.session.query(func.coalesce(func.sum(MouvementInventaire.quantite), 0)).filter_by(
+        article_id=article_id, type_mouvement="utilisation"
+    ).scalar()
+    return int(achats) - int(utilisations)
+
+
 @consommables_bp.route("/")
 @role_required("consommables")
 def liste():
-    today = date.today()
-    annee = request.args.get("annee", today.year, type=int)
-    mois = request.args.get("mois", today.month, type=int)
+    categorie_filtre = request.args.get("categorie", "")
 
-    suivis = (
-        SuiviConsommable.query.filter_by(mois=mois, annee=annee)
-        .join(Consommable)
-        .order_by(Consommable.nom)
+    query = ArticleInventaire.query.filter_by(actif=True)
+    if categorie_filtre in CATEGORIES_INVENTAIRE:
+        query = query.filter_by(categorie=categorie_filtre)
+    articles = query.order_by(ArticleInventaire.categorie, ArticleInventaire.nom).all()
+
+    lignes = []
+    for article in articles:
+        resume = _resume_article(article)
+        lignes.append({
+            "article": article,
+            "stock_bas": article.seuil_alerte > 0 and resume["reste"] <= article.seuil_alerte,
+            **resume,
+        })
+
+    prix_total_general = sum(l["prix_total"] for l in lignes)
+    budget_alloue, budget_depense, budget_restant = _budget()
+
+    mouvements = (
+        MouvementInventaire.query.join(ArticleInventaire)
+        .order_by(MouvementInventaire.date.desc(), MouvementInventaire.id.desc())
+        .limit(50)
         .all()
     )
 
-    total = sum(float(s.montant) for s in suivis)
-    nb_payes = sum(1 for s in suivis if s.paye)
-    budget_alloue, budget_depense, budget_restant = _budget()
-    stock_bas = _stock_carburant() <= _config_carburant().seuil_alerte
+    stock_carburant_bas = _stock_carburant() <= _config_carburant().seuil_alerte
 
     return render_template(
         "consommables/liste.html",
-        suivis=suivis,
-        mois=mois,
-        annee=annee,
-        mois_fr=MOIS_FR,
-        annees=range(today.year - 2, today.year + 2),
-        total=total,
-        nb_payes=nb_payes,
+        lignes=lignes,
+        mouvements=mouvements,
+        categories=CATEGORIES_INVENTAIRE,
+        categorie_filtre=categorie_filtre,
+        prix_total_general=prix_total_general,
         budget_alloue=budget_alloue,
         budget_depense=budget_depense,
         budget_restant=budget_restant,
-        stock_bas=stock_bas,
+        stock_bas=stock_carburant_bas,
+        today=date.today().isoformat(),
     )
 
 
-@consommables_bp.route("/<int:suivi_id>/modifier", methods=["POST"])
+@consommables_bp.route("/articles/nouveau", methods=["POST"])
 @role_required("consommables")
-def modifier(suivi_id):
-    suivi = db.get_or_404(SuiviConsommable, suivi_id)
-
+def article_nouveau():
     if current_user.role == "admin":
-        flash("Un compte admin ne peut pas modifier un consommable, seulement le valider.", "warning")
-        return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
+        flash("Un compte admin ne peut pas ajouter d'article directement.", "warning")
+        return redirect(url_for("consommables.liste"))
 
-    if suivi.valide:
-        flash(f"{suivi.consommable.nom} est validé, il ne peut plus être modifié.", "warning")
-        return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
-
-    montant_brut = request.form.get("montant", "0").strip() or "0"
-    try:
-        montant = float(montant_brut)
-        if montant < 0:
-            raise ValueError
-    except ValueError:
-        flash("Montant invalide.", "danger")
-        return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
-
-    _, budget_depense, budget_restant = _budget()
-    disponible_pour_ce_suivi = budget_restant + float(suivi.montant)
-    if montant > disponible_pour_ce_suivi:
-        flash(
-            f"Montant refusé : il dépasse le budget Consommables disponible "
-            f"({disponible_pour_ce_suivi:.0f} KMF restants).",
-            "danger",
-        )
-        return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
-
-    suivi.montant = montant
-    suivi.notes = request.form.get("notes", "").strip() or None
-
-    db.session.commit()
-    flash(f"{suivi.consommable.nom} mis à jour.", "success")
-    return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
-
-
-@consommables_bp.route("/<int:suivi_id>/toggle-paye", methods=["POST"])
-@role_required("consommables")
-def toggle_paye(suivi_id):
-    suivi = db.get_or_404(SuiviConsommable, suivi_id)
-
-    if current_user.role == "admin":
-        flash("Un compte admin ne peut pas modifier un consommable, seulement le valider.", "warning")
-        return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
-
-    if suivi.valide:
-        flash(f"{suivi.consommable.nom} est validé, il ne peut plus être modifié.", "warning")
-        return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
-
-    suivi.paye = not suivi.paye
-    suivi.date_paiement = date.today() if suivi.paye else None
-    db.session.commit()
-    flash(f"{suivi.consommable.nom} marqué comme {'payé' if suivi.paye else 'non payé'}.", "success")
-    return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
-
-
-@consommables_bp.route("/<int:suivi_id>/valider", methods=["POST"])
-@admin_required
-def valider(suivi_id):
-    suivi = db.get_or_404(SuiviConsommable, suivi_id)
-
-    if suivi.valide:
-        flash(f"{suivi.consommable.nom} est déjà validé.", "info")
-    else:
-        suivi.valide = True
-        suivi.valide_le = datetime.now()
-        db.session.commit()
-        flash(f"{suivi.consommable.nom} validé. Il ne peut plus être modifié.", "success")
-
-    return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
-
-
-@consommables_bp.route("/<int:suivi_id>/devalider", methods=["POST"])
-@admin_required
-def devalider(suivi_id):
-    suivi = db.get_or_404(SuiviConsommable, suivi_id)
-
-    if not suivi.valide:
-        flash(f"{suivi.consommable.nom} n'est pas validé.", "info")
-    else:
-        suivi.valide = False
-        suivi.valide_le = None
-        db.session.commit()
-        flash(f"{suivi.consommable.nom} déverrouillé, il peut de nouveau être modifié.", "success")
-
-    return redirect(url_for("consommables.liste", mois=suivi.mois, annee=suivi.annee))
-
-
-@consommables_bp.route("/types/nouveau", methods=["POST"])
-@role_required("consommables")
-def type_nouveau():
     nom = request.form.get("nom", "").strip()
-    today = date.today()
-    mois = request.form.get("mois", type=int) or today.month
-    annee = request.form.get("annee", type=int) or today.year
-
-    if current_user.role == "admin":
-        flash("Un compte admin ne peut pas ajouter de consommable directement.", "warning")
-        return redirect(url_for("consommables.liste", mois=mois, annee=annee))
+    categorie = request.form.get("categorie", "")
+    seuil_brut = request.form.get("seuil_alerte", "").strip()
 
     if not nom:
         flash("Le nom est obligatoire.", "danger")
-        return redirect(url_for("consommables.liste", mois=mois, annee=annee))
+        return redirect(url_for("consommables.liste"))
+    if categorie not in CATEGORIES_INVENTAIRE:
+        flash("La catégorie sélectionnée est invalide.", "danger")
+        return redirect(url_for("consommables.liste"))
+    try:
+        seuil_alerte = int(seuil_brut) if seuil_brut else 0
+        if seuil_alerte < 0:
+            raise ValueError
+    except ValueError:
+        flash("Le seuil d'alerte doit être un nombre entier positif ou nul.", "danger")
+        return redirect(url_for("consommables.liste"))
 
-    # Le type (le libellé) est réutilisable d'un mois à l'autre, mais son apparition
-    # dans la liste est propre à chaque mois : l'ajouter ne le fait pas apparaître
-    # automatiquement dans les mois suivants.
-    consommable = Consommable.query.filter(Consommable.nom.ilike(nom)).first()
-    if not consommable:
-        consommable = Consommable(nom=nom, actif=True)
-        db.session.add(consommable)
-        db.session.flush()
-
-    if SuiviConsommable.query.filter_by(consommable_id=consommable.id, mois=mois, annee=annee).first():
-        flash(f"« {nom} » est déjà dans la liste de ce mois.", "danger")
+    if ArticleInventaire.query.filter(
+        ArticleInventaire.nom.ilike(nom), ArticleInventaire.categorie == categorie
+    ).first():
+        flash(f"« {nom} » existe déjà dans cette catégorie.", "danger")
     else:
-        db.session.add(SuiviConsommable(consommable_id=consommable.id, mois=mois, annee=annee, montant=0))
+        db.session.add(ArticleInventaire(nom=nom, categorie=categorie, seuil_alerte=seuil_alerte))
         db.session.commit()
-        flash(f"« {nom} » ajouté pour ce mois.", "success")
+        flash(f"« {nom} » ajouté à l'inventaire.", "success")
 
-    return redirect(url_for("consommables.liste", mois=mois, annee=annee))
+    return redirect(url_for("consommables.liste", categorie=categorie))
 
 
-@consommables_bp.route("/types/<int:consommable_id>/toggle-actif", methods=["POST"])
+@consommables_bp.route("/articles/<int:article_id>/supprimer", methods=["POST"])
 @role_required("consommables")
-def type_toggle_actif(consommable_id):
-    consommable = db.get_or_404(Consommable, consommable_id)
-    consommable.actif = not consommable.actif
+def article_supprimer(article_id):
+    article = db.get_or_404(ArticleInventaire, article_id)
+
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas supprimer d'article directement.", "warning")
+        return redirect(url_for("consommables.liste"))
+
+    if MouvementInventaire.query.filter_by(article_id=article.id).first():
+        flash(f"Impossible de supprimer « {article.nom} » : des mouvements existent déjà pour cet article.", "danger")
+        return redirect(url_for("consommables.liste"))
+
+    db.session.delete(article)
     db.session.commit()
-    flash(f"« {consommable.nom} » {'réactivé' if consommable.actif else 'désactivé'}.", "info")
+    flash(f"« {article.nom} » supprimé.", "info")
     return redirect(url_for("consommables.liste"))
 
 
-@consommables_bp.route("/types/<int:consommable_id>/supprimer", methods=["POST"])
+@consommables_bp.route("/articles/<int:article_id>/mouvements/nouveau", methods=["POST"])
 @role_required("consommables")
-def type_supprimer(consommable_id):
-    consommable = db.get_or_404(Consommable, consommable_id)
+def article_mouvement_nouveau(article_id):
+    article = db.get_or_404(ArticleInventaire, article_id)
 
     if current_user.role == "admin":
-        flash("Un compte admin ne peut pas supprimer de consommable directement.", "warning")
+        flash("Un compte admin ne peut pas enregistrer de mouvement d'inventaire.", "warning")
         return redirect(url_for("consommables.liste"))
 
-    a_des_donnees = SuiviConsommable.query.filter(
-        SuiviConsommable.consommable_id == consommable.id,
-        db.or_(SuiviConsommable.montant > 0, SuiviConsommable.valide.is_(True), SuiviConsommable.paye.is_(True)),
-    ).first()
-    if a_des_donnees:
-        flash(f"Impossible de supprimer « {consommable.nom} » : des données existent déjà pour ce type.", "danger")
+    type_mouvement = request.form.get("type_mouvement")
+    if type_mouvement not in ("achat", "utilisation"):
+        flash("Type de mouvement invalide.", "danger")
         return redirect(url_for("consommables.liste"))
 
-    SuiviConsommable.query.filter_by(consommable_id=consommable.id).delete(synchronize_session=False)
-    db.session.delete(consommable)
+    quantite_brute = request.form.get("quantite", "").strip()
+    try:
+        quantite = int(quantite_brute)
+        if quantite <= 0:
+            raise ValueError
+    except ValueError:
+        flash("La quantité doit être un nombre entier positif.", "danger")
+        return redirect(url_for("consommables.liste"))
+
+    if type_mouvement == "utilisation" and quantite > _stock_article(article.id):
+        flash("Impossible d'enregistrer cette sortie : la quantité dépasse le stock disponible.", "danger")
+        return redirect(url_for("consommables.liste"))
+
+    date_valeur = _parse_date(request.form.get("date")) or date.today()
+
+    prix_unitaire = None
+    montant = None
+    if type_mouvement == "achat":
+        prix_unitaire_brut = request.form.get("prix_unitaire", "").strip()
+        try:
+            prix_unitaire = float(prix_unitaire_brut)
+            if prix_unitaire <= 0:
+                raise ValueError
+        except ValueError:
+            flash("Le prix unitaire doit être un nombre positif.", "danger")
+            return redirect(url_for("consommables.liste"))
+        montant = round(quantite * prix_unitaire, 2)
+
+    mouvement = MouvementInventaire(
+        article_id=article.id,
+        date=date_valeur,
+        type_mouvement=type_mouvement,
+        quantite=quantite,
+        prix_unitaire=prix_unitaire,
+        montant=montant,
+        beneficiaire=request.form.get("beneficiaire", "").strip() or None,
+        notes=request.form.get("notes", "").strip() or None,
+        enregistre_par_id=current_user.id,
+    )
+    db.session.add(mouvement)
+
+    if montant:
+        if _appliquer_montant("Inventaire", date_valeur, montant):
+            flash(f"Achat enregistré. {montant:.0f} KMF ajoutés au Suivi mensuel (Inventaire).", "success")
+        else:
+            flash(
+                "Achat enregistré, mais le Suivi mensuel d'Inventaire pour ce mois est déjà validé : "
+                "ajoutez le montant manuellement après déverrouillage.",
+                "warning",
+            )
+        db.session.commit()
+    else:
+        db.session.commit()
+        flash("Sortie de stock enregistrée.", "success")
+
+    return redirect(url_for("consommables.liste"))
+
+
+@consommables_bp.route("/mouvements/<int:mouvement_id>/supprimer", methods=["POST"])
+@role_required("consommables")
+def article_mouvement_supprimer(mouvement_id):
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas supprimer de mouvement d'inventaire.", "warning")
+        return redirect(url_for("consommables.liste"))
+
+    mouvement = db.get_or_404(MouvementInventaire, mouvement_id)
+
+    if mouvement.montant:
+        if not _retirer_montant("Inventaire", mouvement.date, float(mouvement.montant)):
+            flash(
+                "Mouvement supprimé, mais le Suivi mensuel d'Inventaire pour ce mois est déjà validé : "
+                "retirez le montant manuellement après déverrouillage.",
+                "warning",
+            )
+
+    db.session.delete(mouvement)
     db.session.commit()
-    flash(f"« {consommable.nom} » supprimé.", "info")
+    flash("Mouvement supprimé.", "info")
     return redirect(url_for("consommables.liste"))
 
 
@@ -374,7 +409,7 @@ def carburant_mouvement_nouveau():
     db.session.add(mouvement)
 
     if montant:
-        if _appliquer_montant_carburant(date_valeur, montant):
+        if _appliquer_montant("Carburant", date_valeur, montant):
             flash(f"Mouvement enregistré. {montant:.0f} KMF ajoutés au Suivi mensuel (Carburant).", "success")
         else:
             flash(
@@ -400,7 +435,7 @@ def carburant_mouvement_supprimer(mouvement_id):
     mouvement = db.get_or_404(MouvementCarburant, mouvement_id)
 
     if mouvement.montant:
-        if not _retirer_montant_carburant(mouvement.date, float(mouvement.montant)):
+        if not _retirer_montant("Carburant", mouvement.date, float(mouvement.montant)):
             flash(
                 "Mouvement supprimé, mais le Suivi mensuel de Carburant pour ce mois est déjà validé : "
                 "retirez le montant manuellement après déverrouillage.",

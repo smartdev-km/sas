@@ -4,31 +4,13 @@
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h1 class="h3 mb-0">Consommables</h1>
-        <p class="text-muted mb-0">Suivi mensuel des charges récurrentes (Internet, eau, électricité, fournitures...)</p>
+        <p class="text-muted mb-0">Inventaire des fournitures, produits d'entretien et matériel de bureau</p>
     </div>
-    <form method="get" class="d-flex gap-2 align-items-end">
-        <div>
-            <label class="form-label small mb-1">Mois</label>
-            <select class="form-select form-select-sm" name="mois" onchange="this.form.submit()">
-                {% for i in range(1, 13) %}
-                    <option value="{{ i }}" {% if i == mois %}selected{% endif %}>{{ mois_fr[i - 1] }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div>
-            <label class="form-label small mb-1">Année</label>
-            <select class="form-select form-select-sm" name="annee" onchange="this.form.submit()">
-                {% for a in annees %}
-                    <option value="{{ a }}" {% if a == annee %}selected{% endif %}>{{ a }}</option>
-                {% endfor %}
-            </select>
-        </div>
-    </form>
 </div>
 
 <ul class="nav nav-pills mb-4">
     <li class="nav-item">
-        <a class="nav-link active" href="{{ url_for('consommables.liste') }}">Suivi mensuel</a>
+        <a class="nav-link active" href="{{ url_for('consommables.liste') }}">Inventaire</a>
     </li>
     <li class="nav-item">
         <a class="nav-link d-flex align-items-center gap-2" href="{{ url_for('consommables.carburant') }}">
@@ -50,7 +32,7 @@
     <div class="col-12 col-sm-4">
         <div class="card h-100">
             <div class="card-body py-2">
-                <div class="text-muted small">Déjà réparti (tous mois)</div>
+                <div class="text-muted small">Déjà réparti (tous mois, Carburant + Inventaire)</div>
                 <div class="fw-semibold">{{ budget_depense|kmf }}</div>
             </div>
         </div>
@@ -67,8 +49,13 @@
 
 <div class="card mb-3">
     <div class="card-body d-flex justify-content-between align-items-center py-2 flex-wrap gap-2">
-        <span class="text-muted small">{{ nb_payes }} / {{ suivis|length }} payé(s) — {{ mois_fr[mois - 1] }} {{ annee }}</span>
-        <span class="fw-semibold">Total du mois : {{ total|kmf }}</span>
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('consommables.liste') }}" class="btn btn-sm {{ 'btn-primary' if not categorie_filtre else 'btn-outline-secondary' }}">Toutes</a>
+            {% for valeur, libelle in categories.items() %}
+            <a href="{{ url_for('consommables.liste', categorie=valeur) }}" class="btn btn-sm {{ 'btn-primary' if categorie_filtre == valeur else 'btn-outline-secondary' }}">{{ libelle }}</a>
+            {% endfor %}
+        </div>
+        <span class="fw-semibold">Prix total (achats) : {{ prix_total_general|kmf }}</span>
     </div>
 </div>
 
@@ -77,69 +64,52 @@
         <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
                 <tr>
-                    <th>Élément</th>
-                    <th style="width: 180px;">Montant (KMF)</th>
-                    <th style="width: 100px;">Payé</th>
-                    <th>Notes</th>
-                    <th class="text-end" style="width: 130px;">Actions</th>
+                    <th>Article</th>
+                    <th>Catégorie</th>
+                    <th class="text-end">Acheté</th>
+                    <th class="text-end">Utilisé</th>
+                    <th class="text-end">Reste</th>
+                    <th class="text-end">Prix total</th>
+                    <th class="text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                {% for s in suivis %}
-                <tr class="{% if s.paye %}table-success bg-opacity-25{% endif %}">
-                    <td class="fw-semibold">{{ s.consommable.nom }}</td>
-                    {% if s.valide %}
-                    <td>{{ s.montant|int }}</td>
-                    <td class="text-center">
-                        {% if s.paye %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %}
-                    </td>
-                    <td>{{ s.notes or "-" }}</td>
+                {% for ligne in lignes %}
+                <tr class="{% if ligne.stock_bas %}table-warning{% endif %}">
+                    <td class="fw-semibold">{{ ligne.article.nom }}</td>
+                    <td class="text-muted small">{{ categories.get(ligne.article.categorie, ligne.article.categorie) }}</td>
+                    <td class="text-end">{{ ligne.achete }}</td>
+                    <td class="text-end">{{ ligne.utilise }}</td>
                     <td class="text-end">
-                        {% if current_user.role == 'admin' %}
-                        <button type="submit" class="btn btn-sm btn-outline-secondary" title="Déverrouiller" form="form-devalider-{{ s.id }}">
-                            <i class="bi bi-lock-fill"></i>
-                        </button>
+                        {{ ligne.reste }}
+                        {% if ligne.stock_bas %}<i class="bi bi-exclamation-triangle text-warning ms-1" title="Stock bas"></i>{% endif %}
+                    </td>
+                    <td class="text-end">{{ ligne.prix_total|kmf }}</td>
+                    <td class="text-end">
+                        {% if current_user.role != 'admin' %}
+                        <div class="d-flex gap-1 justify-content-end">
+                            <button type="button" class="btn btn-sm btn-outline-success" title="Enregistrer un achat"
+                                    data-bs-toggle="modal" data-bs-target="#modal-achat"
+                                    onclick="document.getElementById('form-achat').action='{{ url_for('consommables.article_mouvement_nouveau', article_id=ligne.article.id) }}'; document.getElementById('achat-article-nom').textContent='{{ ligne.article.nom }}';">
+                                <i class="bi bi-cart-plus"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" title="Enregistrer une utilisation"
+                                    data-bs-toggle="modal" data-bs-target="#modal-utilisation"
+                                    onclick="document.getElementById('form-utilisation').action='{{ url_for('consommables.article_mouvement_nouveau', article_id=ligne.article.id) }}'; document.getElementById('utilisation-article-nom').textContent='{{ ligne.article.nom }}'; document.getElementById('utilisation-stock').textContent='{{ ligne.reste }}';">
+                                <i class="bi bi-box-arrow-up"></i>
+                            </button>
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Supprimer cet article" form="form-supprimer-article-{{ ligne.article.id }}" onclick="return confirm('Supprimer « {{ ligne.article.nom }} » ? Impossible si des mouvements existent déjà pour cet article.');">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
                         {% else %}
-                        <span class="text-muted small"><i class="bi bi-lock"></i></span>
+                        <span class="text-muted small">—</span>
                         {% endif %}
                     </td>
-                    {% elif current_user.role == 'admin' %}
-                    <td>{{ s.montant|int }}</td>
-                    <td class="text-center">
-                        {% if s.paye %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %}
-                    </td>
-                    <td>{{ s.notes or "-" }}</td>
-                    <td class="text-end">
-                        <button type="submit" class="btn btn-sm btn-outline-success" title="Valider" form="form-valider-{{ s.id }}">
-                            <i class="bi bi-shield-check"></i>
-                        </button>
-                    </td>
-                    {% else %}
-                    <td>
-                        <input type="number" step="1" min="0" name="montant" value="{{ s.montant|int }}" class="form-control form-control-sm" form="form-suivi-{{ s.id }}">
-                    </td>
-                    <td class="text-center">
-                        {% if s.paye %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %}
-                    </td>
-                    <td>
-                        <input type="text" name="notes" value="{{ s.notes or '' }}" class="form-control form-control-sm" placeholder="Optionnel" form="form-suivi-{{ s.id }}">
-                    </td>
-                    <td class="text-end">
-                        <button type="submit" class="btn btn-sm btn-outline-primary" title="Enregistrer" form="form-suivi-{{ s.id }}">
-                            <i class="bi bi-check-lg"></i>
-                        </button>
-                        <button type="submit" class="btn btn-sm {{ 'btn-outline-secondary' if s.paye else 'btn-outline-success' }}" title="{{ 'Annuler le paiement' if s.paye else 'Marquer comme payé' }}" form="form-paye-{{ s.id }}">
-                            <i class="bi bi-cash-coin"></i>
-                        </button>
-                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer ce type" form="form-supprimer-type-{{ s.consommable.id }}" onclick="return confirm('Supprimer « {{ s.consommable.nom }} » ? Impossible si des données existent déjà pour ce type.');">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </td>
-                    {% endif %}
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="5" class="text-center text-muted py-4">Aucun élément à suivre.</td>
+                    <td colspan="7" class="text-center text-muted py-4">Aucun article dans l'inventaire.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -147,28 +117,30 @@
     </div>
 </div>
 
-{% for s in suivis %}
-<form id="form-suivi-{{ s.id }}" method="post" action="{{ url_for('consommables.modifier', suivi_id=s.id) }}"></form>
-<form id="form-paye-{{ s.id }}" method="post" action="{{ url_for('consommables.toggle_paye', suivi_id=s.id) }}"></form>
-<form id="form-supprimer-type-{{ s.consommable.id }}" method="post" action="{{ url_for('consommables.type_supprimer', consommable_id=s.consommable.id) }}"></form>
-{% if current_user.role == 'admin' %}
-{% if not s.valide %}
-<form id="form-valider-{{ s.id }}" method="post" action="{{ url_for('consommables.valider', suivi_id=s.id) }}" onsubmit="return confirm('Valider cet élément ? Il ne pourra plus être modifié ensuite.');"></form>
-{% else %}
-<form id="form-devalider-{{ s.id }}" method="post" action="{{ url_for('consommables.devalider', suivi_id=s.id) }}" onsubmit="return confirm('Déverrouiller cet élément ? Il redeviendra modifiable comme avant la validation.');"></form>
-{% endif %}
-{% endif %}
+{% for ligne in lignes %}
+<form id="form-supprimer-article-{{ ligne.article.id }}" method="post" action="{{ url_for('consommables.article_supprimer', article_id=ligne.article.id) }}"></form>
 {% endfor %}
 
 {% if current_user.role != 'admin' %}
-<div class="card">
+<div class="card mb-4">
     <div class="card-body">
-        <h2 class="h6 mb-3">Ajouter un autre élément</h2>
-        <form method="post" action="{{ url_for('consommables.type_nouveau') }}" class="row g-2 align-items-end">
-            <input type="hidden" name="mois" value="{{ mois }}">
-            <input type="hidden" name="annee" value="{{ annee }}">
-            <div class="col-12 col-sm-6 col-md-4">
-                <input type="text" name="nom" class="form-control form-control-sm" placeholder="Ex : Gaz, Nettoyage, Sécurité..." required>
+        <h2 class="h6 mb-3">Ajouter un article à l'inventaire</h2>
+        <form method="post" action="{{ url_for('consommables.article_nouveau') }}" class="row g-2 align-items-end">
+            <div class="col-12 col-sm-4">
+                <label class="form-label small mb-1">Nom</label>
+                <input type="text" name="nom" class="form-control form-control-sm" placeholder="Ex : Ramette de papier A4" required>
+            </div>
+            <div class="col-12 col-sm-4">
+                <label class="form-label small mb-1">Catégorie</label>
+                <select class="form-select form-select-sm" name="categorie" required>
+                    {% for valeur, libelle in categories.items() %}
+                    <option value="{{ valeur }}">{{ libelle }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-sm-3">
+                <label class="form-label small mb-1">Seuil d'alerte (optionnel)</label>
+                <input type="number" step="1" min="0" name="seuil_alerte" class="form-control form-control-sm" placeholder="0">
             </div>
             <div class="col-auto">
                 <button type="submit" class="btn btn-sm btn-outline-primary">
@@ -179,4 +151,133 @@
     </div>
 </div>
 {% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="h6 mb-0">Mouvements récents</h2>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Article</th>
+                    <th>Type</th>
+                    <th class="text-end">Quantité</th>
+                    <th class="text-end">Prix unitaire</th>
+                    <th class="text-end">Montant</th>
+                    <th>Notes</th>
+                    {% if current_user.role != 'admin' %}<th class="text-end">Actions</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in mouvements %}
+                <tr>
+                    <td>{{ m.date.strftime("%d/%m/%Y") }}</td>
+                    <td class="fw-semibold">{{ m.article.nom }}</td>
+                    <td>
+                        {% if m.type_mouvement == 'achat' %}
+                            <span class="badge text-bg-success">Achat</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">Utilisation</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">{{ m.quantite }}</td>
+                    <td class="text-end">{{ m.prix_unitaire|kmf if m.prix_unitaire is not none else "-" }}</td>
+                    <td class="text-end">{{ m.montant|kmf if m.montant is not none else "-" }}</td>
+                    <td class="text-muted small">{{ m.beneficiaire or m.notes or "-" }}</td>
+                    {% if current_user.role != 'admin' %}
+                    <td class="text-end">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" title="Supprimer" form="form-supprimer-mouvement-{{ m.id }}" onclick="return confirm('Supprimer ce mouvement ?');">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">Aucun mouvement enregistré.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% for m in mouvements %}
+<form id="form-supprimer-mouvement-{{ m.id }}" method="post" action="{{ url_for('consommables.article_mouvement_supprimer', mouvement_id=m.id) }}"></form>
+{% endfor %}
+
+<div class="modal fade" id="modal-achat" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="" id="form-achat">
+                <div class="modal-header">
+                    <h3 class="modal-title h6 mb-0">Enregistrer un achat — <span id="achat-article-nom"></span></h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="type_mouvement" value="achat">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small mb-1">Date</label>
+                            <input type="date" class="form-control form-control-sm" name="date" value="{{ today }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small mb-1">Quantité</label>
+                            <input type="number" step="1" min="1" class="form-control form-control-sm" name="quantite" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small mb-1">Prix unitaire (KMF)</label>
+                            <input type="number" step="1" min="1" class="form-control form-control-sm" name="prix_unitaire" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small mb-1">Fournisseur / notes</label>
+                            <input type="text" class="form-control form-control-sm" name="notes" placeholder="Optionnel">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-cart-plus"></i> Enregistrer l'achat</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-utilisation" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="" id="form-utilisation">
+                <div class="modal-header">
+                    <h3 class="modal-title h6 mb-0">Enregistrer une utilisation — <span id="utilisation-article-nom"></span></h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="type_mouvement" value="utilisation">
+                    <p class="text-muted small">Stock disponible : <span id="utilisation-stock"></span></p>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small mb-1">Date</label>
+                            <input type="date" class="form-control form-control-sm" name="date" value="{{ today }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small mb-1">Quantité</label>
+                            <input type="number" step="1" min="1" class="form-control form-control-sm" name="quantite" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small mb-1">Pour / notes</label>
+                            <input type="text" class="form-control form-control-sm" name="beneficiaire" placeholder="Optionnel">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-box-arrow-up"></i> Enregistrer la sortie</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

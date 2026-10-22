@@ -533,6 +533,47 @@ class DemandeCarburant(db.Model):
     traite_par = db.relationship("User", foreign_keys=[traite_par_id])
 
 
+class ArticleInventaire(db.Model):
+    """Article physique suivi en stock (fourniture, produit d'entretien, matériel de bureau)."""
+
+    __tablename__ = "articles_inventaire"
+
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(150), nullable=False)
+    categorie = db.Column(db.String(30), nullable=False)
+    seuil_alerte = db.Column(db.Integer, nullable=False, default=0)
+    actif = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    __table_args__ = (
+        db.UniqueConstraint("nom", "categorie", name="uq_article_inventaire_nom_categorie"),
+    )
+
+    def __repr__(self):
+        return f"<ArticleInventaire {self.nom}>"
+
+
+class MouvementInventaire(db.Model):
+    """Achat (entrée en stock) ou utilisation (sortie de stock) d'un article d'inventaire."""
+
+    __tablename__ = "mouvements_inventaire"
+
+    id = db.Column(db.Integer, primary_key=True)
+    article_id = db.Column(db.Integer, db.ForeignKey("articles_inventaire.id"), nullable=False)
+    date = db.Column(db.Date, nullable=False, default=datetime.now)
+    type_mouvement = db.Column(db.String(15), nullable=False)  # "achat" ou "utilisation"
+    quantite = db.Column(db.Integer, nullable=False)
+    prix_unitaire = db.Column(db.Numeric(12, 2))  # pour un achat
+    montant = db.Column(db.Numeric(12, 2))  # quantite × prix_unitaire, reflété dans le Suivi mensuel
+    beneficiaire = db.Column(db.String(150))
+    notes = db.Column(db.Text)
+    enregistre_par_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    article = db.relationship("ArticleInventaire", backref=db.backref("mouvements", lazy=True))
+    enregistre_par = db.relationship("User")
+
+
 class EvenementAgenda(db.Model):
     """Réunion ou événement ajouté par le secrétaire pour l'admin."""
 

@@ -104,6 +104,12 @@ PRIX_CARBURANT = {
     "diesel": 650,
 }
 
+CATEGORIES_INVENTAIRE = {
+    "fournitures": "Fournitures",
+    "produits_entretien": "Produits d'entretien",
+    "materiel_bureau": "Matériel de bureau",
+}
+
 TYPES_HISTORIQUE_APPAREIL = {
     "creation": {"label": "Ajouté", "icone": "bi-plus-circle", "couleur": "primary"},
     "attribution": {"label": "Attribution", "icone": "bi-person-check", "couleur": "primary"},
