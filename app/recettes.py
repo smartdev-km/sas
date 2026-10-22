@@ -1,11 +1,11 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from flask import Blueprint, render_template, request
 from sqlalchemy import extract, func
 
 from app import db
 from app.decorators import role_required
-from app.models import Depense, TransactionBancaire
+from app.models import Depense, TransactionBancaire, PlanComptable
 from app.constants import MOIS_FR
 from app.compte_bancaire import _solde_avant
 
@@ -42,6 +42,24 @@ def _totaux_mois(mois, annee):
     return {"recettes": recettes, "depenses": depenses, "solde": recettes - depenses}
 
 
+def _depenses_par_categorie(mois, annee):
+    """Répartition des dépenses du mois par catégorie, triée du plus dépensé au moins dépensé."""
+    rows = (
+        db.session.query(Depense.categorie, func.sum(Depense.montant))
+        .filter(extract("year", Depense.date) == annee, extract("month", Depense.date) == mois)
+        .group_by(Depense.categorie)
+        .all()
+    )
+    numeros_par_nom = {p.nom: p.numero for p in PlanComptable.query.all()}
+
+    categories = []
+    for nom, montant in rows:
+        label = f"{numeros_par_nom[nom]} — {nom}" if nom in numeros_par_nom else (nom or "Sans catégorie")
+        categories.append({"categorie": label, "montant": float(montant)})
+    categories.sort(key=lambda c: c["montant"], reverse=True)
+    return categories
+
+
 @recettes_bp.route("/")
 @role_required("recettes")
 def index():
@@ -54,10 +72,15 @@ def index():
     lignes_mois = []
     for _ in range(periode):
         totaux = _totaux_mois(mois, annee)
+        debut_mois = date(annee, mois, 1)
+        fin_mois = date(annee + 1, 1, 1) - timedelta(days=1) if mois == 12 else date(annee, mois + 1, 1) - timedelta(days=1)
         lignes_mois.append({
             "mois": mois,
             "annee": annee,
             "label": f"{MOIS_FR[mois - 1]} {annee}",
+            "categories": _depenses_par_categorie(mois, annee),
+            "date_debut": debut_mois.isoformat(),
+            "date_fin": fin_mois.isoformat(),
             **totaux,
         })
         mois, annee = _mois_precedent(mois, annee)
@@ -71,6 +94,7 @@ def index():
         "recettes": solde_ouverture,
         "depenses": 0.0,
         "solde": solde_ouverture,
+        "categories": [],
         "est_ouverture": True,
     }
     lignes = [ligne_ouverture] + lignes_mois

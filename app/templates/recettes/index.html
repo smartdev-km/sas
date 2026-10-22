@@ -2,6 +2,10 @@
 {% block title %}Recettes{% endblock %}
 {% block head %}
 <style>
+    .sas-ligne-mois:hover {
+        background-color: var(--bs-table-hover-bg);
+    }
+
     @media print {
         @page {
             size: A4;
@@ -89,8 +93,12 @@
             </thead>
             <tbody>
                 {% for ligne in lignes %}
-                <tr class="{% if ligne.est_ouverture %}table-light fst-italic{% endif %}">
-                    <td class="fw-semibold">{{ ligne.label }}</td>
+                <tr class="{% if ligne.est_ouverture %}table-light fst-italic{% else %}sas-ligne-mois{% endif %}"
+                    {% if not ligne.est_ouverture %}data-bs-toggle="modal" data-bs-target="#modal-categories-{{ ligne.annee }}-{{ ligne.mois }}" style="cursor: pointer;"{% endif %}>
+                    <td class="fw-semibold">
+                        {{ ligne.label }}
+                        {% if not ligne.est_ouverture %}<i class="bi bi-chevron-right text-muted small d-print-none"></i>{% endif %}
+                    </td>
                     <td class="text-end text-success">{{ ligne.recettes|kmf }}</td>
                     <td class="text-end {{ 'text-danger' if ligne.depenses else 'text-muted' }}">{{ ligne.depenses|kmf }}</td>
                     <td class="text-end {{ 'text-success' if ligne.solde >= 0 else 'text-danger' }}">{{ ligne.solde|kmf }}</td>
@@ -112,6 +120,57 @@
         </table>
     </div>
 </div>
+
+{% for ligne in lignes_mois %}
+<div class="modal fade d-print-none" id="modal-categories-{{ ligne.annee }}-{{ ligne.mois }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title h6 mb-0">Dépenses par catégorie — {{ ligne.label }}</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Catégorie</th>
+                                <th class="text-end">Montant</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cat in ligne.categories %}
+                            <tr>
+                                <td>{{ cat.categorie }}</td>
+                                <td class="text-end text-danger">{{ cat.montant|kmf }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="2" class="text-center text-muted py-3">Aucune dépense ce mois-ci.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        {% if ligne.categories %}
+                        <tfoot>
+                            <tr class="table-light fw-semibold">
+                                <td>TOTAL</td>
+                                <td class="text-end text-danger">{{ ligne.depenses|kmf }}</td>
+                            </tr>
+                        </tfoot>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="{{ url_for('depenses.liste', date_debut=ligne.date_debut, date_fin=ligne.date_fin) }}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-list-ul"></i> Voir le détail dans Dépenses
+                </a>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
 
 <div class="d-flex justify-content-end mt-4 d-none d-print-flex">
     <div class="text-center" style="min-width: 220px;">
