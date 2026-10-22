@@ -200,17 +200,6 @@
         </div>
         {% endif %}
 
-        <div class="sas-payslip-columns sas-payslip-signatures">
-            <div class="sas-payslip-col">
-                <div class="text-muted small">La Présidente - Directrice Générale</div>
-                <div class="sas-payslip-signature-line border-top pt-1 small">Mme Faouzia VITRY</div>
-            </div>
-            <div class="sas-payslip-col">
-                <div class="text-muted small">Signature de l'employé</div>
-                <div class="sas-payslip-signature-line border-top pt-1 text-muted small">{{ bulletin.employe.nom }}</div>
-            </div>
-        </div>
-
         <p class="text-muted small mt-3 mb-0 d-print-block sas-payslip-footer">
             Document généré le {{ now.strftime("%d/%m/%Y à %H:%M") }}
             {% if current_user.is_authenticated %}par {{ current_user.nom }}{% endif %}.
