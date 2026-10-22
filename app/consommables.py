@@ -338,11 +338,29 @@ def _resume_litres(type_gaz):
     achete = float(achats[0])
     prix_total = float(achats[1])
     utilise = float(utilise)
-    return {"achete": achete, "prix_total": prix_total, "utilise": utilise, "reste": achete - utilise}
+    reste = achete - utilise
+
+    # Valeur de ce qui a été utilisé / reste, au prorata du prix moyen payé à l'achat.
+    prix_utilise = round(prix_total * utilise / achete, 2) if achete else 0.0
+    prix_restant = round(prix_total - prix_utilise, 2)
+
+    return {
+        "achete": achete, "prix_total": prix_total, "utilise": utilise, "reste": reste,
+        "prix_utilise": prix_utilise, "prix_restant": prix_restant,
+    }
 
 
 def _stock_litres(type_gaz):
     return _resume_litres(type_gaz)["reste"]
+
+
+def _budget_carburant():
+    """Total des dépenses validées de catégorie « Carburant » (budget alloué par l'admin)."""
+    return float(
+        db.session.query(func.sum(Depense.montant))
+        .filter(Depense.categorie == "Carburant", Depense.valide.is_(True))
+        .scalar() or 0
+    )
 
 
 @consommables_bp.route("/carburant")
@@ -381,6 +399,9 @@ def carburant():
         lignes_litres=lignes_litres,
         mouvements_litres=mouvements_litres,
         types_gaz=TYPES_GAZ,
+        budget_carburant=_budget_carburant(),
+        prix_total_utilise=sum(l["prix_utilise"] for l in lignes_litres),
+        prix_total_restant=sum(l["prix_restant"] for l in lignes_litres),
     )
 
 

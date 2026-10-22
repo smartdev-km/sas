@@ -28,19 +28,27 @@
 </ul>
 
 <div class="row g-3 mb-3">
-    <div class="col-12 col-sm-6">
+    <div class="col-12 col-sm-4">
         <div class="card h-100">
             <div class="card-body py-2">
-                <div class="text-muted small">Tickets en stock</div>
-                <div class="fw-semibold {{ 'text-danger' if stock_bas else '' }}">{{ stock }}</div>
+                <div class="text-muted small">Budget du carburant (validé par l'admin)</div>
+                <div class="fw-semibold">{{ budget_carburant|kmf }}</div>
             </div>
         </div>
     </div>
-    <div class="col-12 col-sm-6">
+    <div class="col-12 col-sm-4">
         <div class="card h-100">
             <div class="card-body py-2">
-                <div class="text-muted small">Seuil d'alerte</div>
-                <div class="fw-semibold">{{ seuil }}</div>
+                <div class="text-muted small">Prix total du carburant utilisé</div>
+                <div class="fw-semibold">{{ prix_total_utilise|kmf }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Prix total du carburant restant</div>
+                <div class="fw-semibold">{{ prix_total_restant|kmf }}</div>
             </div>
         </div>
     </div>
