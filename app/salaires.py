@@ -7,7 +7,7 @@ from sqlalchemy import func
 
 from app import db
 from app.models import Employe, Salaire, User, ConnexionLog, TransactionBancaire, Depense
-from app.constants import MOIS_FR, STATUTS_SALAIRE, SEXES, TYPES_CONTRAT, MODES_PAIEMENT, ROLES_COMPTE
+from app.constants import MOIS_FR, STATUTS_SALAIRE, SEXES, TYPES_CONTRAT, MODES_PAIEMENT, ROLES_COMPTE, MOTIFS_ABSENCE_BULLETIN
 from app.presence import calculer_presence_mensuelle, statistiques_annuelles_employe
 
 salaires_bp = Blueprint("salaires", __name__, url_prefix="/salaires")
@@ -421,6 +421,7 @@ def bulletin_detail(bulletin_id):
 
     return render_template(
         "salaires/bulletin_detail.html", bulletin=bulletin, mois_fr=MOIS_FR, statuts=STATUTS_SALAIRE,
+        motifs_absence=MOTIFS_ABSENCE_BULLETIN,
         now=datetime.now(), historique_bulletins=historique_bulletins, stats_presence=stats_presence,
     )
 
@@ -455,7 +456,10 @@ def bulletin_modifier(bulletin_id):
         if erreurs:
             for erreur in erreurs:
                 flash(erreur, "danger")
-            return render_template("salaires/bulletin_form.html", bulletin=bulletin, statuts=STATUTS_SALAIRE, mois_fr=MOIS_FR)
+            return render_template(
+                "salaires/bulletin_form.html", bulletin=bulletin, statuts=STATUTS_SALAIRE, mois_fr=MOIS_FR,
+                motifs_absence=MOTIFS_ABSENCE_BULLETIN,
+            )
 
         bulletin.salaire_base = valeurs["salaire_base"]
         bulletin.primes = valeurs["primes"]
@@ -468,13 +472,18 @@ def bulletin_modifier(bulletin_id):
         bulletin.jours_travailles = int(jours_travailles) if jours_travailles else None
         jours_absence = request.form.get("jours_absence", "").strip()
         bulletin.jours_absence = int(jours_absence) if jours_absence else None
+        motif_absence = request.form.get("motif_absence", "").strip()
+        bulletin.motif_absence = motif_absence if motif_absence in MOTIFS_ABSENCE_BULLETIN else None
         bulletin.note = request.form.get("note", "").strip() or None
 
         db.session.commit()
         flash("Bulletin mis à jour.", "success")
         return redirect(url_for("salaires.bulletin_detail", bulletin_id=bulletin.id))
 
-    return render_template("salaires/bulletin_form.html", bulletin=bulletin, statuts=STATUTS_SALAIRE, mois_fr=MOIS_FR)
+    return render_template(
+        "salaires/bulletin_form.html", bulletin=bulletin, statuts=STATUTS_SALAIRE, mois_fr=MOIS_FR,
+        motifs_absence=MOTIFS_ABSENCE_BULLETIN,
+    )
 
 
 def _valider_bulletin(form):

@@ -147,6 +147,12 @@
                         <div class="text-muted small">Jours d'absence</div>
                         <div class="fw-semibold">{{ bulletin.jours_absence if bulletin.jours_absence is not none else "-" }}</div>
                     </div>
+                    {% if bulletin.motif_absence %}
+                    <div class="sas-payslip-field">
+                        <div class="text-muted small">Motif de l'absence</div>
+                        <div class="fw-semibold">{{ motifs_absence.get(bulletin.motif_absence, bulletin.motif_absence) }}</div>
+                    </div>
+                    {% endif %}
                 </section>
 
                 <section class="sas-payslip-section">

@@ -31,6 +31,13 @@ STATUTS_DEMANDE_ABSENCE = {
     "refusee": "Refusée",
 }
 
+MOTIFS_ABSENCE_BULLETIN = {
+    "jour_ferie": "Jour férié (congés payés)",
+    "maladie_justificatif": "Congés maladie avec justificatif",
+    "absence_justifiee": "Absence justifiée",
+    "absence_autorisee": "Absence autorisée",
+}
+
 TYPES_EVENEMENT = {
     "reunion": "Réunion",
     "rdv_externe": "Rendez-vous externe",

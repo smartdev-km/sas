@@ -75,6 +75,15 @@
                     <label class="form-label" for="jours_absence">Jours d'absence</label>
                     <input type="number" step="1" min="0" class="form-control" id="jours_absence" name="jours_absence" value="{{ bulletin.jours_absence if bulletin.jours_absence is not none else '' }}">
                 </div>
+                <div class="col-12">
+                    <label class="form-label" for="motif_absence">Motif de l'absence</label>
+                    <select class="form-select" id="motif_absence" name="motif_absence">
+                        <option value="">—</option>
+                        {% for valeur, libelle in motifs_absence.items() %}
+                            <option value="{{ valeur }}" {% if bulletin.motif_absence == valeur %}selected{% endif %}>{{ libelle }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
         </div>
     </div>

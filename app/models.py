@@ -277,6 +277,7 @@ class Salaire(db.Model):
 
     jours_travailles = db.Column(db.Integer)
     jours_absence = db.Column(db.Integer)
+    motif_absence = db.Column(db.String(30))
     note = db.Column(db.Text)
 
     date_paiement = db.Column(db.Date, nullable=True)
