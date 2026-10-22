@@ -26,6 +26,11 @@
     <div class="card-body">
         <form method="post">
             <div class="mb-3">
+                <label class="form-label" for="date_paiement">Date de paiement *</label>
+                <input type="date" class="form-control" id="date_paiement" name="date_paiement" value="{{ today }}" style="max-width: 220px;" required>
+            </div>
+
+            <div class="mb-3">
                 <label class="form-label d-block">Mode de paiement</label>
                 <div class="form-check form-check-inline">
                     <input class="form-check-input" type="radio" name="mode_paiement" id="mode-cash" value="cash" checked onchange="document.getElementById('bloc-compte-bancaire').classList.add('d-none')">

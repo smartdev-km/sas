@@ -547,9 +547,11 @@ def bulletin_ajouter_paiement(bulletin_id):
             flash("Le mode de paiement est invalide.", "danger")
             return redirect(url_for("salaires.bulletin_ajouter_paiement", bulletin_id=bulletin.id))
 
+        date_paiement = _parse_date(request.form.get("date_paiement")) or date.today()
+
         bulletin.mode_paiement = mode_paiement
         bulletin.statut = "paye"
-        bulletin.date_paiement = date.today()
+        bulletin.date_paiement = date_paiement
         libelle = f"Salaire {bulletin.employe.nom} - {MOIS_FR[bulletin.mois - 1]} {bulletin.annee}"
 
         if mode_paiement == "compte_bancaire":
@@ -597,7 +599,7 @@ def bulletin_ajouter_paiement(bulletin_id):
         db.session.commit()
         return redirect(url_for("salaires.bulletin_detail", bulletin_id=bulletin.id))
 
-    return render_template("salaires/bulletin_paiement.html", bulletin=bulletin, mois_fr=MOIS_FR)
+    return render_template("salaires/bulletin_paiement.html", bulletin=bulletin, mois_fr=MOIS_FR, today=date.today().isoformat())
 
 
 @salaires_bp.route("/bulletins/<int:bulletin_id>/annuler-paiement", methods=["POST"])
