@@ -40,7 +40,7 @@
         <div class="card h-100">
             <div class="card-body py-2">
                 <div class="text-muted small">Tickets en stock</div>
-                <div class="fw-semibold fs-4 {{ 'text-danger' if stock_bas else '' }}">{{ stock }}</div>
+                <div class="fw-semibold {{ 'text-danger' if stock_bas else '' }}">{{ stock }}</div>
             </div>
         </div>
     </div>
@@ -48,20 +48,23 @@
         <div class="card h-100">
             <div class="card-body py-2">
                 <div class="text-muted small">Seuil d'alerte</div>
-                <div class="fw-semibold fs-4">{{ seuil }}</div>
+                <div class="fw-semibold">{{ seuil }}</div>
             </div>
         </div>
     </div>
     <div class="col-12 col-sm-4">
         <div class="card h-100">
-            <div class="card-body py-2 d-flex flex-column justify-content-center h-100">
-                {% if demande_en_attente %}
-                <span class="badge text-bg-warning align-self-start">Demande en attente</span>
-                {% elif stock_bas %}
-                <span class="badge text-bg-danger align-self-start">Stock bas</span>
-                {% else %}
-                <span class="badge text-bg-success align-self-start">Stock suffisant</span>
-                {% endif %}
+            <div class="card-body py-2">
+                <div class="text-muted small">Statut</div>
+                <div class="fw-semibold">
+                    {% if demande_en_attente %}
+                    <span class="badge text-bg-warning">Demande en attente</span>
+                    {% elif stock_bas %}
+                    <span class="badge text-bg-danger">Stock bas</span>
+                    {% else %}
+                    <span class="badge text-bg-success">Stock suffisant</span>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -108,208 +111,122 @@
 {% endif %}
 {% endif %}
 
-<div class="row g-3">
-    <div class="col-12 col-lg-7">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="h6 mb-3">Mouvements récents</h2>
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover mb-0 align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Date</th>
-                                <th>Type</th>
-                                <th class="text-end">Quantité</th>
-                                <th>Détail</th>
-                                {% if current_user.role != 'admin' %}<th class="text-end">Actions</th>{% endif %}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for m in mouvements %}
-                            <tr>
-                                <td>{{ m.date.strftime("%d/%m/%Y") }}</td>
-                                <td>
-                                    {% if m.type_mouvement == 'reception' %}
-                                        <span class="badge text-bg-success">Réception</span>
-                                    {% else %}
-                                        <span class="badge text-bg-secondary">Utilisation</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-end fw-semibold {{ 'text-success' if m.type_mouvement == 'reception' else 'text-danger' }}">
-                                    {{ '+' if m.type_mouvement == 'reception' else '−' }}{{ m.quantite }}
-                                </td>
-                                <td class="text-muted small">
-                                    {% if m.montant %}
-                                        <span class="badge text-bg-light border">{{ 'Essence' if m.type_gaz == 'essence' else 'Gazoil' }} · {{ m.quantite_litres|int }} L · {{ m.montant|kmf }}</span>
-                                    {% endif %}
-                                    {{ m.beneficiaire or "-" }}{% if m.notes %} · {{ m.notes }}{% endif %}
-                                </td>
-                                {% if current_user.role != 'admin' %}
-                                <td class="text-end">
-                                    <form method="post" action="{{ url_for('consommables.carburant_mouvement_supprimer', mouvement_id=m.id) }}" onsubmit="return confirm('Supprimer ce mouvement ?');">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                                {% endif %}
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-4">Aucun mouvement enregistré.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-suivi-litres" type="button" role="tab">Suivi en litres</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-mouvements-litres" type="button" role="tab">Mouvements (litres)</button>
+    </li>
+</ul>
 
-    </div>
-
-    <div class="col-12 col-lg-5">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="h6 mb-3">Historique des demandes</h2>
-                {% if demandes %}
-                <ul class="list-unstyled mb-0">
-                    {% for d in demandes %}
-                    <li class="py-2 {% if not loop.last %}border-bottom{% endif %}">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <span class="small fw-semibold">{{ d.date_demande.strftime("%d/%m/%Y") }}</span>
-                            {% if d.statut == 'en_attente' %}
-                                <span class="badge text-bg-warning">En attente</span>
-                            {% elif d.statut == 'traitee' %}
-                                <span class="badge text-bg-success">Traitée</span>
-                            {% else %}
-                                <span class="badge text-bg-secondary">Rejetée</span>
-                            {% endif %}
-                        </div>
-                        <div class="text-muted small">{{ d.demande_par.nom }} · stock à {{ d.stock_au_moment }} ticket(s)</div>
-                        {% if d.notes %}<div class="small">{{ d.notes }}</div>{% endif %}
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="text-muted small mb-0">Aucune demande pour le moment.</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<hr class="my-4">
-
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <div>
-        <h2 class="h5 mb-0">Suivi en litres</h2>
-        <p class="text-muted small mb-0">
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="tab-suivi-litres" role="tabpanel">
+        <p class="text-muted small">
             Les achats sont ajoutés automatiquement depuis une dépense « Carburant ».
             <a href="{{ url_for('depenses.nouvelle') }}">Ajouter une dépense</a>
         </p>
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Type de gaz</th>
+                            <th class="text-end">Acheté (L)</th>
+                            <th class="text-end">Utilisé (L)</th>
+                            <th class="text-end">Reste (L)</th>
+                            <th class="text-end">Prix total</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ligne in lignes_litres %}
+                        <tr>
+                            <td class="fw-semibold">{{ ligne.libelle }}</td>
+                            <td class="text-end">{{ "%.1f"|format(ligne.achete) }}</td>
+                            <td class="text-end">{{ "%.1f"|format(ligne.utilise) }}</td>
+                            <td class="text-end">{{ "%.1f"|format(ligne.reste) }}</td>
+                            <td class="text-end">{{ ligne.prix_total|kmf }}</td>
+                            <td class="text-end">
+                                {% if current_user.role != 'admin' %}
+                                <button type="button" class="btn btn-sm btn-outline-danger" title="Enregistrer une utilisation"
+                                        data-bs-toggle="modal" data-bs-target="#modal-utilisation-litres"
+                                        onclick="document.getElementById('form-utilisation-litres').action='{{ url_for('consommables.carburant_litres_utilisation') }}'; document.getElementById('utilisation-litres-type-gaz').value='{{ ligne.type_gaz }}'; document.getElementById('utilisation-litres-nom').textContent='{{ ligne.libelle }}'; document.getElementById('utilisation-litres-stock').textContent='{{ "%.1f"|format(ligne.reste) }}';">
+                                    <i class="bi bi-box-arrow-up"></i>
+                                </button>
+                                {% else %}
+                                <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-</div>
 
-<div class="card mb-4">
-    <div class="table-responsive">
-        <table class="table table-hover mb-0 align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>Type de gaz</th>
-                    <th class="text-end">Acheté (L)</th>
-                    <th class="text-end">Utilisé (L)</th>
-                    <th class="text-end">Reste (L)</th>
-                    <th class="text-end">Prix total</th>
-                    <th class="text-end">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ligne in lignes_litres %}
-                <tr>
-                    <td class="fw-semibold">{{ ligne.libelle }}</td>
-                    <td class="text-end">{{ "%.1f"|format(ligne.achete) }}</td>
-                    <td class="text-end">{{ "%.1f"|format(ligne.utilise) }}</td>
-                    <td class="text-end">{{ "%.1f"|format(ligne.reste) }}</td>
-                    <td class="text-end">{{ ligne.prix_total|kmf }}</td>
-                    <td class="text-end">
-                        {% if current_user.role != 'admin' %}
-                        <button type="button" class="btn btn-sm btn-outline-danger" title="Enregistrer une utilisation"
-                                data-bs-toggle="modal" data-bs-target="#modal-utilisation-litres"
-                                onclick="document.getElementById('form-utilisation-litres').action='{{ url_for('consommables.carburant_litres_utilisation') }}'; document.getElementById('utilisation-litres-type-gaz').value='{{ ligne.type_gaz }}'; document.getElementById('utilisation-litres-nom').textContent='{{ ligne.libelle }}'; document.getElementById('utilisation-litres-stock').textContent='{{ "%.1f"|format(ligne.reste) }}';">
-                            <i class="bi bi-box-arrow-up"></i>
-                        </button>
+    <div class="tab-pane fade" id="tab-mouvements-litres" role="tabpanel">
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Type de gaz</th>
+                            <th>Mouvement</th>
+                            <th class="text-end">Litres</th>
+                            <th class="text-end">Montant</th>
+                            <th>Détail</th>
+                            {% if current_user.role != 'admin' %}<th class="text-end">Actions</th>{% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in mouvements_litres %}
+                        <tr>
+                            <td>{{ m.date.strftime("%d/%m/%Y") }}</td>
+                            <td>{{ types_gaz.get(m.type_gaz, m.type_gaz) }}</td>
+                            <td>
+                                {% if m.type_mouvement == 'achat' %}
+                                    <span class="badge text-bg-success">Achat</span>
+                                {% else %}
+                                    <span class="badge text-bg-secondary">Utilisation</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end fw-semibold {{ 'text-success' if m.type_mouvement == 'achat' else 'text-danger' }}">
+                                {{ '+' if m.type_mouvement == 'achat' else '−' }}{{ "%.1f"|format(m.quantite_litres) }}
+                            </td>
+                            <td class="text-end">{{ m.montant|kmf if m.montant is not none else "-" }}</td>
+                            <td class="text-muted small">
+                                {% if m.type_mouvement == 'achat' and m.depense %}
+                                    <a href="{{ url_for('depenses.modifier', depense_id=m.depense_id) }}">Dépense #{{ m.depense_id }}</a>
+                                {% else %}
+                                    {{ m.beneficiaire or "-" }}{% if m.notes %} · {{ m.notes }}{% endif %}
+                                {% endif %}
+                            </td>
+                            {% if current_user.role != 'admin' %}
+                            <td class="text-end">
+                                {% if m.type_mouvement == 'utilisation' %}
+                                <form method="post" action="{{ url_for('consommables.carburant_litres_supprimer', mouvement_id=m.id) }}" onsubmit="return confirm('Supprimer ce mouvement ?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                {% else %}
+                                <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                        </tr>
                         {% else %}
-                        <span class="text-muted small">—</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="card mb-4">
-    <div class="card-header">
-        <h3 class="h6 mb-0">Mouvements (litres)</h3>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-sm table-hover mb-0 align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>Date</th>
-                    <th>Type de gaz</th>
-                    <th>Mouvement</th>
-                    <th class="text-end">Litres</th>
-                    <th class="text-end">Montant</th>
-                    <th>Détail</th>
-                    {% if current_user.role != 'admin' %}<th class="text-end">Actions</th>{% endif %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for m in mouvements_litres %}
-                <tr>
-                    <td>{{ m.date.strftime("%d/%m/%Y") }}</td>
-                    <td>{{ types_gaz.get(m.type_gaz, m.type_gaz) }}</td>
-                    <td>
-                        {% if m.type_mouvement == 'achat' %}
-                            <span class="badge text-bg-success">Achat</span>
-                        {% else %}
-                            <span class="badge text-bg-secondary">Utilisation</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-end fw-semibold {{ 'text-success' if m.type_mouvement == 'achat' else 'text-danger' }}">
-                        {{ '+' if m.type_mouvement == 'achat' else '−' }}{{ "%.1f"|format(m.quantite_litres) }}
-                    </td>
-                    <td class="text-end">{{ m.montant|kmf if m.montant is not none else "-" }}</td>
-                    <td class="text-muted small">
-                        {% if m.type_mouvement == 'achat' and m.depense %}
-                            <a href="{{ url_for('depenses.modifier', depense_id=m.depense_id) }}">Dépense #{{ m.depense_id }}</a>
-                        {% else %}
-                            {{ m.beneficiaire or "-" }}{% if m.notes %} · {{ m.notes }}{% endif %}
-                        {% endif %}
-                    </td>
-                    {% if current_user.role != 'admin' %}
-                    <td class="text-end">
-                        {% if m.type_mouvement == 'utilisation' %}
-                        <form method="post" action="{{ url_for('consommables.carburant_litres_supprimer', mouvement_id=m.id) }}" onsubmit="return confirm('Supprimer ce mouvement ?');">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </form>
-                        {% else %}
-                        <span class="text-muted small">—</span>
-                        {% endif %}
-                    </td>
-                    {% endif %}
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="7" class="text-center text-muted py-4">Aucun mouvement enregistré.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">Aucun mouvement enregistré.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
