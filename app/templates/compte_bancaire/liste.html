@@ -21,6 +21,16 @@
             padding: 0.25rem 0.4rem !important;
             font-size: 0.72rem;
         }
+
+        .sas-cb-kpis {
+            flex-wrap: nowrap !important;
+        }
+
+        .sas-cb-kpis > div {
+            flex: 1 1 0 !important;
+            max-width: none !important;
+            width: auto !important;
+        }
     }
 </style>
 {% endblock %}
@@ -65,8 +75,8 @@
     <p class="text-muted mb-0">Compte Bancaire — {{ mois_fr[mois - 1] }} {{ annee }}</p>
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-12 col-sm-6 col-lg-3">
+<div class="row g-3 mb-4 sas-cb-kpis">
+    <div class="col-12 col-sm-6 col-md-3">
         <div class="card sas-kpi h-100">
             <div class="card-body">
                 <div class="sas-kpi-icon bg-success-subtle text-success"><i class="bi bi-arrow-down-circle"></i></div>
@@ -75,7 +85,7 @@
             </div>
         </div>
     </div>
-    <div class="col-12 col-sm-6 col-lg-3">
+    <div class="col-12 col-sm-6 col-md-3">
         <div class="card sas-kpi h-100">
             <div class="card-body">
                 <div class="sas-kpi-icon bg-danger-subtle text-danger"><i class="bi bi-arrow-up-circle"></i></div>
@@ -84,7 +94,7 @@
             </div>
         </div>
     </div>
-    <div class="col-12 col-sm-6 col-lg-3">
+    <div class="col-12 col-sm-6 col-md-3">
         <div class="card sas-kpi h-100">
             <div class="card-body">
                 <div class="sas-kpi-icon bg-primary-subtle text-primary"><i class="bi bi-wallet2"></i></div>
@@ -93,7 +103,7 @@
             </div>
         </div>
     </div>
-    <div class="col-12 col-sm-6 col-lg-3">
+    <div class="col-12 col-sm-6 col-md-3">
         <div class="card sas-kpi h-100">
             <div class="card-body">
                 <div class="sas-kpi-icon bg-secondary-subtle text-secondary"><i class="bi bi-clock-history"></i></div>
