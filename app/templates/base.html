@@ -77,7 +77,7 @@
             {% if current_user.role in ('admin', 'agent_commercial') %}
             <li class="nav-item">
                 <a class="nav-link {% if request.blueprint == 'commercial' %}active{% endif %}" href="{{ url_for('commercial.liste') }}">
-                    <i class="bi bi-person-lines-fill"></i> Appel clientèle
+                    <i class="bi bi-person-lines-fill"></i> Vente Villa
                 </a>
             </li>
             {% endif %}
