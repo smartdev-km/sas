@@ -18,63 +18,170 @@
     </form>
 </div>
 
-<div class="card">
-    <div class="table-responsive">
-        <table class="table table-hover mb-0 align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>Employé</th>
-                    <th>Période</th>
-                    <th>Motif</th>
-                    <th>Précision</th>
-                    <th>Statut</th>
-                    <th class="text-end">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for d in demandes %}
-                <tr>
-                    <td class="fw-semibold">{{ d.employe.nom }}</td>
-                    <td>
-                        {{ d.date_debut.strftime("%d/%m/%Y") }}
-                        {% if d.date_fin != d.date_debut %} – {{ d.date_fin.strftime("%d/%m/%Y") }}{% endif %}
-                    </td>
-                    <td>{{ motifs.get(d.motif, d.motif) }}</td>
-                    <td class="text-muted small">{{ d.precision or "-" }}</td>
-                    <td>
-                        {% if d.statut == 'validee' %}
-                            <span class="badge text-bg-success">{{ statuts[d.statut] }}</span>
-                        {% elif d.statut == 'refusee' %}
-                            <span class="badge text-bg-danger">{{ statuts[d.statut] }}</span>
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-demandes" type="button" role="tab">Demandes d'absence</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-absences-autorisees" type="button" role="tab">Absences autorisées</button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="tab-demandes" role="tabpanel">
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Employé</th>
+                            <th>Période</th>
+                            <th>Motif</th>
+                            <th>Précision</th>
+                            <th>Statut</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in demandes %}
+                        <tr>
+                            <td class="fw-semibold">{{ d.employe.nom }}</td>
+                            <td>
+                                {{ d.date_debut.strftime("%d/%m/%Y") }}
+                                {% if d.date_fin != d.date_debut %} – {{ d.date_fin.strftime("%d/%m/%Y") }}{% endif %}
+                            </td>
+                            <td>{{ motifs.get(d.motif, d.motif) }}</td>
+                            <td class="text-muted small">{{ d.precision or "-" }}</td>
+                            <td>
+                                {% if d.statut == 'validee' %}
+                                    <span class="badge text-bg-success">{{ statuts[d.statut] }}</span>
+                                {% elif d.statut == 'refusee' %}
+                                    <span class="badge text-bg-danger">{{ statuts[d.statut] }}</span>
+                                {% else %}
+                                    <span class="badge text-bg-warning">{{ statuts[d.statut] }}</span>
+                                {% endif %}
+                                {% if d.commentaire_admin %}<div class="text-muted small">{{ d.commentaire_admin }}</div>{% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if d.statut == 'en_attente' %}
+                                <form method="post" action="{{ url_for('presence.demande_valider', demande_id=d.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Valider">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                </form>
+                                <button type="button" class="btn btn-sm btn-outline-danger" title="Refuser" data-bs-toggle="modal" data-bs-target="#refuser-{{ d.id }}">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                                {% else %}
+                                <span class="text-muted small">
+                                    {{ d.traite_le.strftime("%d/%m/%Y") if d.traite_le else "" }}
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
                         {% else %}
-                            <span class="badge text-bg-warning">{{ statuts[d.statut] }}</span>
-                        {% endif %}
-                        {% if d.commentaire_admin %}<div class="text-muted small">{{ d.commentaire_admin }}</div>{% endif %}
-                    </td>
-                    <td class="text-end">
-                        {% if d.statut == 'en_attente' %}
-                        <form method="post" action="{{ url_for('presence.demande_valider', demande_id=d.id) }}" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-outline-success" title="Valider">
-                                <i class="bi bi-check-lg"></i>
-                            </button>
-                        </form>
-                        <button type="button" class="btn btn-sm btn-outline-danger" title="Refuser" data-bs-toggle="modal" data-bs-target="#refuser-{{ d.id }}">
-                            <i class="bi bi-x-lg"></i>
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">Aucune demande.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="tab-absences-autorisees" role="tabpanel">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Ajouter une absence autorisée</h2>
+                <p class="text-muted small">
+                    Enregistre une absence déjà autorisée par l'administration pour un employé, à une heure précise, avec son motif.
+                </p>
+                <form method="post" action="{{ url_for('presence.absence_autorisee_nouvelle') }}" class="row g-2">
+                    <div class="col-12 col-sm-4">
+                        <label class="form-label small mb-1">Employé</label>
+                        <select class="form-select form-select-sm" name="employe_id" required>
+                            <option value="" selected disabled>Choisir...</option>
+                            {% for employe in employes_pour_presence %}
+                            <option value="{{ employe.id }}">{{ employe.nom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-sm-3">
+                        <label class="form-label small mb-1">Date</label>
+                        <input type="date" class="form-control form-control-sm" name="date" value="{{ today.isoformat() }}" required>
+                    </div>
+                    <div class="col-12 col-sm-3">
+                        <label class="form-label small mb-1">Heure</label>
+                        <input type="time" class="form-control form-control-sm" name="heure" required>
+                    </div>
+                    <div class="col-12 col-sm-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary btn-sm w-100">
+                            <i class="bi bi-check-lg"></i> Enregistrer
                         </button>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small mb-1">Motif</label>
+                        <textarea class="form-control form-control-sm" name="motif" rows="2" required></textarea>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Employé</th>
+                            <th>Heure</th>
+                            <th>Motif</th>
+                            <th>Statut</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for absence in absences_autorisees %}
+                        <tr>
+                            <td class="fw-semibold">{{ absence.date.strftime("%d/%m/%Y") }}</td>
+                            <td>{{ absence.employe.nom }}</td>
+                            <td>{{ absence.heure.strftime("%H:%M") }}</td>
+                            <td>{{ absence.motif }}</td>
+                            <td>
+                                {% if absence.statut == 'validee' %}
+                                    <span class="badge text-bg-success">{{ statuts[absence.statut] }}</span>
+                                {% elif absence.statut == 'refusee' %}
+                                    <span class="badge text-bg-danger">{{ statuts[absence.statut] }}</span>
+                                {% else %}
+                                    <span class="badge text-bg-warning">{{ statuts[absence.statut] }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex gap-1 justify-content-end">
+                                    {% if absence.statut == 'en_attente' %}
+                                    <form method="post" action="{{ url_for('presence.absence_autorisee_valider', absence_id=absence.id) }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Valider"><i class="bi bi-check-lg"></i></button>
+                                    </form>
+                                    <form method="post" action="{{ url_for('presence.absence_autorisee_refuser', absence_id=absence.id) }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Refuser"><i class="bi bi-x-lg"></i></button>
+                                    </form>
+                                    {% endif %}
+                                    <form method="post" action="{{ url_for('presence.absence_autorisee_supprimer', absence_id=absence.id) }}" onsubmit="return confirm('Supprimer cette absence autorisée ?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary" title="Supprimer"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
                         {% else %}
-                        <span class="text-muted small">
-                            {{ d.traite_le.strftime("%d/%m/%Y") if d.traite_le else "" }}
-                        </span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="6" class="text-center text-muted py-4">Aucune demande.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">Aucune absence autorisée enregistrée.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 

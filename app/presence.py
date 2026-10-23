@@ -329,13 +329,6 @@ def index():
     annee_actuelle = date.today().year
     situation = _calculer_situation_presence(mois_actuel, annee_actuelle)
 
-    absences_autorisees = (
-        AbsenceAutorisee.query.join(Employe)
-        .order_by(AbsenceAutorisee.date.desc(), AbsenceAutorisee.id.desc())
-        .limit(50)
-        .all()
-    )
-
     return render_template(
         "presence/index.html",
         sessions=sessions,
@@ -352,8 +345,6 @@ def index():
         situation_presence=situation["situation_presence"],
         mois_label=f"{MOIS_FR[mois_actuel - 1]} {annee_actuelle}",
         employes_pour_presence=employes_pour_presence,
-        absences_autorisees=absences_autorisees,
-        statuts_absence=STATUTS_DEMANDE_ABSENCE,
     )
 
 
@@ -680,9 +671,19 @@ def demandes():
         query = query.filter(DemandeAbsence.statut == statut)
     liste_demandes = query.order_by(DemandeAbsence.created_at.desc()).all()
 
+    query_autorisees = AbsenceAutorisee.query.join(Employe)
+    if statut in STATUTS_DEMANDE_ABSENCE:
+        query_autorisees = query_autorisees.filter(AbsenceAutorisee.statut == statut)
+    absences_autorisees = query_autorisees.order_by(
+        AbsenceAutorisee.date.desc(), AbsenceAutorisee.id.desc()
+    ).all()
+
     return render_template(
         "presence/demandes.html", demandes=liste_demandes,
         motifs=MOTIFS_ABSENCE, statuts=STATUTS_DEMANDE_ABSENCE, statut_filtre=statut,
+        absences_autorisees=absences_autorisees,
+        employes_pour_presence=_employes_pour_presence(),
+        today=date.today(),
     )
 
 
