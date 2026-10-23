@@ -17,15 +17,15 @@ depends_on = None
 
 
 def upgrade():
-    plan_comptable = sa.table(
-        'plan_comptable',
-        sa.column('numero', sa.String),
-        sa.column('nom', sa.String),
-        sa.column('actif', sa.Boolean),
-    )
-    op.execute(
-        plan_comptable.insert().values(numero='6411', nom='Salaires', actif=True)
-    )
+    # Idempotent : certains environnements (ex. production) peuvent déjà avoir une
+    # catégorie "Salaires" ajoutée manuellement via l'interface, avec ce même numéro.
+    op.execute("""
+        INSERT INTO plan_comptable (numero, nom, actif)
+        SELECT '6411', 'Salaires', true
+        WHERE NOT EXISTS (
+            SELECT 1 FROM plan_comptable WHERE numero = '6411' OR nom = 'Salaires'
+        )
+    """)
 
 
 def downgrade():
