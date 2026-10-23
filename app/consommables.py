@@ -407,6 +407,16 @@ def carburant():
         .all()
     )
 
+    jours_litres = {}
+    for m in sorted(mouvements_litres, key=lambda m: m.date):
+        label = m.date.strftime("%d/%m")
+        jour = jours_litres.setdefault(label, {"achat": 0.0, "utilisation": 0.0})
+        jour[m.type_mouvement] += float(m.quantite_litres)
+    graphique_litres = [
+        {"label": label, "achat": valeurs["achat"], "utilisation": valeurs["utilisation"]}
+        for label, valeurs in jours_litres.items()
+    ]
+
     return render_template(
         "consommables/carburant.html",
         stock=stock,
@@ -419,6 +429,7 @@ def carburant():
         prix_carburant=PRIX_CARBURANT,
         lignes_litres=lignes_litres,
         mouvements_litres=mouvements_litres,
+        graphique_litres=graphique_litres,
         types_gaz=TYPES_GAZ,
         budget_carburant=_budget_carburant(),
         prix_total_utilise=sum(l["prix_utilise"] for l in lignes_litres),
