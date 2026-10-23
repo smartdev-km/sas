@@ -42,7 +42,7 @@
         <div class="card h-100">
             <div class="card-body py-2">
                 <div class="text-muted small">Solde d'ouverture</div>
-                <div class="fw-semibold fs-5">{{ solde_ouverture|kmf }}</div>
+                <div class="fw-semibold fs-5">{{ solde_ouverture|kmf2 }}</div>
             </div>
         </div>
     </div>
@@ -50,7 +50,7 @@
         <div class="card h-100">
             <div class="card-body py-2">
                 <div class="text-muted small">Total recettes</div>
-                <div class="fw-semibold fs-5 text-success">{{ total_recettes|kmf }}</div>
+                <div class="fw-semibold fs-5 text-success">{{ total_recettes|kmf2 }}</div>
             </div>
         </div>
     </div>
@@ -58,7 +58,7 @@
         <div class="card h-100">
             <div class="card-body py-2">
                 <div class="text-muted small">Total dépenses</div>
-                <div class="fw-semibold fs-5 text-danger">{{ total_depenses|kmf }}</div>
+                <div class="fw-semibold fs-5 text-danger">{{ total_depenses|kmf2 }}</div>
             </div>
         </div>
     </div>
@@ -66,7 +66,7 @@
         <div class="card h-100">
             <div class="card-body py-2">
                 <div class="text-muted small">Solde de clôture</div>
-                <div class="fw-semibold fs-5 {{ 'text-success' if total_solde >= 0 else 'text-danger' }}">{{ total_solde|kmf }}</div>
+                <div class="fw-semibold fs-5 {{ 'text-success' if total_solde >= 0 else 'text-danger' }}">{{ total_solde|kmf2 }}</div>
             </div>
         </div>
     </div>
@@ -99,9 +99,9 @@
                         {{ ligne.label }}
                         {% if not ligne.est_ouverture %}<i class="bi bi-chevron-right text-muted small d-print-none"></i>{% endif %}
                     </td>
-                    <td class="text-end text-success">{{ ligne.recettes|kmf }}</td>
-                    <td class="text-end {{ 'text-danger' if ligne.depenses else 'text-muted' }}">{{ ligne.depenses|kmf }}</td>
-                    <td class="text-end {{ 'text-success' if ligne.solde >= 0 else 'text-danger' }}">{{ ligne.solde|kmf }}</td>
+                    <td class="text-end text-success">{{ ligne.recettes|kmf2 }}</td>
+                    <td class="text-end {{ 'text-danger' if ligne.depenses else 'text-muted' }}">{{ ligne.depenses|kmf2 }}</td>
+                    <td class="text-end {{ 'text-success' if ligne.solde >= 0 else 'text-danger' }}">{{ ligne.solde|kmf2 }}</td>
                 </tr>
                 {% else %}
                 <tr>
@@ -112,9 +112,9 @@
             <tfoot>
                 <tr class="table-light fw-semibold">
                     <td>TOTAL</td>
-                    <td class="text-end text-success">{{ total_recettes|kmf }}</td>
-                    <td class="text-end text-danger">{{ total_depenses|kmf }}</td>
-                    <td class="text-end {{ 'text-success' if total_solde >= 0 else 'text-danger' }}">{{ total_solde|kmf }}</td>
+                    <td class="text-end text-success">{{ total_recettes|kmf2 }}</td>
+                    <td class="text-end text-danger">{{ total_depenses|kmf2 }}</td>
+                    <td class="text-end {{ 'text-success' if total_solde >= 0 else 'text-danger' }}">{{ total_solde|kmf2 }}</td>
                 </tr>
             </tfoot>
         </table>
@@ -142,7 +142,7 @@
                             {% for cat in ligne.categories %}
                             <tr>
                                 <td>{{ cat.categorie }}</td>
-                                <td class="text-end text-danger">{{ cat.montant|kmf }}</td>
+                                <td class="text-end text-danger">{{ cat.montant|kmf2 }}</td>
                             </tr>
                             {% else %}
                             <tr>
@@ -154,7 +154,7 @@
                         <tfoot>
                             <tr class="table-light fw-semibold">
                                 <td>TOTAL</td>
-                                <td class="text-end text-danger">{{ ligne.depenses|kmf }}</td>
+                                <td class="text-end text-danger">{{ ligne.depenses|kmf2 }}</td>
                             </tr>
                         </tfoot>
                         {% endif %}
