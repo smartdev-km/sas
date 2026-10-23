@@ -126,9 +126,10 @@ def _stock_article(article_id):
 @consommables_bp.route("/")
 @role_required("consommables")
 def liste():
+    today = date.today()
     categorie_filtre = request.args.get("categorie", "")
-    mois_filtre = request.args.get("mois", type=int)
-    annee_filtre = request.args.get("annee", type=int)
+    mois = request.args.get("mois", today.month, type=int)
+    annee = request.args.get("annee", today.year, type=int)
 
     query = ArticleInventaire.query.filter_by(actif=True)
     if categorie_filtre in CATEGORIES_INVENTAIRE:
@@ -147,14 +148,10 @@ def liste():
     prix_total_general = sum(l["prix_total"] for l in lignes)
     budget_alloue, budget_depense, budget_restant = _budget()
 
-    mouvements_query = MouvementInventaire.query.join(ArticleInventaire)
-    if mois_filtre:
-        mouvements_query = mouvements_query.filter(extract("month", MouvementInventaire.date) == mois_filtre)
-    if annee_filtre:
-        mouvements_query = mouvements_query.filter(extract("year", MouvementInventaire.date) == annee_filtre)
     mouvements = (
-        mouvements_query.order_by(MouvementInventaire.date.desc(), MouvementInventaire.id.desc())
-        .limit(200)
+        MouvementInventaire.query.join(ArticleInventaire)
+        .filter(extract("year", MouvementInventaire.date) == annee, extract("month", MouvementInventaire.date) == mois)
+        .order_by(MouvementInventaire.date.desc(), MouvementInventaire.id.desc())
         .all()
     )
 
@@ -171,20 +168,24 @@ def liste():
         budget_depense=budget_depense,
         budget_restant=budget_restant,
         stock_bas=stock_carburant_bas,
-        today=date.today().isoformat(),
+        today=today.isoformat(),
         mois_fr=MOIS_FR,
-        mois_filtre=mois_filtre,
-        annee_filtre=annee_filtre,
-        annees=range(date.today().year - 2, date.today().year + 2),
+        mois=mois,
+        annee=annee,
+        annees=range(today.year - 2, today.year + 2),
+        mois_label=f"{MOIS_FR[mois - 1]} {annee}",
     )
 
 
 @consommables_bp.route("/articles/nouveau", methods=["POST"])
 @role_required("consommables")
 def article_nouveau():
+    mois = request.form.get("mois", type=int) or date.today().month
+    annee = request.form.get("annee", type=int) or date.today().year
+
     if current_user.role == "admin":
         flash("Un compte admin ne peut pas ajouter d'article directement.", "warning")
-        return redirect(url_for("consommables.liste"))
+        return redirect(url_for("consommables.liste", mois=mois, annee=annee))
 
     nom = request.form.get("nom", "").strip()
     categorie = request.form.get("categorie", "")
@@ -192,17 +193,17 @@ def article_nouveau():
 
     if not nom:
         flash("Le nom est obligatoire.", "danger")
-        return redirect(url_for("consommables.liste"))
+        return redirect(url_for("consommables.liste", mois=mois, annee=annee))
     if categorie not in CATEGORIES_INVENTAIRE:
         flash("La catégorie sélectionnée est invalide.", "danger")
-        return redirect(url_for("consommables.liste"))
+        return redirect(url_for("consommables.liste", mois=mois, annee=annee))
     try:
         seuil_alerte = int(seuil_brut) if seuil_brut else 0
         if seuil_alerte < 0:
             raise ValueError
     except ValueError:
         flash("Le seuil d'alerte doit être un nombre entier positif ou nul.", "danger")
-        return redirect(url_for("consommables.liste"))
+        return redirect(url_for("consommables.liste", mois=mois, annee=annee))
 
     if ArticleInventaire.query.filter(
         ArticleInventaire.nom.ilike(nom), ArticleInventaire.categorie == categorie
@@ -213,41 +214,45 @@ def article_nouveau():
         db.session.commit()
         flash(f"« {nom} » ajouté à l'inventaire.", "success")
 
-    return redirect(url_for("consommables.liste", categorie=categorie))
+    return redirect(url_for("consommables.liste", categorie=categorie, mois=mois, annee=annee))
 
 
 @consommables_bp.route("/articles/<int:article_id>/supprimer", methods=["POST"])
 @role_required("consommables")
 def article_supprimer(article_id):
     article = db.get_or_404(ArticleInventaire, article_id)
+    mois = request.form.get("mois", type=int) or date.today().month
+    annee = request.form.get("annee", type=int) or date.today().year
 
     if current_user.role == "admin":
         flash("Un compte admin ne peut pas supprimer d'article directement.", "warning")
-        return redirect(url_for("consommables.liste"))
+        return redirect(url_for("consommables.liste", mois=mois, annee=annee))
 
     if MouvementInventaire.query.filter_by(article_id=article.id).first():
         flash(f"Impossible de supprimer « {article.nom} » : des mouvements existent déjà pour cet article.", "danger")
-        return redirect(url_for("consommables.liste"))
+        return redirect(url_for("consommables.liste", mois=mois, annee=annee))
 
     db.session.delete(article)
     db.session.commit()
     flash(f"« {article.nom} » supprimé.", "info")
-    return redirect(url_for("consommables.liste"))
+    return redirect(url_for("consommables.liste", mois=mois, annee=annee))
 
 
 @consommables_bp.route("/articles/<int:article_id>/mouvements/nouveau", methods=["POST"])
 @role_required("consommables")
 def article_mouvement_nouveau(article_id):
     article = db.get_or_404(ArticleInventaire, article_id)
+    mois = request.form.get("mois", type=int) or date.today().month
+    annee = request.form.get("annee", type=int) or date.today().year
 
     if current_user.role == "admin":
         flash("Un compte admin ne peut pas enregistrer de mouvement d'inventaire.", "warning")
-        return redirect(url_for("consommables.liste"))
+        return redirect(url_for("consommables.liste", mois=mois, annee=annee))
 
     type_mouvement = request.form.get("type_mouvement")
     if type_mouvement not in ("achat", "utilisation"):
         flash("Type de mouvement invalide.", "danger")
-        return redirect(url_for("consommables.liste"))
+        return redirect(url_for("consommables.liste", mois=mois, annee=annee))
 
     quantite_brute = request.form.get("quantite", "").strip()
     try:
@@ -256,11 +261,11 @@ def article_mouvement_nouveau(article_id):
             raise ValueError
     except ValueError:
         flash("La quantité doit être un nombre entier positif.", "danger")
-        return redirect(url_for("consommables.liste"))
+        return redirect(url_for("consommables.liste", mois=mois, annee=annee))
 
     if type_mouvement == "utilisation" and quantite > _stock_article(article.id):
         flash("Impossible d'enregistrer cette sortie : la quantité dépasse le stock disponible.", "danger")
-        return redirect(url_for("consommables.liste"))
+        return redirect(url_for("consommables.liste", mois=mois, annee=annee))
 
     date_valeur = _parse_date(request.form.get("date")) or date.today()
 
@@ -274,7 +279,7 @@ def article_mouvement_nouveau(article_id):
                 raise ValueError
         except ValueError:
             flash("Le prix unitaire doit être un nombre positif.", "danger")
-            return redirect(url_for("consommables.liste"))
+            return redirect(url_for("consommables.liste", mois=mois, annee=annee))
         montant = round(quantite * prix_unitaire, 2)
 
     mouvement = MouvementInventaire(
@@ -304,17 +309,18 @@ def article_mouvement_nouveau(article_id):
         db.session.commit()
         flash("Sortie de stock enregistrée.", "success")
 
-    return redirect(url_for("consommables.liste"))
+    return redirect(url_for("consommables.liste", mois=date_valeur.month, annee=date_valeur.year))
 
 
 @consommables_bp.route("/mouvements/<int:mouvement_id>/supprimer", methods=["POST"])
 @role_required("consommables")
 def article_mouvement_supprimer(mouvement_id):
+    mouvement = db.get_or_404(MouvementInventaire, mouvement_id)
+    mois, annee = mouvement.date.month, mouvement.date.year
+
     if current_user.role == "admin":
         flash("Un compte admin ne peut pas supprimer de mouvement d'inventaire.", "warning")
-        return redirect(url_for("consommables.liste"))
-
-    mouvement = db.get_or_404(MouvementInventaire, mouvement_id)
+        return redirect(url_for("consommables.liste", mois=mois, annee=annee))
 
     if mouvement.montant:
         if not _retirer_montant("Inventaire", mouvement.date, float(mouvement.montant)):
@@ -327,7 +333,7 @@ def article_mouvement_supprimer(mouvement_id):
     db.session.delete(mouvement)
     db.session.commit()
     flash("Mouvement supprimé.", "info")
-    return redirect(url_for("consommables.liste"))
+    return redirect(url_for("consommables.liste", mois=mois, annee=annee))
 
 
 # --- Carburant ------------------------------------------------------------
@@ -376,8 +382,9 @@ def _budget_carburant():
 @consommables_bp.route("/carburant")
 @role_required("consommables")
 def carburant():
-    mois_filtre = request.args.get("mois", type=int)
-    annee_filtre = request.args.get("annee", type=int)
+    today = date.today()
+    mois = request.args.get("mois", today.month, type=int)
+    annee = request.args.get("annee", today.year, type=int)
 
     config = _config_carburant()
     stock = _stock_carburant()
@@ -393,14 +400,10 @@ def carburant():
         {"type_gaz": valeur, "libelle": libelle, **_resume_litres(valeur)}
         for valeur, libelle in TYPES_GAZ.items()
     ]
-    mouvements_litres_query = MouvementLitresCarburant.query
-    if mois_filtre:
-        mouvements_litres_query = mouvements_litres_query.filter(extract("month", MouvementLitresCarburant.date) == mois_filtre)
-    if annee_filtre:
-        mouvements_litres_query = mouvements_litres_query.filter(extract("year", MouvementLitresCarburant.date) == annee_filtre)
     mouvements_litres = (
-        mouvements_litres_query.order_by(MouvementLitresCarburant.date.desc(), MouvementLitresCarburant.id.desc())
-        .limit(200)
+        MouvementLitresCarburant.query
+        .filter(extract("year", MouvementLitresCarburant.date) == annee, extract("month", MouvementLitresCarburant.date) == mois)
+        .order_by(MouvementLitresCarburant.date.desc(), MouvementLitresCarburant.id.desc())
         .all()
     )
 
@@ -412,7 +415,7 @@ def carburant():
         mouvements=mouvements,
         demandes=demandes,
         demande_en_attente=demande_en_attente,
-        today=date.today().isoformat(),
+        today=today.isoformat(),
         prix_carburant=PRIX_CARBURANT,
         lignes_litres=lignes_litres,
         mouvements_litres=mouvements_litres,
@@ -421,9 +424,10 @@ def carburant():
         prix_total_utilise=sum(l["prix_utilise"] for l in lignes_litres),
         prix_total_restant=sum(l["prix_restant"] for l in lignes_litres),
         mois_fr=MOIS_FR,
-        mois_filtre=mois_filtre,
-        annee_filtre=annee_filtre,
-        annees=range(date.today().year - 2, date.today().year + 2),
+        mois=mois,
+        annee=annee,
+        annees=range(today.year - 2, today.year + 2),
+        mois_label=f"{MOIS_FR[mois - 1]} {annee}",
     )
 
 
@@ -495,14 +499,17 @@ def carburant_mouvement_supprimer(mouvement_id):
 @consommables_bp.route("/carburant/litres/utilisation", methods=["POST"])
 @role_required("consommables")
 def carburant_litres_utilisation():
+    mois = request.form.get("mois", type=int) or date.today().month
+    annee = request.form.get("annee", type=int) or date.today().year
+
     if current_user.role == "admin":
         flash("Un compte admin ne peut pas enregistrer de mouvement de carburant.", "warning")
-        return redirect(url_for("consommables.carburant"))
+        return redirect(url_for("consommables.carburant", mois=mois, annee=annee))
 
     type_gaz = request.form.get("type_gaz")
     if type_gaz not in TYPES_GAZ:
         flash("Type de gaz invalide.", "danger")
-        return redirect(url_for("consommables.carburant"))
+        return redirect(url_for("consommables.carburant", mois=mois, annee=annee))
 
     quantite_brute = request.form.get("quantite_litres", "").strip()
     try:
@@ -511,11 +518,11 @@ def carburant_litres_utilisation():
             raise ValueError
     except ValueError:
         flash("La quantité de litres doit être un nombre positif.", "danger")
-        return redirect(url_for("consommables.carburant"))
+        return redirect(url_for("consommables.carburant", mois=mois, annee=annee))
 
     if quantite_litres > _stock_litres(type_gaz):
         flash("Impossible d'enregistrer cette sortie : la quantité dépasse le stock de litres disponible.", "danger")
-        return redirect(url_for("consommables.carburant"))
+        return redirect(url_for("consommables.carburant", mois=mois, annee=annee))
 
     date_valeur = _parse_date(request.form.get("date")) or date.today()
 
@@ -530,26 +537,27 @@ def carburant_litres_utilisation():
     ))
     db.session.commit()
     flash("Utilisation de carburant (litres) enregistrée.", "success")
-    return redirect(url_for("consommables.carburant"))
+    return redirect(url_for("consommables.carburant", mois=date_valeur.month, annee=date_valeur.year))
 
 
 @consommables_bp.route("/carburant/litres/<int:mouvement_id>/supprimer", methods=["POST"])
 @role_required("consommables")
 def carburant_litres_supprimer(mouvement_id):
+    mouvement = db.get_or_404(MouvementLitresCarburant, mouvement_id)
+    mois, annee = mouvement.date.month, mouvement.date.year
+
     if current_user.role == "admin":
         flash("Un compte admin ne peut pas supprimer de mouvement de carburant.", "warning")
-        return redirect(url_for("consommables.carburant"))
-
-    mouvement = db.get_or_404(MouvementLitresCarburant, mouvement_id)
+        return redirect(url_for("consommables.carburant", mois=mois, annee=annee))
 
     if mouvement.type_mouvement == "achat":
         flash("Cet achat provient d'une dépense « Carburant » ; modifiez-le ou supprimez-le depuis Dépenses.", "warning")
-        return redirect(url_for("consommables.carburant"))
+        return redirect(url_for("consommables.carburant", mois=mois, annee=annee))
 
     db.session.delete(mouvement)
     db.session.commit()
     flash("Mouvement supprimé.", "info")
-    return redirect(url_for("consommables.carburant"))
+    return redirect(url_for("consommables.carburant", mois=mois, annee=annee))
 
 
 @consommables_bp.route("/carburant/seuil", methods=["POST"])
@@ -627,15 +635,16 @@ def carburant_demande_rejeter(demande_id):
 @consommables_bp.route("/deplacement")
 @role_required("consommables")
 def deplacement():
-    mois_filtre = request.args.get("mois", type=int)
-    annee_filtre = request.args.get("annee", type=int)
+    today = date.today()
+    mois = request.args.get("mois", today.month, type=int)
+    annee = request.args.get("annee", today.year, type=int)
 
-    query = Deplacement.query
-    if mois_filtre:
-        query = query.filter(extract("month", Deplacement.date) == mois_filtre)
-    if annee_filtre:
-        query = query.filter(extract("year", Deplacement.date) == annee_filtre)
-    deplacements = query.order_by(Deplacement.date.desc(), Deplacement.id.desc()).limit(200).all()
+    deplacements = (
+        Deplacement.query
+        .filter(extract("year", Deplacement.date) == annee, extract("month", Deplacement.date) == mois)
+        .order_by(Deplacement.date.desc(), Deplacement.id.desc())
+        .all()
+    )
     total = sum(float(d.prix) for d in deplacements)
     budget_alloue, budget_depense, budget_restant = _budget()
 
@@ -647,25 +656,29 @@ def deplacement():
         budget_depense=budget_depense,
         budget_restant=budget_restant,
         stock_bas=_stock_carburant() <= _config_carburant().seuil_alerte,
-        today=date.today().isoformat(),
+        today=today.isoformat(),
         mois_fr=MOIS_FR,
-        mois_filtre=mois_filtre,
-        annee_filtre=annee_filtre,
-        annees=range(date.today().year - 2, date.today().year + 2),
+        mois=mois,
+        annee=annee,
+        annees=range(today.year - 2, today.year + 2),
+        mois_label=f"{MOIS_FR[mois - 1]} {annee}",
     )
 
 
 @consommables_bp.route("/deplacement/nouveau", methods=["POST"])
 @role_required("consommables")
 def deplacement_nouveau():
+    mois = request.form.get("mois", type=int) or date.today().month
+    annee = request.form.get("annee", type=int) or date.today().year
+
     if current_user.role == "admin":
         flash("Un compte admin ne peut pas ajouter de déplacement directement.", "warning")
-        return redirect(url_for("consommables.deplacement"))
+        return redirect(url_for("consommables.deplacement", mois=mois, annee=annee))
 
     trajet = request.form.get("trajet", "").strip()
     if not trajet:
         flash("Le trajet est obligatoire.", "danger")
-        return redirect(url_for("consommables.deplacement"))
+        return redirect(url_for("consommables.deplacement", mois=mois, annee=annee))
 
     prix_brut = request.form.get("prix", "").strip()
     try:
@@ -674,7 +687,7 @@ def deplacement_nouveau():
             raise ValueError
     except ValueError:
         flash("Le prix doit être un nombre positif.", "danger")
-        return redirect(url_for("consommables.deplacement"))
+        return redirect(url_for("consommables.deplacement", mois=mois, annee=annee))
 
     date_valeur = _parse_date(request.form.get("date")) or date.today()
 
@@ -696,17 +709,18 @@ def deplacement_nouveau():
         )
     db.session.commit()
 
-    return redirect(url_for("consommables.deplacement"))
+    return redirect(url_for("consommables.deplacement", mois=date_valeur.month, annee=date_valeur.year))
 
 
 @consommables_bp.route("/deplacement/<int:deplacement_id>/supprimer", methods=["POST"])
 @role_required("consommables")
 def deplacement_supprimer(deplacement_id):
+    trajet = db.get_or_404(Deplacement, deplacement_id)
+    mois, annee = trajet.date.month, trajet.date.year
+
     if current_user.role == "admin":
         flash("Un compte admin ne peut pas supprimer de déplacement directement.", "warning")
-        return redirect(url_for("consommables.deplacement"))
-
-    trajet = db.get_or_404(Deplacement, deplacement_id)
+        return redirect(url_for("consommables.deplacement", mois=mois, annee=annee))
 
     if not _retirer_montant("Déplacement", trajet.date, float(trajet.prix)):
         flash(
@@ -718,4 +732,4 @@ def deplacement_supprimer(deplacement_id):
     db.session.delete(trajet)
     db.session.commit()
     flash("Déplacement supprimé.", "info")
-    return redirect(url_for("consommables.deplacement"))
+    return redirect(url_for("consommables.deplacement", mois=mois, annee=annee))
