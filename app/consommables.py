@@ -2,7 +2,7 @@ from datetime import date, datetime
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
-from sqlalchemy import func
+from sqlalchemy import func, extract
 from app.decorators import role_required, admin_required
 
 from app import db
@@ -10,7 +10,7 @@ from app.models import (
     Consommable, SuiviConsommable, Depense, ConfigCarburant, MouvementCarburant, DemandeCarburant,
     ArticleInventaire, MouvementInventaire, MouvementLitresCarburant, Deplacement,
 )
-from app.constants import PRIX_CARBURANT, CATEGORIES_INVENTAIRE, TYPES_GAZ
+from app.constants import PRIX_CARBURANT, CATEGORIES_INVENTAIRE, TYPES_GAZ, MOIS_FR
 
 consommables_bp = Blueprint("consommables", __name__, url_prefix="/consommables")
 
@@ -127,6 +127,8 @@ def _stock_article(article_id):
 @role_required("consommables")
 def liste():
     categorie_filtre = request.args.get("categorie", "")
+    mois_filtre = request.args.get("mois", type=int)
+    annee_filtre = request.args.get("annee", type=int)
 
     query = ArticleInventaire.query.filter_by(actif=True)
     if categorie_filtre in CATEGORIES_INVENTAIRE:
@@ -145,10 +147,14 @@ def liste():
     prix_total_general = sum(l["prix_total"] for l in lignes)
     budget_alloue, budget_depense, budget_restant = _budget()
 
+    mouvements_query = MouvementInventaire.query.join(ArticleInventaire)
+    if mois_filtre:
+        mouvements_query = mouvements_query.filter(extract("month", MouvementInventaire.date) == mois_filtre)
+    if annee_filtre:
+        mouvements_query = mouvements_query.filter(extract("year", MouvementInventaire.date) == annee_filtre)
     mouvements = (
-        MouvementInventaire.query.join(ArticleInventaire)
-        .order_by(MouvementInventaire.date.desc(), MouvementInventaire.id.desc())
-        .limit(50)
+        mouvements_query.order_by(MouvementInventaire.date.desc(), MouvementInventaire.id.desc())
+        .limit(200)
         .all()
     )
 
@@ -166,6 +172,10 @@ def liste():
         budget_restant=budget_restant,
         stock_bas=stock_carburant_bas,
         today=date.today().isoformat(),
+        mois_fr=MOIS_FR,
+        mois_filtre=mois_filtre,
+        annee_filtre=annee_filtre,
+        annees=range(date.today().year - 2, date.today().year + 2),
     )
 
 
@@ -366,6 +376,9 @@ def _budget_carburant():
 @consommables_bp.route("/carburant")
 @role_required("consommables")
 def carburant():
+    mois_filtre = request.args.get("mois", type=int)
+    annee_filtre = request.args.get("annee", type=int)
+
     config = _config_carburant()
     stock = _stock_carburant()
     mouvements = (
@@ -380,9 +393,14 @@ def carburant():
         {"type_gaz": valeur, "libelle": libelle, **_resume_litres(valeur)}
         for valeur, libelle in TYPES_GAZ.items()
     ]
+    mouvements_litres_query = MouvementLitresCarburant.query
+    if mois_filtre:
+        mouvements_litres_query = mouvements_litres_query.filter(extract("month", MouvementLitresCarburant.date) == mois_filtre)
+    if annee_filtre:
+        mouvements_litres_query = mouvements_litres_query.filter(extract("year", MouvementLitresCarburant.date) == annee_filtre)
     mouvements_litres = (
-        MouvementLitresCarburant.query.order_by(MouvementLitresCarburant.date.desc(), MouvementLitresCarburant.id.desc())
-        .limit(50)
+        mouvements_litres_query.order_by(MouvementLitresCarburant.date.desc(), MouvementLitresCarburant.id.desc())
+        .limit(200)
         .all()
     )
 
@@ -402,6 +420,10 @@ def carburant():
         budget_carburant=_budget_carburant(),
         prix_total_utilise=sum(l["prix_utilise"] for l in lignes_litres),
         prix_total_restant=sum(l["prix_restant"] for l in lignes_litres),
+        mois_fr=MOIS_FR,
+        mois_filtre=mois_filtre,
+        annee_filtre=annee_filtre,
+        annees=range(date.today().year - 2, date.today().year + 2),
     )
 
 
@@ -605,7 +627,15 @@ def carburant_demande_rejeter(demande_id):
 @consommables_bp.route("/deplacement")
 @role_required("consommables")
 def deplacement():
-    deplacements = Deplacement.query.order_by(Deplacement.date.desc(), Deplacement.id.desc()).limit(100).all()
+    mois_filtre = request.args.get("mois", type=int)
+    annee_filtre = request.args.get("annee", type=int)
+
+    query = Deplacement.query
+    if mois_filtre:
+        query = query.filter(extract("month", Deplacement.date) == mois_filtre)
+    if annee_filtre:
+        query = query.filter(extract("year", Deplacement.date) == annee_filtre)
+    deplacements = query.order_by(Deplacement.date.desc(), Deplacement.id.desc()).limit(200).all()
     total = sum(float(d.prix) for d in deplacements)
     budget_alloue, budget_depense, budget_restant = _budget()
 
@@ -618,6 +648,10 @@ def deplacement():
         budget_restant=budget_restant,
         stock_bas=_stock_carburant() <= _config_carburant().seuil_alerte,
         today=date.today().isoformat(),
+        mois_fr=MOIS_FR,
+        mois_filtre=mois_filtre,
+        annee_filtre=annee_filtre,
+        annees=range(date.today().year - 2, date.today().year + 2),
     )
 
 

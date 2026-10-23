@@ -138,6 +138,30 @@
     </div>
 
     <div class="tab-pane fade" id="tab-mouvements" role="tabpanel">
+        <form method="get" class="d-flex gap-2 align-items-end mb-3">
+            <input type="hidden" name="_tab" value="mouvements">
+            <div>
+                <label class="form-label small mb-1">Mois</label>
+                <select class="form-select form-select-sm" name="mois" onchange="this.form.submit()">
+                    <option value="">Tous</option>
+                    {% for i in range(1, 13) %}
+                    <option value="{{ i }}" {% if mois_filtre == i %}selected{% endif %}>{{ mois_fr[i - 1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label small mb-1">Année</label>
+                <select class="form-select form-select-sm" name="annee" onchange="this.form.submit()">
+                    <option value="">Toutes</option>
+                    {% for a in annees %}
+                    <option value="{{ a }}" {% if annee_filtre == a %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% if mois_filtre or annee_filtre %}
+            <a href="{{ url_for('consommables.liste') }}" class="btn btn-sm btn-outline-secondary">Réinit.</a>
+            {% endif %}
+        </form>
         <div class="card">
             <div class="table-responsive">
                 <table class="table table-sm table-hover mb-0 align-middle">
@@ -307,4 +331,16 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('_tab') === 'mouvements') {
+            var trigger = document.querySelector('[data-bs-target="#tab-mouvements"]');
+            if (trigger) new bootstrap.Tab(trigger).show();
+        }
+    })();
+</script>
 {% endblock %}
