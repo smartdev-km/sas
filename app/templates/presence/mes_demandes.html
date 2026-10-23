@@ -3,146 +3,161 @@
 {% block content %}
 <div class="mb-4">
     <h1 class="h4 mb-1">Mes demandes d'absence</h1>
-    <p class="text-muted mb-0">Congé, maladie, empêchement ou autre — l'absence reste comptée, mais sera justifiée une fois validée.</p>
+    <p class="text-muted mb-0">Congé, maladie, empêchement, absence autorisée — l'absence reste comptée, mais sera justifiée une fois validée.</p>
 </div>
 
-<div class="card mb-4">
-    <div class="card-body">
-        <h2 class="h6 mb-3">Nouvelle demande</h2>
-        <form method="post" class="row g-3">
-            <div class="col-12 col-sm-4">
-                <label class="form-label" for="date_debut">Date de début *</label>
-                <input type="date" class="form-control" id="date_debut" name="date_debut" value="{{ today.isoformat() }}" required>
-            </div>
-            <div class="col-12 col-sm-4">
-                <label class="form-label" for="date_fin">Date de fin *</label>
-                <input type="date" class="form-control" id="date_fin" name="date_fin" value="{{ today.isoformat() }}" required>
-            </div>
-            <div class="col-12 col-sm-4">
-                <label class="form-label" for="motif">Motif *</label>
-                <select class="form-select" id="motif" name="motif" required>
-                    {% for valeur, libelle in motifs.items() %}
-                        <option value="{{ valeur }}">{{ libelle }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-12">
-                <label class="form-label" for="precision">Précision</label>
-                <textarea class="form-control" id="precision" name="precision" rows="2" placeholder="Optionnel, sauf si motif « Autre »"></textarea>
-            </div>
-            <div class="col-12">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-send"></i> Envoyer la demande
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-nouvelle-demande" type="button" role="tab">Nouvelle demande</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-absence-autorisee" type="button" role="tab">Demander une absence autorisée</button>
+    </li>
+</ul>
 
-<div class="card">
-    <div class="table-responsive">
-        <table class="table table-hover mb-0 align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>Période</th>
-                    <th>Motif</th>
-                    <th>Précision</th>
-                    <th>Statut</th>
-                    <th>Commentaire admin</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for d in demandes %}
-                <tr>
-                    <td>
-                        {{ d.date_debut.strftime("%d/%m/%Y") }}
-                        {% if d.date_fin != d.date_debut %} – {{ d.date_fin.strftime("%d/%m/%Y") }}{% endif %}
-                    </td>
-                    <td>{{ motifs.get(d.motif, d.motif) }}</td>
-                    <td class="text-muted small">{{ d.precision or "-" }}</td>
-                    <td>
-                        {% if d.statut == 'validee' %}
-                            <span class="badge text-bg-success">{{ statuts[d.statut] }}</span>
-                        {% elif d.statut == 'refusee' %}
-                            <span class="badge text-bg-danger">{{ statuts[d.statut] }}</span>
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="tab-nouvelle-demande" role="tabpanel">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Nouvelle demande</h2>
+                <form method="post" class="row g-3">
+                    <div class="col-12 col-sm-4">
+                        <label class="form-label" for="date_debut">Date de début *</label>
+                        <input type="date" class="form-control" id="date_debut" name="date_debut" value="{{ today.isoformat() }}" required>
+                    </div>
+                    <div class="col-12 col-sm-4">
+                        <label class="form-label" for="date_fin">Date de fin *</label>
+                        <input type="date" class="form-control" id="date_fin" name="date_fin" value="{{ today.isoformat() }}" required>
+                    </div>
+                    <div class="col-12 col-sm-4">
+                        <label class="form-label" for="motif">Motif *</label>
+                        <select class="form-select" id="motif" name="motif" required>
+                            {% for valeur, libelle in motifs.items() %}
+                                <option value="{{ valeur }}">{{ libelle }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="precision">Précision</label>
+                        <textarea class="form-control" id="precision" name="precision" rows="2" placeholder="Optionnel, sauf si motif « Autre »"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Envoyer la demande
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Période</th>
+                            <th>Motif</th>
+                            <th>Précision</th>
+                            <th>Statut</th>
+                            <th>Commentaire admin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in demandes %}
+                        <tr>
+                            <td>
+                                {{ d.date_debut.strftime("%d/%m/%Y") }}
+                                {% if d.date_fin != d.date_debut %} – {{ d.date_fin.strftime("%d/%m/%Y") }}{% endif %}
+                            </td>
+                            <td>{{ motifs.get(d.motif, d.motif) }}</td>
+                            <td class="text-muted small">{{ d.precision or "-" }}</td>
+                            <td>
+                                {% if d.statut == 'validee' %}
+                                    <span class="badge text-bg-success">{{ statuts[d.statut] }}</span>
+                                {% elif d.statut == 'refusee' %}
+                                    <span class="badge text-bg-danger">{{ statuts[d.statut] }}</span>
+                                {% else %}
+                                    <span class="badge text-bg-warning">{{ statuts[d.statut] }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted small">{{ d.commentaire_admin or "-" }}</td>
+                        </tr>
                         {% else %}
-                            <span class="badge text-bg-warning">{{ statuts[d.statut] }}</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-muted small">{{ d.commentaire_admin or "-" }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="5" class="text-center text-muted py-4">Aucune demande envoyée.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">Aucune demande envoyée.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-</div>
 
-<div class="card mb-4 mt-4">
-    <div class="card-body">
-        <h2 class="h6 mb-3">Demander une absence autorisée</h2>
-        <p class="text-muted small mb-3">
-            Pour une sortie anticipée, une arrivée tardive ou toute autre absence ponctuelle sur un jour précis, à une heure donnée.
-        </p>
-        <form method="post" action="{{ url_for('presence.demander_absence_autorisee') }}" class="row g-3">
-            <div class="col-12 col-sm-6">
-                <label class="form-label" for="absence_date">Date *</label>
-                <input type="date" class="form-control" id="absence_date" name="date" value="{{ today.isoformat() }}" required>
+    <div class="tab-pane fade" id="tab-absence-autorisee" role="tabpanel">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Demander une absence autorisée</h2>
+                <p class="text-muted small mb-3">
+                    Pour une sortie anticipée, une arrivée tardive ou toute autre absence ponctuelle sur un jour précis, à une heure donnée.
+                </p>
+                <form method="post" action="{{ url_for('presence.demander_absence_autorisee') }}" class="row g-3">
+                    <div class="col-12 col-sm-6">
+                        <label class="form-label" for="absence_date">Date *</label>
+                        <input type="date" class="form-control" id="absence_date" name="date" value="{{ today.isoformat() }}" required>
+                    </div>
+                    <div class="col-12 col-sm-6">
+                        <label class="form-label" for="absence_heure">Heure *</label>
+                        <input type="time" class="form-control" id="absence_heure" name="heure" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="absence_motif">Motif *</label>
+                        <textarea class="form-control" id="absence_motif" name="motif" rows="2" required></textarea>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Envoyer la demande
+                        </button>
+                    </div>
+                </form>
             </div>
-            <div class="col-12 col-sm-6">
-                <label class="form-label" for="absence_heure">Heure *</label>
-                <input type="time" class="form-control" id="absence_heure" name="heure" required>
-            </div>
-            <div class="col-12">
-                <label class="form-label" for="absence_motif">Motif *</label>
-                <textarea class="form-control" id="absence_motif" name="motif" rows="2" required></textarea>
-            </div>
-            <div class="col-12">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-send"></i> Envoyer la demande
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
+        </div>
 
-<div class="card">
-    <div class="table-responsive">
-        <table class="table table-hover mb-0 align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>Date</th>
-                    <th>Heure</th>
-                    <th>Motif</th>
-                    <th>Statut</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for absence in absences_autorisees %}
-                <tr>
-                    <td>{{ absence.date.strftime("%d/%m/%Y") }}</td>
-                    <td>{{ absence.heure.strftime("%H:%M") }}</td>
-                    <td class="text-muted small">{{ absence.motif }}</td>
-                    <td>
-                        {% if absence.statut == 'validee' %}
-                            <span class="badge text-bg-success">{{ statuts[absence.statut] }}</span>
-                        {% elif absence.statut == 'refusee' %}
-                            <span class="badge text-bg-danger">{{ statuts[absence.statut] }}</span>
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Heure</th>
+                            <th>Motif</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for absence in absences_autorisees %}
+                        <tr>
+                            <td>{{ absence.date.strftime("%d/%m/%Y") }}</td>
+                            <td>{{ absence.heure.strftime("%H:%M") }}</td>
+                            <td class="text-muted small">{{ absence.motif }}</td>
+                            <td>
+                                {% if absence.statut == 'validee' %}
+                                    <span class="badge text-bg-success">{{ statuts[absence.statut] }}</span>
+                                {% elif absence.statut == 'refusee' %}
+                                    <span class="badge text-bg-danger">{{ statuts[absence.statut] }}</span>
+                                {% else %}
+                                    <span class="badge text-bg-warning">{{ statuts[absence.statut] }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
                         {% else %}
-                            <span class="badge text-bg-warning">{{ statuts[absence.statut] }}</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="4" class="text-center text-muted py-4">Aucune demande d'absence autorisée envoyée.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">Aucune demande d'absence autorisée envoyée.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
