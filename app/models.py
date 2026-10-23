@@ -160,6 +160,7 @@ class PlanComptable(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     numero = db.Column(db.String(20), nullable=False, unique=True)
     nom = db.Column(db.String(150), nullable=False)
+    budget = db.Column(db.Numeric(14, 2))  # plafond max pour cette catégorie, optionnel
     actif = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

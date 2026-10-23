@@ -106,9 +106,23 @@ def liste():
     }
 
     categorie_label = ""
+    categorie_budget = None
+    categorie_depense = None
+    categorie_restant = None
     if categorie:
         plan = PlanComptable.query.filter_by(nom=categorie).first()
-        categorie_label = f"{plan.numero} — {plan.nom}" if plan else categorie
+        if plan:
+            categorie_label = f"{plan.numero} — {plan.nom}"
+            if plan.budget is not None:
+                categorie_budget = float(plan.budget)
+                categorie_depense = float(
+                    db.session.query(func.coalesce(func.sum(Depense.montant), 0))
+                    .filter(Depense.categorie == categorie, Depense.valide.is_(True))
+                    .scalar()
+                )
+                categorie_restant = categorie_budget - categorie_depense
+        else:
+            categorie_label = categorie
 
     budget_alloue, budget_depense, budget_restant = _calculer_budget()
 
@@ -122,6 +136,9 @@ def liste():
         depense_ids_salaire=depense_ids_salaire,
         total_filtre=float(total_filtre),
         categorie_label=categorie_label,
+        categorie_budget=categorie_budget,
+        categorie_depense=categorie_depense,
+        categorie_restant=categorie_restant,
         budget_alloue=budget_alloue,
         budget_depense=budget_depense,
         budget_restant=budget_restant,
@@ -321,6 +338,20 @@ def devalider(depense_id):
     return redirect(url_for("depenses.liste"))
 
 
+def _parser_budget_categorie(form):
+    """Renvoie (budget, erreur) : budget est None si le champ est laissé vide (pas de plafond)."""
+    budget_brut = form.get("budget", "").strip()
+    if not budget_brut:
+        return None, None
+    try:
+        budget = float(budget_brut)
+        if budget < 0:
+            raise ValueError
+    except ValueError:
+        return None, "Le budget de la catégorie est invalide."
+    return budget, None
+
+
 @depenses_bp.route("/plan-comptable/nouveau", methods=["POST"])
 @role_required("depenses")
 def plan_comptable_nouveau():
@@ -330,13 +361,16 @@ def plan_comptable_nouveau():
 
     numero = request.form.get("numero", "").strip()
     nom = request.form.get("nom", "").strip()
+    budget, erreur_budget = _parser_budget_categorie(request.form)
 
     if not numero or not nom:
         flash("Le numéro et la catégorie sont obligatoires.", "danger")
+    elif erreur_budget:
+        flash(erreur_budget, "danger")
     elif PlanComptable.query.filter(PlanComptable.numero.ilike(numero)).first():
         flash(f"Le numéro « {numero} » est déjà utilisé.", "danger")
     else:
-        db.session.add(PlanComptable(numero=numero, nom=nom))
+        db.session.add(PlanComptable(numero=numero, nom=nom, budget=budget))
         db.session.commit()
         flash(f"Catégorie « {numero} — {nom} » ajoutée au plan comptable.", "success")
 
@@ -354,15 +388,19 @@ def plan_comptable_modifier(plan_id):
 
     numero = request.form.get("numero", "").strip()
     nom = request.form.get("nom", "").strip()
+    budget, erreur_budget = _parser_budget_categorie(request.form)
 
     if not numero or not nom:
         flash("Le numéro et la catégorie sont obligatoires.", "danger")
+    elif erreur_budget:
+        flash(erreur_budget, "danger")
     elif PlanComptable.query.filter(PlanComptable.numero.ilike(numero), PlanComptable.id != plan.id).first():
         flash(f"Le numéro « {numero} » est déjà utilisé.", "danger")
     else:
         ancien_nom = plan.nom
         plan.numero = numero
         plan.nom = nom
+        plan.budget = budget
         if ancien_nom != nom:
             Depense.query.filter_by(categorie=ancien_nom).update({"categorie": nom})
         db.session.commit()

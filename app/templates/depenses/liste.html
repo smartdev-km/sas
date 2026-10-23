@@ -209,6 +209,20 @@
                     <td colspan="4" class="text-end">Total</td>
                     <td class="text-end">{{ total_filtre|kmf }}</td>
                 </tr>
+                {% if categorie_budget is not none %}
+                <tr>
+                    <td colspan="4" class="text-end text-muted">Budget « {{ categorie_label }} »</td>
+                    <td class="text-end text-muted">{{ categorie_budget|kmf }}</td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="text-end text-muted">Montant utilisé (validé)</td>
+                    <td class="text-end text-muted">{{ categorie_depense|kmf }}</td>
+                </tr>
+                <tr class="fw-bold">
+                    <td colspan="4" class="text-end">Montant restant</td>
+                    <td class="text-end {{ 'text-danger' if categorie_restant < 0 else 'text-success' }}">{{ categorie_restant|kmf }}</td>
+                </tr>
+                {% endif %}
                 {% if budget_alloue %}
                 <tr>
                     <td colspan="4" class="text-end text-muted">Budget dépensé (validé)</td>
@@ -280,9 +294,10 @@
                     <table class="table table-sm align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 120px;">Numéro</th>
+                                <th style="width: 110px;">Numéro</th>
                                 <th>Catégorie</th>
-                                <th class="text-center" style="width: 90px;">Actif</th>
+                                <th style="width: 130px;">Budget max</th>
+                                <th class="text-center" style="width: 70px;">Actif</th>
                                 {% if current_user.role != 'admin' %}<th class="text-end" style="width: 110px;">Actions</th>{% endif %}
                             </tr>
                         </thead>
@@ -296,9 +311,13 @@
                                 <td>
                                     <input type="text" class="form-control form-control-sm" name="nom" value="{{ plan.nom }}" form="form-plan-modifier-{{ plan.id }}" required>
                                 </td>
+                                <td>
+                                    <input type="number" step="0.01" min="0" class="form-control form-control-sm" name="budget" value="{{ plan.budget if plan.budget is not none else '' }}" placeholder="Aucun" form="form-plan-modifier-{{ plan.id }}">
+                                </td>
                                 {% else %}
                                 <td>{{ plan.numero }}</td>
                                 <td>{{ plan.nom }}</td>
+                                <td>{{ plan.budget|kmf if plan.budget is not none else "—" }}</td>
                                 {% endif %}
                                 <td class="text-center">
                                     {% if plan.actif %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %}
@@ -319,7 +338,7 @@
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="4" class="text-center text-muted py-3">Aucune catégorie dans le plan comptable.</td>
+                                <td colspan="5" class="text-center text-muted py-3">Aucune catégorie dans le plan comptable.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -336,18 +355,22 @@
                 <hr>
                 <h4 class="h6 mb-2">Ajouter une catégorie</h4>
                 <form method="post" action="{{ url_for('depenses.plan_comptable_nouveau') }}" class="row g-2 align-items-end">
-                    <div class="col-4">
+                    <div class="col-3">
                         <label class="form-label small mb-1">Numéro</label>
                         <input type="text" class="form-control form-control-sm" name="numero" placeholder="Ex : 6222" required>
                     </div>
-                    <div class="col-8">
+                    <div class="col-4">
                         <label class="form-label small mb-1">Catégorie</label>
-                        <div class="d-flex gap-2">
-                            <input type="text" class="form-control form-control-sm" name="nom" placeholder="Ex : Location immobilière" required>
-                            <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">
-                                <i class="bi bi-plus-lg"></i> Ajouter
-                            </button>
-                        </div>
+                        <input type="text" class="form-control form-control-sm" name="nom" placeholder="Ex : Location immobilière" required>
+                    </div>
+                    <div class="col-3">
+                        <label class="form-label small mb-1">Budget max</label>
+                        <input type="number" step="0.01" min="0" class="form-control form-control-sm" name="budget" placeholder="Optionnel">
+                    </div>
+                    <div class="col-2">
+                        <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                            <i class="bi bi-plus-lg"></i> Ajouter
+                        </button>
                     </div>
                 </form>
                 {% endif %}
