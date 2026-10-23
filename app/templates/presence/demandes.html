@@ -208,3 +208,23 @@
 </div>
 {% endfor %}
 {% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        var STORAGE_KEY = 'sas-presence-demandes-tab';
+
+        var saved = sessionStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            var trigger = document.querySelector('[data-bs-target="' + saved + '"]');
+            if (trigger) new bootstrap.Tab(trigger).show();
+        }
+
+        document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function (el) {
+            el.addEventListener('shown.bs.tab', function (e) {
+                sessionStorage.setItem(STORAGE_KEY, e.target.getAttribute('data-bs-target'));
+            });
+        });
+    })();
+</script>
+{% endblock %}

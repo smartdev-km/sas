@@ -752,7 +752,7 @@ def absence_autorisee_nouvelle():
         db.session.commit()
         flash(f"Absence autorisée enregistrée pour {employe.nom}.", "success")
 
-    return redirect(url_for("presence.index"))
+    return redirect(url_for("presence.demandes"))
 
 
 @presence_bp.route("/absences-autorisees/<int:absence_id>/valider", methods=["POST"])
@@ -763,7 +763,7 @@ def absence_autorisee_valider(absence_id):
     absence.traite_le = datetime.now()
     db.session.commit()
     flash("Absence autorisée validée.", "success")
-    return redirect(url_for("presence.index"))
+    return redirect(url_for("presence.demandes"))
 
 
 @presence_bp.route("/absences-autorisees/<int:absence_id>/refuser", methods=["POST"])
@@ -774,7 +774,7 @@ def absence_autorisee_refuser(absence_id):
     absence.traite_le = datetime.now()
     db.session.commit()
     flash("Absence autorisée refusée.", "info")
-    return redirect(url_for("presence.index"))
+    return redirect(url_for("presence.demandes"))
 
 
 @presence_bp.route("/absences-autorisees/<int:absence_id>/supprimer", methods=["POST"])
@@ -784,7 +784,7 @@ def absence_autorisee_supprimer(absence_id):
     db.session.delete(absence)
     db.session.commit()
     flash("Absence autorisée supprimée.", "info")
-    return redirect(url_for("presence.index"))
+    return redirect(url_for("presence.demandes"))
 
 
 @presence_bp.route("/demander-absence-autorisee", methods=["POST"])
