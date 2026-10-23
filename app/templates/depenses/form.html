@@ -56,7 +56,7 @@
                 </div>
                 <div class="col-12 col-sm-6">
                     <label class="form-label" for="montant">Montant (KMF) *</label>
-                    <input type="number" step="1" min="1" class="form-control" id="montant" name="montant" value="{{ form.montant or '' }}" required>
+                    <input type="number" step="0.01" min="0.01" class="form-control" id="montant" name="montant" value="{{ form.montant or '' }}" required>
                 </div>
                 <div class="col-12 col-sm-6">
                     <label class="form-label" for="beneficiaire">Bénéficiaire</label>
