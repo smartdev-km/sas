@@ -4,11 +4,12 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user
 
 from app import db
-from app.models import ClientCommercial
+from app.models import ClientCommercial, Villa, VillaAttribution
 from app.decorators import role_required
 from app.constants import (
     TYPES_CLIENT, STATUTS_CLIENT, STATUTS_CLIENT_COULEUR,
     PROJETS_ACQUISITION, MODES_FINANCEMENT, INTENTIONS_ACHAT,
+    STATUTS_VILLA, STATUTS_VILLA_COULEUR, STATUTS_ATTRIBUTION_VILLA,
 )
 
 commercial_bp = Blueprint("commercial", __name__, url_prefix="/commercial")
@@ -92,7 +93,10 @@ def _contexte_formulaire(**extra):
     return dict(
         types_client=TYPES_CLIENT, statuts_client=STATUTS_CLIENT,
         projets_acquisition=PROJETS_ACQUISITION, modes_financement=MODES_FINANCEMENT,
-        intentions_achat=INTENTIONS_ACHAT, **extra,
+        intentions_achat=INTENTIONS_ACHAT,
+        toutes_les_villas=Villa.query.order_by(Villa.numero).all(),
+        statuts_villa=STATUTS_VILLA, statuts_attribution_villa=STATUTS_ATTRIBUTION_VILLA,
+        **extra,
     )
 
 
@@ -246,7 +250,143 @@ def supprimer(client_id):
         flash("Un compte admin ne peut pas supprimer une fiche client.", "warning")
         return redirect(url_for("commercial.liste"))
 
+    villas_concernees = [a.villa for a in client.villa_attributions]
+    for attribution in list(client.villa_attributions):
+        db.session.delete(attribution)
     db.session.delete(client)
+    for villa in villas_concernees:
+        _recalculer_statut_villa(villa)
     db.session.commit()
     flash("Client supprimé.", "info")
     return redirect(url_for("commercial.liste"))
+
+
+# --- Villas ----------------------------------------------------------------
+
+def _recalculer_statut_villa(villa):
+    """Le statut d'une villa dérive de ses attributions : vendue > réservée > disponible."""
+    attributions = villa.attributions
+    if any(a.statut == "vendue" for a in attributions):
+        villa.statut = "vendue"
+    elif any(a.statut == "reservee" for a in attributions):
+        villa.statut = "reservee"
+    else:
+        villa.statut = "disponible"
+
+
+@commercial_bp.route("/villas")
+@role_required("commercial")
+def villas():
+    statut_filtre = request.args.get("statut", "")
+
+    query = Villa.query
+    if statut_filtre in STATUTS_VILLA:
+        query = query.filter_by(statut=statut_filtre)
+
+    liste_villas = query.order_by(Villa.numero).all()
+    compteurs = {valeur: Villa.query.filter_by(statut=valeur).count() for valeur in STATUTS_VILLA}
+
+    return render_template(
+        "commercial/villas.html",
+        villas=liste_villas,
+        statuts_villa=STATUTS_VILLA,
+        statuts_villa_couleur=STATUTS_VILLA_COULEUR,
+        statuts_attribution=STATUTS_ATTRIBUTION_VILLA,
+        statut_filtre=statut_filtre,
+        compteurs=compteurs,
+    )
+
+
+@commercial_bp.route("/<int:client_id>/villas/nouvelle", methods=["POST"])
+@role_required("commercial")
+def villa_attribution_nouvelle(client_id):
+    client = db.get_or_404(ClientCommercial, client_id)
+
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas modifier une fiche client.", "warning")
+        return redirect(url_for("commercial.liste"))
+
+    villa_id = request.form.get("villa_id", type=int)
+    villa = db.get_or_404(Villa, villa_id) if villa_id else None
+    statut = request.form.get("statut", "")
+
+    if not villa:
+        flash("Merci de sélectionner une villa.", "danger")
+        return redirect(url_for("commercial.modifier", client_id=client.id))
+    if statut not in STATUTS_ATTRIBUTION_VILLA:
+        flash("Le statut de la villa est invalide.", "danger")
+        return redirect(url_for("commercial.modifier", client_id=client.id))
+
+    if statut in ("reservee", "vendue"):
+        deja_prise = VillaAttribution.query.filter(
+            VillaAttribution.villa_id == villa.id,
+            VillaAttribution.statut.in_(("reservee", "vendue")),
+            VillaAttribution.client_id != client.id,
+        ).first()
+        if deja_prise:
+            flash(f"{villa.label()} est déjà {STATUTS_ATTRIBUTION_VILLA[deja_prise.statut].lower()} par {deja_prise.client.nom_client}.", "danger")
+            return redirect(url_for("commercial.modifier", client_id=client.id))
+
+    db.session.add(VillaAttribution(
+        villa_id=villa.id,
+        client_id=client.id,
+        statut=statut,
+        date=_parse_date(request.form.get("date")),
+        notes=request.form.get("notes", "").strip() or None,
+    ))
+    _recalculer_statut_villa(villa)
+    db.session.commit()
+    flash(f"{villa.label()} ajoutée à la fiche de {client.nom_client}.", "success")
+    return redirect(url_for("commercial.modifier", client_id=client.id))
+
+
+@commercial_bp.route("/villas/attributions/<int:attribution_id>/modifier", methods=["POST"])
+@role_required("commercial")
+def villa_attribution_modifier(attribution_id):
+    attribution = db.get_or_404(VillaAttribution, attribution_id)
+
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas modifier une fiche client.", "warning")
+        return redirect(url_for("commercial.liste"))
+
+    statut = request.form.get("statut", "")
+    if statut not in STATUTS_ATTRIBUTION_VILLA:
+        flash("Le statut de la villa est invalide.", "danger")
+        return redirect(url_for("commercial.modifier", client_id=attribution.client_id))
+
+    if statut in ("reservee", "vendue"):
+        deja_prise = VillaAttribution.query.filter(
+            VillaAttribution.villa_id == attribution.villa_id,
+            VillaAttribution.statut.in_(("reservee", "vendue")),
+            VillaAttribution.id != attribution.id,
+            VillaAttribution.client_id != attribution.client_id,
+        ).first()
+        if deja_prise:
+            flash(f"{attribution.villa.label()} est déjà {STATUTS_ATTRIBUTION_VILLA[deja_prise.statut].lower()} par {deja_prise.client.nom_client}.", "danger")
+            return redirect(url_for("commercial.modifier", client_id=attribution.client_id))
+
+    attribution.statut = statut
+    attribution.date = _parse_date(request.form.get("date"))
+    attribution.notes = request.form.get("notes", "").strip() or None
+    _recalculer_statut_villa(attribution.villa)
+    db.session.commit()
+    flash("Villa mise à jour.", "success")
+    return redirect(url_for("commercial.modifier", client_id=attribution.client_id))
+
+
+@commercial_bp.route("/villas/attributions/<int:attribution_id>/supprimer", methods=["POST"])
+@role_required("commercial")
+def villa_attribution_supprimer(attribution_id):
+    attribution = db.get_or_404(VillaAttribution, attribution_id)
+
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas modifier une fiche client.", "warning")
+        return redirect(url_for("commercial.liste"))
+
+    client_id = attribution.client_id
+    villa = attribution.villa
+    db.session.delete(attribution)
+    _recalculer_statut_villa(villa)
+    db.session.commit()
+    flash("Villa retirée de la fiche.", "info")
+    return redirect(url_for("commercial.modifier", client_id=client_id))

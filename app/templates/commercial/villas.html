@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Villas{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Villas</h1>
+        <p class="text-muted mb-0">Registre des 200 villas du projet</p>
+    </div>
+</div>
+
+<ul class="nav nav-pills mb-4">
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('commercial.liste') }}">Clients</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active" href="{{ url_for('commercial.villas') }}">Villas</a>
+    </li>
+</ul>
+
+<div class="row g-3 mb-3">
+    <div class="col-12 col-sm-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Disponibles</div>
+                <div class="fw-semibold fs-5 text-success">{{ compteurs.disponible }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Réservées</div>
+                <div class="fw-semibold fs-5 text-warning">{{ compteurs.reservee }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="card h-100">
+            <div class="card-body py-2">
+                <div class="text-muted small">Vendues</div>
+                <div class="fw-semibold fs-5">{{ compteurs.vendue }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('commercial.villas') }}" class="btn btn-sm {{ 'btn-primary' if not statut_filtre else 'btn-outline-secondary' }}">Toutes</a>
+            {% for valeur, libelle in statuts_villa.items() %}
+            <a href="{{ url_for('commercial.villas', statut=valeur) }}" class="btn btn-sm {{ 'btn-primary' if statut_filtre == valeur else 'btn-outline-secondary' }}">{{ libelle }}</a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 100px;">Villa</th>
+                    <th>Statut</th>
+                    <th>Client(s)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for villa in villas %}
+                {% set reservee_ou_vendue = villa.attributions | selectattr('statut', 'in', ['reservee', 'vendue']) | first %}
+                {% set interessees = villa.attributions | selectattr('statut', 'equalto', 'interessee') | list %}
+                <tr>
+                    <td class="fw-semibold">{{ villa.label() }}</td>
+                    <td><span class="badge text-bg-{{ statuts_villa_couleur.get(villa.statut, 'secondary') }}">{{ statuts_villa.get(villa.statut, villa.statut) }}</span></td>
+                    <td>
+                        {% if reservee_ou_vendue %}
+                        <a href="{{ url_for('commercial.modifier', client_id=reservee_ou_vendue.client_id) }}">{{ reservee_ou_vendue.client.nom_client }}</a>
+                        {% elif interessees %}
+                        <span class="text-muted small">
+                            Intéressé(s) :
+                            {% for a in interessees %}
+                                <a href="{{ url_for('commercial.modifier', client_id=a.client_id) }}">{{ a.client.nom_client }}</a>{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </span>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="text-center text-muted py-4">Aucune villa trouvée.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

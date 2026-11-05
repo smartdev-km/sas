@@ -101,6 +101,26 @@ INTENTIONS_ACHAT = {
     "apres_jeux": "Je souhaite concrétiser mon achat après les jeux, sous réserve de disponibilité",
 }
 
+NOMBRE_TOTAL_VILLAS = 200
+
+STATUTS_VILLA = {
+    "disponible": "Disponible",
+    "reservee": "Réservée",
+    "vendue": "Vendue",
+}
+
+STATUTS_VILLA_COULEUR = {
+    "disponible": "success",
+    "reservee": "warning",
+    "vendue": "secondary",
+}
+
+STATUTS_ATTRIBUTION_VILLA = {
+    "interessee": "Intéressée",
+    "reservee": "Réservée",
+    "vendue": "Vendue",
+}
+
 TYPES_APPAREIL = ["Téléphone", "Ordinateur portable", "Ordinateur fixe", "Tablette", "Imprimante", "Autre"]
 
 STATUTS_APPAREIL = {

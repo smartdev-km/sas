@@ -686,3 +686,34 @@ class ClientCommercial(db.Model):
 
     def mode_financement_liste(self):
         return [m for m in (self.mode_financement or "").split(",") if m]
+
+
+class Villa(db.Model):
+    """Une des 200 villas du projet, suivie individuellement."""
+
+    __tablename__ = "villas"
+
+    id = db.Column(db.Integer, primary_key=True)
+    numero = db.Column(db.Integer, nullable=False, unique=True)
+    statut = db.Column(db.String(20), nullable=False, default="disponible")  # disponible, reservee, vendue
+    notes = db.Column(db.Text)
+
+    def label(self):
+        return f"Villa {self.numero}"
+
+
+class VillaAttribution(db.Model):
+    """Lien entre une villa et un client (intérêt, réservation ou vente)."""
+
+    __tablename__ = "villa_attributions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    villa_id = db.Column(db.Integer, db.ForeignKey("villas.id"), nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey("clients_commercial.id"), nullable=False)
+    statut = db.Column(db.String(20), nullable=False, default="interessee")  # interessee, reservee, vendue
+    date = db.Column(db.Date)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    villa = db.relationship("Villa", backref=db.backref("attributions", lazy=True))
+    client = db.relationship("ClientCommercial", backref=db.backref("villa_attributions", lazy=True))

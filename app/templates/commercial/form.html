@@ -162,8 +162,8 @@
             <h2 class="h6 mb-3">Suivi commercial</h2>
             <div class="row g-3">
                 <div class="col-12">
-                    <label class="form-label" for="villa_interessee">Villa intéressée</label>
-                    <input type="text" class="form-control" id="villa_interessee" name="villa_interessee" value="{{ form.villa_interessee or '' }}">
+                    <label class="form-label" for="villa_interessee">Note libre sur la villa (optionnel)</label>
+                    <input type="text" class="form-control" id="villa_interessee" name="villa_interessee" value="{{ form.villa_interessee or '' }}" placeholder="Ex : préfère vue mer, proche de l'entrée...">
                 </div>
                 <div class="col-12">
                     <label class="form-label" for="notes">Notes / objections</label>
@@ -180,4 +180,85 @@
         <a href="{{ url_for('commercial.liste') }}" class="btn btn-outline-secondary">Annuler</a>
     </div>
 </form>
+
+{% if client %}
+<div class="card mb-4" style="max-width: 820px;">
+    <div class="card-header">
+        <h2 class="h6 mb-0">Villas (un client peut en acheter plusieurs)</h2>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Villa</th>
+                    <th>Statut</th>
+                    <th>Date</th>
+                    <th>Notes</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in client.villa_attributions %}
+                <tr>
+                    <td class="fw-semibold">{{ a.villa.label() }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('commercial.villa_attribution_modifier', attribution_id=a.id) }}" class="d-flex gap-1">
+                            <select class="form-select form-select-sm" name="statut" style="width: 140px;">
+                                {% for valeur, libelle in statuts_attribution_villa.items() %}
+                                <option value="{{ valeur }}" {% if a.statut == valeur %}selected{% endif %}>{{ libelle }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="date" class="form-control form-control-sm" name="date" value="{{ a.date.isoformat() if a.date else '' }}" style="width: 150px;">
+                            <input type="text" class="form-control form-control-sm" name="notes" value="{{ a.notes or '' }}" placeholder="Notes">
+                            <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap"><i class="bi bi-check-lg"></i></button>
+                        </form>
+                    </td>
+                    <td colspan="2"></td>
+                    <td class="text-end">
+                        <form method="post" action="{{ url_for('commercial.villa_attribution_supprimer', attribution_id=a.id) }}" onsubmit="return confirm('Retirer {{ a.villa.label() }} de cette fiche ?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-3">Aucune villa associée à ce client.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-body border-top">
+        <h3 class="h6 mb-2">Ajouter une villa</h3>
+        <form method="post" action="{{ url_for('commercial.villa_attribution_nouvelle', client_id=client.id) }}" class="row g-2 align-items-end">
+            <div class="col-12 col-sm-3">
+                <label class="form-label small mb-1">Villa</label>
+                <select class="form-select form-select-sm" name="villa_id" required>
+                    <option value="" selected disabled>Choisir...</option>
+                    {% for v in toutes_les_villas %}
+                    <option value="{{ v.id }}">{{ v.label() }} — {{ statuts_villa.get(v.statut, v.statut) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-sm-3">
+                <label class="form-label small mb-1">Statut</label>
+                <select class="form-select form-select-sm" name="statut" required>
+                    {% for valeur, libelle in statuts_attribution_villa.items() %}
+                    <option value="{{ valeur }}">{{ libelle }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-sm-3">
+                <label class="form-label small mb-1">Date</label>
+                <input type="date" class="form-control form-control-sm" name="date">
+            </div>
+            <div class="col-12 col-sm-3">
+                <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                    <i class="bi bi-plus-lg"></i> Ajouter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
