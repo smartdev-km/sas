@@ -18,9 +18,11 @@
                 </select>
             </div>
         </form>
+        {% if current_user.role != 'admin' %}
         <a href="{{ url_for('commercial.nouveau') }}" class="btn btn-primary">
             <i class="bi bi-plus-lg"></i> Nouveau client
         </a>
+        {% endif %}
     </div>
 </div>
 
@@ -57,6 +59,7 @@
                     <td><span class="badge text-bg-{{ statuts_couleur.get(c.statut, 'secondary') }}">{{ statuts_client.get(c.statut, c.statut) }}</span></td>
                     <td>{{ c.prochaine_relance.strftime("%d/%m/%Y") if c.prochaine_relance else "-" }}</td>
                     <td class="text-end">
+                        {% if current_user.role != 'admin' %}
                         <a href="{{ url_for('commercial.modifier', client_id=c.id) }}" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-pencil"></i>
                         </a>
@@ -65,6 +68,9 @@
                                 <i class="bi bi-trash"></i>
                             </button>
                         </form>
+                        {% else %}
+                        <span class="text-muted small">—</span>
+                        {% endif %}
                     </td>
                 </tr>
                 {% else %}

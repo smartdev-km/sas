@@ -155,6 +155,10 @@ def liste():
 @commercial_bp.route("/nouveau", methods=["GET", "POST"])
 @role_required("commercial")
 def nouveau():
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas ajouter de client directement.", "warning")
+        return redirect(url_for("commercial.liste"))
+
     if request.method == "POST":
         erreurs = _valider_formulaire(request.form)
         if erreurs:
@@ -182,6 +186,10 @@ def nouveau():
 @role_required("commercial")
 def modifier(client_id):
     client = db.get_or_404(ClientCommercial, client_id)
+
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas modifier une fiche client.", "warning")
+        return redirect(url_for("commercial.liste"))
 
     if request.method == "POST":
         erreurs = _valider_formulaire(request.form)
@@ -233,6 +241,11 @@ def modifier(client_id):
 @role_required("commercial")
 def supprimer(client_id):
     client = db.get_or_404(ClientCommercial, client_id)
+
+    if current_user.role == "admin":
+        flash("Un compte admin ne peut pas supprimer une fiche client.", "warning")
+        return redirect(url_for("commercial.liste"))
+
     db.session.delete(client)
     db.session.commit()
     flash("Client supprimé.", "info")
