@@ -648,17 +648,41 @@ class ClientCommercial(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     date_contact = db.Column(db.Date, nullable=False)
-    nom_client = db.Column(db.String(150), nullable=False)
-    telephone = db.Column(db.String(30))
-    email = db.Column(db.String(120))
-    type_client = db.Column(db.String(20), nullable=False, default="acheteur")
+
+    # 1. Informations personnelles
+    numero_piece_identite = db.Column(db.String(50))
+    type_client = db.Column(db.String(20), nullable=False, default="famille")
     type_client_precision = db.Column(db.String(150))
-    budget = db.Column(db.Numeric(14, 2))
-    villa_interessee = db.Column(db.String(150))
     statut = db.Column(db.String(20), nullable=False, default="nouveau")
+    nom_client = db.Column(db.String(150), nullable=False)
+    profession = db.Column(db.String(255))
+    societe = db.Column(db.String(150))
+    telephone = db.Column(db.String(30))
+    whatsapp = db.Column(db.String(30))
+    email = db.Column(db.String(120))
+    lieu_residence = db.Column(db.String(150))
+    nombre_villas_envisage = db.Column(db.Integer)
+
+    # 2. Projet d'acquisition (type de résidence recherché)
+    projet_acquisition = db.Column(db.String(30))
+    projet_acquisition_autre = db.Column(db.String(150))
+
+    # 3. Budget et modalités d'achat
+    budget = db.Column(db.Numeric(14, 2))
+    budget_min = db.Column(db.Numeric(14, 2))
+    budget_max = db.Column(db.Numeric(14, 2))
+    mode_financement = db.Column(db.String(150))
+
+    # 4. Intention d'acquisition d'une villa
+    intention_achat = db.Column(db.String(30))
+
+    villa_interessee = db.Column(db.String(150))
     prochaine_relance = db.Column(db.Date)
     notes = db.Column(db.Text)
     cree_par_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     cree_par = db.relationship("User")
+
+    def mode_financement_liste(self):
+        return [m for m in (self.mode_financement or "").split(",") if m]

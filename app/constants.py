@@ -56,8 +56,8 @@ ROLES_COMPTE = {
 }
 
 TYPES_CLIENT = {
-    "acheteur": "Acheteur",
     "investisseur": "Investisseur",
+    "famille": "Famille",
     "autre": "Autre",
 }
 
@@ -65,18 +65,40 @@ STATUTS_CLIENT = {
     "nouveau": "Nouveau",
     "contacte": "Contacté",
     "rdv_cale": "RDV calé",
-    "a_relancer": "À relancer",
+    "reservee": "Réservée",
+    "prochaine_relance": "Prochaine relance",
+    "confirme": "Confirmé",
     "vendu": "Vendu",
-    "perdu": "Perdu",
 }
 
 STATUTS_CLIENT_COULEUR = {
     "nouveau": "secondary",
     "contacte": "info",
     "rdv_cale": "primary",
-    "a_relancer": "warning",
+    "reservee": "warning",
+    "prochaine_relance": "warning",
+    "confirme": "success",
     "vendu": "success",
-    "perdu": "danger",
+}
+
+PROJETS_ACQUISITION = {
+    "residence_principale": "Résidence principale",
+    "residence_secondaire": "Résidence secondaire",
+    "investissement_locatif": "Investissement locatif",
+    "investissement_patrimonial": "Investissement patrimonial",
+    "autre": "Autre",
+}
+
+MODES_FINANCEMENT = {
+    "fonds_propres": "Fonds propres",
+    "credit_bancaire": "Crédit bancaire",
+    "paiement_echelonne": "Paiement échelonné",
+    "revenus_mensuels": "Revenus mensuels (CDD, CDI, allocations familiales, ou autres)",
+}
+
+INTENTIONS_ACHAT = {
+    "reserver_maintenant": "Je souhaite réserver une villa dès maintenant avec signature de compromis de vente",
+    "apres_jeux": "Je souhaite concrétiser mon achat après les jeux, sous réserve de disponibilité",
 }
 
 TYPES_APPAREIL = ["Téléphone", "Ordinateur portable", "Ordinateur fixe", "Tablette", "Imprimante", "Autre"]
