@@ -8,7 +8,7 @@ from app.models import ClientCommercial, Villa, VillaAttribution
 from app.decorators import role_required
 from app.constants import (
     TYPES_CLIENT, STATUTS_CLIENT, STATUTS_CLIENT_COULEUR,
-    PROJETS_ACQUISITION, MODES_FINANCEMENT, INTENTIONS_ACHAT,
+    PROJETS_ACQUISITION, MODES_FINANCEMENT, TYPES_REVENUS_MENSUELS, INTENTIONS_ACHAT,
     STATUTS_VILLA, STATUTS_VILLA_COULEUR, STATUTS_ATTRIBUTION_VILLA,
 )
 
@@ -81,6 +81,13 @@ def _valider_formulaire(form):
     if intention and intention not in INTENTIONS_ACHAT:
         erreurs.append("L'intention d'achat est invalide.")
 
+    if "revenus_mensuels" in form.getlist("mode_financement"):
+        types_revenus = form.getlist("revenus_mensuels_types")
+        if not any(t in TYPES_REVENUS_MENSUELS for t in types_revenus):
+            erreurs.append("Merci de préciser le type de revenus mensuels (CDD, CDI, allocations familiales ou autre).")
+        elif "autre" in types_revenus and not form.get("revenus_mensuels_autre_precision", "").strip():
+            erreurs.append("Merci de préciser le type de revenus mensuels (autre).")
+
     return erreurs
 
 
@@ -89,10 +96,18 @@ def _mode_financement_depuis_form(form):
     return ",".join(m for m in choix if m in MODES_FINANCEMENT) or None
 
 
+def _revenus_mensuels_types_depuis_form(form):
+    if "revenus_mensuels" not in form.getlist("mode_financement"):
+        return None
+    choix = form.getlist("revenus_mensuels_types")
+    return ",".join(t for t in choix if t in TYPES_REVENUS_MENSUELS) or None
+
+
 def _contexte_formulaire(**extra):
     return dict(
         types_client=TYPES_CLIENT, statuts_client=STATUTS_CLIENT,
         projets_acquisition=PROJETS_ACQUISITION, modes_financement=MODES_FINANCEMENT,
+        types_revenus_mensuels=TYPES_REVENUS_MENSUELS,
         intentions_achat=INTENTIONS_ACHAT,
         toutes_les_villas=Villa.query.order_by(Villa.numero).all(),
         statuts_villa=STATUTS_VILLA, statuts_attribution_villa=STATUTS_ATTRIBUTION_VILLA,
@@ -127,6 +142,12 @@ def _appliquer_formulaire(client, form):
     client.budget_min = _parse_decimal(form.get("budget_min"))
     client.budget_max = _parse_decimal(form.get("budget_max"))
     client.mode_financement = _mode_financement_depuis_form(form)
+    client.revenus_mensuels_types = _revenus_mensuels_types_depuis_form(form)
+    revenus_types = client.revenus_mensuels_types_liste()
+    client.revenus_mensuels_autre_precision = (
+        form.get("revenus_mensuels_autre_precision", "").strip() or None
+        if "autre" in revenus_types else None
+    )
 
     client.intention_achat = form.get("intention_achat", "") or None
 
@@ -229,6 +250,8 @@ def modifier(client_id):
         "budget_min": client.budget_min,
         "budget_max": client.budget_max,
         "mode_financement": client.mode_financement_liste(),
+        "revenus_mensuels_types": client.revenus_mensuels_types_liste(),
+        "revenus_mensuels_autre_precision": client.revenus_mensuels_autre_precision or "",
         "intention_achat": client.intention_achat or "",
         "villa_interessee": client.villa_interessee or "",
         "statut": client.statut,

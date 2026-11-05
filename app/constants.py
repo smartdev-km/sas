@@ -93,7 +93,14 @@ MODES_FINANCEMENT = {
     "fonds_propres": "Fonds propres",
     "credit_bancaire": "Crédit bancaire",
     "paiement_echelonne": "Paiement échelonné",
-    "revenus_mensuels": "Revenus mensuels (CDD, CDI, allocations familiales, ou autres)",
+    "revenus_mensuels": "Revenus mensuels",
+}
+
+TYPES_REVENUS_MENSUELS = {
+    "cdd": "CDD",
+    "cdi": "CDI",
+    "allocations_familiales": "Allocations familiales",
+    "autre": "Autre",
 }
 
 INTENTIONS_ACHAT = {

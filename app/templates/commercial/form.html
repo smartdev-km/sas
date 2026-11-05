@@ -9,6 +9,7 @@
 </div>
 
 {% set mode_fin_selection = form.getlist('mode_financement') if form.getlist is defined else (form.mode_financement or []) %}
+{% set revenus_selection = form.getlist('revenus_mensuels_types') if form.getlist is defined else (form.revenus_mensuels_types or []) %}
 
 <form method="post">
     <div class="card mb-3" style="max-width: 820px;">
@@ -135,10 +136,25 @@
             <div class="d-flex flex-column gap-2">
                 {% for valeur, libelle in modes_financement.items() %}
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="mode_financement" id="financement-{{ valeur }}" value="{{ valeur }}" {% if valeur in mode_fin_selection %}checked{% endif %}>
+                    <input class="form-check-input" type="checkbox" name="mode_financement" id="financement-{{ valeur }}" value="{{ valeur }}" {% if valeur in mode_fin_selection %}checked{% endif %}
+                           {% if valeur == 'revenus_mensuels' %}onchange="document.getElementById('bloc-revenus-mensuels').classList.toggle('d-none', !this.checked);"{% endif %}>
                     <label class="form-check-label" for="financement-{{ valeur }}">{{ libelle }}</label>
                 </div>
                 {% endfor %}
+
+                <div class="ps-4 {% if 'revenus_mensuels' not in mode_fin_selection %}d-none{% endif %}" id="bloc-revenus-mensuels">
+                    <label class="form-label small mb-1 d-block">Préciser le type de revenus</label>
+                    <div class="d-flex flex-column gap-2">
+                        {% for valeur, libelle in types_revenus_mensuels.items() %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="revenus_mensuels_types" id="revenus-{{ valeur }}" value="{{ valeur }}" {% if valeur in revenus_selection %}checked{% endif %}
+                                   {% if valeur == 'autre' %}onchange="document.getElementById('bloc-revenus-autre').classList.toggle('d-none', !this.checked);"{% endif %}>
+                            <label class="form-check-label" for="revenus-{{ valeur }}">{{ libelle }}</label>
+                        </div>
+                        {% endfor %}
+                        <input type="text" class="form-control form-control-sm {% if 'autre' not in revenus_selection %}d-none{% endif %}" style="max-width: 320px;" id="bloc-revenus-autre" name="revenus_mensuels_autre_precision" value="{{ form.revenus_mensuels_autre_precision or '' }}" placeholder="Préciser">
+                    </div>
+                </div>
             </div>
         </div>
     </div>
