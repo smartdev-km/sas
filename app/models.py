@@ -545,16 +545,16 @@ class MouvementLitresCarburant(db.Model):
     enregistre_par = db.relationship("User")
 
 
-class Deplacement(db.Model):
-    """Trajet (ex. taxi) enregistré directement par le secrétaire, avec son prix."""
+class MouvementPetiteCaisse(db.Model):
+    """Sortie d'argent de la petite caisse, enregistrée directement par le secrétaire."""
 
-    __tablename__ = "deplacements"
+    __tablename__ = "mouvements_petite_caisse"
 
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.Date, nullable=False, default=datetime.now)
-    trajet = db.Column(db.String(255), nullable=False)
-    prix = db.Column(db.Numeric(12, 2), nullable=False)
-    notes = db.Column(db.Text)
+    beneficiaire = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.String(255), nullable=False)
+    montant = db.Column(db.Numeric(12, 2), nullable=False)
     enregistre_par_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     created_at = db.Column(db.DateTime, default=datetime.now)
 

@@ -8,7 +8,7 @@ from app.decorators import role_required, admin_required
 from app import db
 from app.models import (
     Consommable, SuiviConsommable, Depense, ConfigCarburant, MouvementCarburant, DemandeCarburant,
-    ArticleInventaire, MouvementInventaire, MouvementLitresCarburant, Deplacement,
+    ArticleInventaire, MouvementInventaire, MouvementLitresCarburant, MouvementPetiteCaisse,
 )
 from app.constants import PRIX_CARBURANT, CATEGORIES_INVENTAIRE, TYPES_GAZ, MOIS_FR
 
@@ -641,27 +641,27 @@ def carburant_demande_rejeter(demande_id):
     return redirect(url_for("consommables.carburant"))
 
 
-# --- Déplacement ------------------------------------------------------------
+# --- Petite caisse ----------------------------------------------------------
 
-@consommables_bp.route("/deplacement")
+@consommables_bp.route("/petite-caisse")
 @role_required("consommables")
-def deplacement():
+def petite_caisse():
     today = date.today()
     mois = request.args.get("mois", today.month, type=int)
     annee = request.args.get("annee", today.year, type=int)
 
-    deplacements = (
-        Deplacement.query
-        .filter(extract("year", Deplacement.date) == annee, extract("month", Deplacement.date) == mois)
-        .order_by(Deplacement.date.desc(), Deplacement.id.desc())
+    mouvements = (
+        MouvementPetiteCaisse.query
+        .filter(extract("year", MouvementPetiteCaisse.date) == annee, extract("month", MouvementPetiteCaisse.date) == mois)
+        .order_by(MouvementPetiteCaisse.date.desc(), MouvementPetiteCaisse.id.desc())
         .all()
     )
-    total = sum(float(d.prix) for d in deplacements)
+    total = sum(float(m.montant) for m in mouvements)
     budget_alloue, budget_depense, budget_restant = _budget()
 
     return render_template(
-        "consommables/deplacement.html",
-        deplacements=deplacements,
+        "consommables/petite_caisse.html",
+        mouvements=mouvements,
         total=total,
         budget_alloue=budget_alloue,
         budget_depense=budget_depense,
@@ -676,71 +676,76 @@ def deplacement():
     )
 
 
-@consommables_bp.route("/deplacement/nouveau", methods=["POST"])
+@consommables_bp.route("/petite-caisse/nouveau", methods=["POST"])
 @role_required("consommables")
-def deplacement_nouveau():
+def petite_caisse_nouveau():
     mois = request.form.get("mois", type=int) or date.today().month
     annee = request.form.get("annee", type=int) or date.today().year
 
     if current_user.role == "admin":
-        flash("Un compte admin ne peut pas ajouter de déplacement directement.", "warning")
-        return redirect(url_for("consommables.deplacement", mois=mois, annee=annee))
+        flash("Un compte admin ne peut pas ajouter de mouvement de petite caisse directement.", "warning")
+        return redirect(url_for("consommables.petite_caisse", mois=mois, annee=annee))
 
-    trajet = request.form.get("trajet", "").strip()
-    if not trajet:
-        flash("Le trajet est obligatoire.", "danger")
-        return redirect(url_for("consommables.deplacement", mois=mois, annee=annee))
+    beneficiaire = request.form.get("beneficiaire", "").strip()
+    if not beneficiaire:
+        flash("Le bénéficiaire est obligatoire.", "danger")
+        return redirect(url_for("consommables.petite_caisse", mois=mois, annee=annee))
 
-    prix_brut = request.form.get("prix", "").strip()
+    description = request.form.get("description", "").strip()
+    if not description:
+        flash("La description est obligatoire.", "danger")
+        return redirect(url_for("consommables.petite_caisse", mois=mois, annee=annee))
+
+    montant_brut = request.form.get("montant", "").strip()
     try:
-        prix = float(prix_brut)
-        if prix <= 0:
+        montant = float(montant_brut)
+        if montant <= 0:
             raise ValueError
     except ValueError:
-        flash("Le prix doit être un nombre positif.", "danger")
-        return redirect(url_for("consommables.deplacement", mois=mois, annee=annee))
+        flash("Le montant doit être un nombre positif.", "danger")
+        return redirect(url_for("consommables.petite_caisse", mois=mois, annee=annee))
 
     date_valeur = _parse_date(request.form.get("date")) or date.today()
 
-    db.session.add(Deplacement(
+    db.session.add(MouvementPetiteCaisse(
         date=date_valeur,
-        trajet=trajet,
-        prix=prix,
-        notes=request.form.get("notes", "").strip() or None,
+        beneficiaire=beneficiaire,
+        description=description,
+        montant=montant,
         enregistre_par_id=current_user.id,
     ))
 
-    if _appliquer_montant("Déplacement", date_valeur, prix):
-        flash("Déplacement enregistré.", "success")
+    if _appliquer_montant("Petite caisse", date_valeur, montant):
+        flash("Mouvement de petite caisse enregistré.", "success")
     else:
         flash(
-            "Déplacement enregistré, mais le Suivi mensuel de Déplacement pour ce mois est déjà validé : "
+            "Mouvement enregistré, mais le Suivi mensuel de Petite caisse pour ce mois est déjà validé : "
             "ajoutez le montant manuellement après déverrouillage.",
             "warning",
         )
     db.session.commit()
 
-    return redirect(url_for("consommables.deplacement", mois=date_valeur.month, annee=date_valeur.year))
+    return redirect(url_for("consommables.petite_caisse", mois=date_valeur.month, annee=date_valeur.year))
 
 
-@consommables_bp.route("/deplacement/<int:deplacement_id>/supprimer", methods=["POST"])
+@consommables_bp.route("/petite-caisse/<int:mouvement_id>/supprimer", methods=["POST"])
 @role_required("consommables")
-def deplacement_supprimer(deplacement_id):
-    trajet = db.get_or_404(Deplacement, deplacement_id)
-    mois, annee = trajet.date.month, trajet.date.year
+def petite_caisse_supprimer(mouvement_id):
+    mouvement = db.get_or_404(MouvementPetiteCaisse, mouvement_id)
+    mois, annee = mouvement.date.month, mouvement.date.year
 
     if current_user.role == "admin":
-        flash("Un compte admin ne peut pas supprimer de déplacement directement.", "warning")
-        return redirect(url_for("consommables.deplacement", mois=mois, annee=annee))
+        flash("Un compte admin ne peut pas supprimer de mouvement de petite caisse directement.", "warning")
+        return redirect(url_for("consommables.petite_caisse", mois=mois, annee=annee))
 
-    if not _retirer_montant("Déplacement", trajet.date, float(trajet.prix)):
+    if not _retirer_montant("Petite caisse", mouvement.date, float(mouvement.montant)):
         flash(
-            "Déplacement supprimé, mais le Suivi mensuel de Déplacement pour ce mois est déjà validé : "
+            "Mouvement supprimé, mais le Suivi mensuel de Petite caisse pour ce mois est déjà validé : "
             "retirez le montant manuellement après déverrouillage.",
             "warning",
         )
 
-    db.session.delete(trajet)
+    db.session.delete(mouvement)
     db.session.commit()
-    flash("Déplacement supprimé.", "info")
-    return redirect(url_for("consommables.deplacement", mois=mois, annee=annee))
+    flash("Mouvement supprimé.", "info")
+    return redirect(url_for("consommables.petite_caisse", mois=mois, annee=annee))

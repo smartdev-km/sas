@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Déplacement{% endblock %}
+{% block title %}Petite caisse{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h1 class="h3 mb-0">Consommables</h1>
-        <p class="text-muted mb-0">Déplacements (ex. taxi) et leur prix — {{ mois_label }}</p>
+        <p class="text-muted mb-0">Mouvements de la petite caisse — {{ mois_label }}</p>
     </div>
     <div class="d-flex gap-2 align-items-end flex-wrap">
         <form method="get" class="d-flex gap-2 align-items-end">
@@ -26,8 +26,8 @@
             </div>
         </form>
         {% if current_user.role != 'admin' %}
-        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-nouveau-deplacement">
-            <i class="bi bi-plus-lg"></i> Ajouter un déplacement
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-nouveau-petite-caisse">
+            <i class="bi bi-plus-lg"></i> Ajouter un mouvement
         </button>
         {% endif %}
     </div>
@@ -38,7 +38,7 @@
         <a class="nav-link" href="{{ url_for('consommables.liste', mois=mois, annee=annee) }}">Inventaire</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link active" href="{{ url_for('consommables.deplacement', mois=mois, annee=annee) }}">Déplacement</a>
+        <a class="nav-link active" href="{{ url_for('consommables.petite_caisse', mois=mois, annee=annee) }}">Petite caisse</a>
     </li>
     <li class="nav-item">
         <a class="nav-link" href="{{ url_for('consommables.carburant', mois=mois, annee=annee) }}">Carburant</a>
@@ -78,22 +78,22 @@
             <thead class="table-light">
                 <tr>
                     <th>Date</th>
-                    <th>Trajet</th>
-                    <th>Notes</th>
-                    <th class="text-end">Prix</th>
+                    <th>Bénéficiaire</th>
+                    <th>Description</th>
+                    <th class="text-end">Montant</th>
                     {% if current_user.role != 'admin' %}<th class="text-end">Actions</th>{% endif %}
                 </tr>
             </thead>
             <tbody>
-                {% for d in deplacements %}
+                {% for m in mouvements %}
                 <tr>
-                    <td>{{ d.date.strftime("%d/%m/%Y") }}</td>
-                    <td class="fw-semibold">{{ d.trajet }}</td>
-                    <td class="text-muted small">{{ d.notes or "-" }}</td>
-                    <td class="text-end">{{ d.prix|kmf }}</td>
+                    <td>{{ m.date.strftime("%d/%m/%Y") }}</td>
+                    <td class="fw-semibold">{{ m.beneficiaire }}</td>
+                    <td class="text-muted small">{{ m.description }}</td>
+                    <td class="text-end">{{ m.montant|kmf }}</td>
                     {% if current_user.role != 'admin' %}
                     <td class="text-end">
-                        <form method="post" action="{{ url_for('consommables.deplacement_supprimer', deplacement_id=d.id) }}" onsubmit="return confirm('Supprimer ce déplacement ?');">
+                        <form method="post" action="{{ url_for('consommables.petite_caisse_supprimer', mouvement_id=m.id) }}" onsubmit="return confirm('Supprimer ce mouvement ?');">
                             <button type="submit" class="btn btn-sm btn-outline-danger">
                                 <i class="bi bi-trash"></i>
                             </button>
@@ -103,11 +103,11 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="5" class="text-center text-muted py-4">Aucun déplacement pour {{ mois_label }}.</td>
+                    <td colspan="5" class="text-center text-muted py-4">Aucun mouvement pour {{ mois_label }}.</td>
                 </tr>
                 {% endfor %}
             </tbody>
-            {% if deplacements %}
+            {% if mouvements %}
             <tfoot>
                 <tr class="table-light fw-semibold">
                     <td colspan="3">TOTAL</td>
@@ -121,12 +121,12 @@
 </div>
 
 {% if current_user.role != 'admin' %}
-<div class="modal fade" id="modal-nouveau-deplacement" tabindex="-1">
+<div class="modal fade" id="modal-nouveau-petite-caisse" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="post" action="{{ url_for('consommables.deplacement_nouveau') }}">
+            <form method="post" action="{{ url_for('consommables.petite_caisse_nouveau') }}">
                 <div class="modal-header">
-                    <h3 class="modal-title h6 mb-0">Ajouter un déplacement</h3>
+                    <h3 class="modal-title h6 mb-0">Ajouter un mouvement de petite caisse</h3>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -138,16 +138,16 @@
                             <input type="date" class="form-control form-control-sm" name="date" value="{{ today }}" required>
                         </div>
                         <div class="col-12 col-sm-6">
-                            <label class="form-label small mb-1">Prix (KMF)</label>
-                            <input type="number" step="1" min="1" class="form-control form-control-sm" name="prix" required>
+                            <label class="form-label small mb-1">Montant (KMF)</label>
+                            <input type="number" step="1" min="1" class="form-control form-control-sm" name="montant" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label small mb-1">Trajet</label>
-                            <input type="text" class="form-control form-control-sm" name="trajet" placeholder="Ex : Moroni — Aéroport" required>
+                            <label class="form-label small mb-1">Bénéficiaire</label>
+                            <input type="text" class="form-control form-control-sm" name="beneficiaire" placeholder="Ex : Mme Fatima" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label small mb-1">Notes</label>
-                            <input type="text" class="form-control form-control-sm" name="notes" placeholder="Optionnel">
+                            <label class="form-label small mb-1">Description</label>
+                            <input type="text" class="form-control form-control-sm" name="description" placeholder="Ex : Achat de fournitures de bureau" required>
                         </div>
                     </div>
                 </div>

@@ -39,7 +39,7 @@
         <a class="nav-link active" href="{{ url_for('consommables.liste', mois=mois, annee=annee) }}">Inventaire</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('consommables.deplacement', mois=mois, annee=annee) }}">Déplacement</a>
+        <a class="nav-link" href="{{ url_for('consommables.petite_caisse', mois=mois, annee=annee) }}">Petite caisse</a>
     </li>
     <li class="nav-item">
         <a class="nav-link" href="{{ url_for('consommables.carburant', mois=mois, annee=annee) }}">Carburant</a>
@@ -58,7 +58,7 @@
     <div class="col-12 col-sm-4">
         <div class="card h-100">
             <div class="card-body py-2">
-                <div class="text-muted small">Déjà réparti (tous mois, Inventaire + Déplacement)</div>
+                <div class="text-muted small">Déjà réparti (tous mois, Inventaire + Petite caisse)</div>
                 <div class="fw-semibold">{{ budget_depense|kmf }}</div>
             </div>
         </div>
