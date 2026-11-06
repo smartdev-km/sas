@@ -1,4 +1,5 @@
 import os
+import re
 import time as _time
 
 # Fixe le fuseau horaire du process sur celui des Comores (identique à Nairobi,
@@ -153,6 +154,7 @@ def create_app(config_class=Config):
     app.jinja_env.filters["kmf2"] = format_kmf2
     app.jinja_env.filters["nombre2"] = format_nombre2
     app.jinja_env.filters["role_label"] = format_role_label
+    app.jinja_env.filters["whatsapp_link"] = format_whatsapp_link
 
     return app
 
@@ -185,3 +187,12 @@ def format_nombre2(value):
         value = 0
     entier, _, decimales = f"{value:,.2f}".partition(".")
     return entier.replace(",", " ") + "," + decimales
+
+
+def format_whatsapp_link(value):
+    digits = re.sub(r"\D", "", value or "").lstrip("0")
+    if not digits:
+        return None
+    if not digits.startswith("269"):
+        digits = "269" + digits
+    return f"https://wa.me/{digits}"

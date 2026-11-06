@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}{{ client.nom_client }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">{{ client.nom_client }}</h1>
+        <p class="text-muted mb-0">
+            <a href="{{ url_for('commercial.liste') }}" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Retour à la liste</a>
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        {% if client.whatsapp or client.telephone %}
+        <a href="{{ (client.whatsapp or client.telephone)|whatsapp_link }}" target="_blank" rel="noopener" class="btn btn-success">
+            <i class="bi bi-whatsapp"></i> Contacter sur WhatsApp
+        </a>
+        {% endif %}
+        {% if current_user.role != 'admin' %}
+        <a href="{{ url_for('commercial.modifier', client_id=client.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil"></i> Modifier
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-3" style="max-width: 820px;">
+    <div class="card-body">
+        <h2 class="h6 mb-3">1. Informations personnelles</h2>
+        <div class="row g-3">
+            <div class="col-12 col-sm-6">
+                <div class="text-muted small">Date contact</div>
+                <div>{{ client.date_contact.strftime("%d/%m/%Y") }}</div>
+            </div>
+            <div class="col-12 col-sm-6">
+                <div class="text-muted small">N° Carte nationale ou Passeport</div>
+                <div>{{ client.numero_piece_identite or "-" }}</div>
+            </div>
+            <div class="col-12 col-sm-6">
+                <div class="text-muted small">Profession / Activité</div>
+                <div>{{ client.profession or "-" }}</div>
+            </div>
+            <div class="col-12 col-sm-6">
+                <div class="text-muted small">Revenus mensuels</div>
+                <div>
+                    {% if client.revenus_mensuels_type %}
+                        {{ types_revenus_mensuels.get(client.revenus_mensuels_type, client.revenus_mensuels_type) }}
+                        {% if client.revenus_mensuels_type == 'autre' and client.revenus_mensuels_autre_precision %}
+                            ({{ client.revenus_mensuels_autre_precision }})
+                        {% endif %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-12 col-sm-6">
+                <div class="text-muted small">Société / Institution</div>
+                <div>{{ client.societe or "-" }}</div>
+            </div>
+            <div class="col-12 col-sm-6">
+                <div class="text-muted small">Lieu de résidence</div>
+                <div>{{ client.lieu_residence or "-" }}</div>
+            </div>
+            <div class="col-12 col-sm-4">
+                <div class="text-muted small">Téléphone</div>
+                <div>{{ client.telephone or "-" }}</div>
+            </div>
+            <div class="col-12 col-sm-4">
+                <div class="text-muted small">WhatsApp</div>
+                <div>{{ client.whatsapp or "-" }}</div>
+            </div>
+            <div class="col-12 col-sm-4">
+                <div class="text-muted small">Adresse e-mail</div>
+                <div>{{ client.email or "-" }}</div>
+            </div>
+            <div class="col-12 col-sm-4">
+                <div class="text-muted small">Type de client</div>
+                <div>
+                    {{ types_client.get(client.type_client, client.type_client) }}
+                    {% if client.type_client == 'autre' and client.type_client_precision %}({{ client.type_client_precision }}){% endif %}
+                </div>
+            </div>
+            <div class="col-12 col-sm-4">
+                <div class="text-muted small">Nombre de villas envisagé</div>
+                <div>{{ client.nombre_villas_envisage if client.nombre_villas_envisage is not none else "-" }}</div>
+            </div>
+            <div class="col-12 col-sm-4">
+                <div class="text-muted small">Statut</div>
+                <div><span class="badge text-bg-{{ statuts_couleur.get(client.statut, 'secondary') }}">{{ statuts_client.get(client.statut, client.statut) }}</span></div>
+            </div>
+            {% if client.prochaine_relance %}
+            <div class="col-12 col-sm-6">
+                <div class="text-muted small">Date de la prochaine relance</div>
+                <div>{{ client.prochaine_relance.strftime("%d/%m/%Y") }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card mb-3" style="max-width: 820px;">
+    <div class="card-body">
+        <h2 class="h6 mb-3">2. Projet d'acquisition</h2>
+        <div>
+            {% if client.projet_acquisition %}
+                {{ projets_acquisition.get(client.projet_acquisition, client.projet_acquisition) }}
+                {% if client.projet_acquisition == 'autre' and client.projet_acquisition_autre %}({{ client.projet_acquisition_autre }}){% endif %}
+            {% else %}
+                -
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card mb-3" style="max-width: 820px;">
+    <div class="card-body">
+        <h2 class="h6 mb-3">3. Budget et modalités d'achat</h2>
+        <div class="row g-3">
+            <div class="col-12 col-sm-6">
+                <div class="text-muted small">Budget envisagé (millions KMF)</div>
+                <div>
+                    {% if client.budget_min is not none or client.budget_max is not none %}
+                        {{ client.budget_min|nombre if client.budget_min is not none else "0" }}
+                        —
+                        {{ client.budget_max|nombre if client.budget_max is not none else "plus de" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+            </div>
+            {% if client.type_client == 'investisseur' %}
+            <div class="col-12 col-sm-6">
+                <div class="text-muted small">Budget (KMF)</div>
+                <div>{{ client.budget|kmf if client.budget is not none else "-" }}</div>
+            </div>
+            {% endif %}
+            <div class="col-12">
+                <div class="text-muted small">Mode de financement envisagé</div>
+                <div>
+                    {% set modes = client.mode_financement_liste() %}
+                    {% if modes %}
+                        {% for m in modes %}{{ modes_financement.get(m, m) }}{% if not loop.last %}, {% endif %}{% endfor %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-3" style="max-width: 820px;">
+    <div class="card-body">
+        <h2 class="h6 mb-3">4. Votre projet d'acquisition d'une villa</h2>
+        <div>{{ intentions_achat.get(client.intention_achat, "-") if client.intention_achat else "-" }}</div>
+    </div>
+</div>
+
+<div class="card mb-3" style="max-width: 820px;">
+    <div class="card-body">
+        <h2 class="h6 mb-3">Suivi commercial</h2>
+        <div class="row g-3">
+            {% if client.villa_interessee %}
+            <div class="col-12">
+                <div class="text-muted small">Note libre sur la villa</div>
+                <div>{{ client.villa_interessee }}</div>
+            </div>
+            {% endif %}
+            <div class="col-12">
+                <div class="text-muted small">Notes / objections</div>
+                <div style="white-space: pre-wrap;">{{ client.notes or "-" }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if client.villa_attributions %}
+<div class="card mb-4" style="max-width: 820px;">
+    <div class="card-header">
+        <h2 class="h6 mb-0">Villas</h2>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Villa</th>
+                    <th>Statut</th>
+                    <th>Date</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in client.villa_attributions %}
+                <tr>
+                    <td class="fw-semibold">{{ a.villa.label() }}</td>
+                    <td>{{ statuts_attribution_villa.get(a.statut, a.statut) }}</td>
+                    <td>{{ a.date.strftime("%d/%m/%Y") if a.date else "-" }}</td>
+                    <td class="text-muted small">{{ a.notes or "-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

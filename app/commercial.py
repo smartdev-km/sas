@@ -175,6 +175,20 @@ def liste():
     )
 
 
+@commercial_bp.route("/<int:client_id>")
+@role_required("commercial")
+def detail(client_id):
+    client = db.get_or_404(ClientCommercial, client_id)
+    return render_template(
+        "commercial/detail.html",
+        client=client,
+        types_client=TYPES_CLIENT, statuts_client=STATUTS_CLIENT, statuts_couleur=STATUTS_CLIENT_COULEUR,
+        projets_acquisition=PROJETS_ACQUISITION, modes_financement=MODES_FINANCEMENT,
+        types_revenus_mensuels=TYPES_REVENUS_MENSUELS, intentions_achat=INTENTIONS_ACHAT,
+        statuts_attribution_villa=STATUTS_ATTRIBUTION_VILLA,
+    )
+
+
 @commercial_bp.route("/nouveau", methods=["GET", "POST"])
 @role_required("commercial")
 def nouveau():

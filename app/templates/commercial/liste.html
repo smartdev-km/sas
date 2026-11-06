@@ -56,7 +56,16 @@
                     <td class="text-muted">{{ loop.index }}</td>
                     <td>{{ c.date_contact.strftime("%d/%m/%Y") }}</td>
                     <td class="fw-semibold">{{ c.nom_client }}</td>
-                    <td>{{ c.telephone or "-" }}</td>
+                    <td>
+                        {% if c.telephone %}
+                        {{ c.telephone }}
+                        <a href="{{ (c.whatsapp or c.telephone)|whatsapp_link }}" target="_blank" rel="noopener" class="text-success ms-1" title="Contacter sur WhatsApp">
+                            <i class="bi bi-whatsapp"></i>
+                        </a>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
                     <td>
                         {{ types_client.get(c.type_client, c.type_client) }}
                         {% if c.type_client == 'autre' and c.type_client_precision %}
@@ -68,6 +77,9 @@
                     <td><span class="badge text-bg-{{ statuts_couleur.get(c.statut, 'secondary') }}">{{ statuts_client.get(c.statut, c.statut) }}</span></td>
                     <td>{{ c.prochaine_relance.strftime("%d/%m/%Y") if c.prochaine_relance else "-" }}</td>
                     <td class="text-end">
+                        <a href="{{ url_for('commercial.detail', client_id=c.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i>
+                        </a>
                         {% if current_user.role != 'admin' %}
                         <a href="{{ url_for('commercial.modifier', client_id=c.id) }}" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-pencil"></i>
@@ -77,8 +89,6 @@
                                 <i class="bi bi-trash"></i>
                             </button>
                         </form>
-                        {% else %}
-                        <span class="text-muted small">—</span>
                         {% endif %}
                     </td>
                 </tr>
