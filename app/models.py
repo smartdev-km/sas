@@ -672,7 +672,7 @@ class ClientCommercial(db.Model):
     budget_min = db.Column(db.Numeric(14, 2))
     budget_max = db.Column(db.Numeric(14, 2))
     mode_financement = db.Column(db.String(150))
-    revenus_mensuels_types = db.Column(db.String(100))
+    revenus_mensuels_type = db.Column(db.String(30))
     revenus_mensuels_autre_precision = db.Column(db.String(150))
 
     # 4. Intention d'acquisition d'une villa
@@ -688,9 +688,6 @@ class ClientCommercial(db.Model):
 
     def mode_financement_liste(self):
         return [m for m in (self.mode_financement or "").split(",") if m]
-
-    def revenus_mensuels_types_liste(self):
-        return [t for t in (self.revenus_mensuels_types or "").split(",") if t]
 
 
 class Villa(db.Model):
