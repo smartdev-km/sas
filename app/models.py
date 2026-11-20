@@ -719,3 +719,58 @@ class VillaAttribution(db.Model):
 
     villa = db.relationship("Villa", backref=db.backref("attributions", lazy=True))
     client = db.relationship("ClientCommercial", backref=db.backref("villa_attributions", lazy=True))
+
+
+class CreditBancaire(db.Model):
+    """Financement bancaire (prêt) contracté auprès d'une banque, versé par tranches."""
+
+    __tablename__ = "credits_bancaires"
+
+    id = db.Column(db.Integer, primary_key=True)
+    banque = db.Column(db.String(150), nullable=False)
+    financement_total = db.Column(db.Numeric(14, 2), nullable=False)
+    notes = db.Column(db.Text)
+    cree_par_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    cree_par = db.relationship("User")
+
+    def total_tranches_versees(self):
+        return sum(float(t.montant_tranche) for t in self.tranches)
+
+    def total_frais_prealables(self):
+        return sum(float(t.frais_prealable or 0) for t in self.tranches)
+
+    def total_net_verse(self):
+        return self.total_tranches_versees() - self.total_frais_prealables()
+
+    def pourcentage_verse(self):
+        if not self.financement_total:
+            return 0.0
+        return self.total_tranches_versees() / float(self.financement_total) * 100
+
+
+class TrancheCreditBancaire(db.Model):
+    """Versement d'une tranche d'un crédit bancaire."""
+
+    __tablename__ = "tranches_credit_bancaire"
+
+    id = db.Column(db.Integer, primary_key=True)
+    credit_id = db.Column(db.Integer, db.ForeignKey("credits_bancaires.id"), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    montant_tranche = db.Column(db.Numeric(14, 2), nullable=False)
+    frais_prealable = db.Column(db.Numeric(14, 2), default=0)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    credit = db.relationship("CreditBancaire", backref=db.backref(
+        "tranches", lazy=True, order_by="TrancheCreditBancaire.date"
+    ))
+
+    def pourcentage(self):
+        if not self.credit.financement_total:
+            return 0.0
+        return float(self.montant_tranche) / float(self.credit.financement_total) * 100
+
+    def montant_net(self):
+        return float(self.montant_tranche) - float(self.frais_prealable or 0)

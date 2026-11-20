@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ "Modifier" if credit else "Nouvelle" }} banque{% endblock %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="h3 mb-0">{{ "Modifier la banque" if credit else "Ajouter une banque" }}</h1>
+    <p class="text-muted mb-0">
+        <a href="{{ url_for('credit_bancaire.detail', credit_id=credit.id) if credit else url_for('credit_bancaire.liste') }}" class="text-decoration-none">
+            <i class="bi bi-arrow-left"></i> Retour
+        </a>
+    </p>
+</div>
+
+<form method="post">
+    <div class="card mb-3" style="max-width: 600px;">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label" for="banque">Banque *</label>
+                    <input type="text" class="form-control" id="banque" name="banque" value="{{ form.banque or '' }}" placeholder="Ex : Banque Fédérale de Commerce" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="financement_total">Financement total (KMF) *</label>
+                    <input type="number" step="0.01" min="0.01" class="form-control" id="financement_total" name="financement_total" value="{{ form.financement_total if form.financement_total is not none else '' }}" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="notes">Notes</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="3">{{ form.notes or '' }}</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mb-4">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg"></i> {{ "Enregistrer" if credit else "Ajouter" }}
+        </button>
+        <a href="{{ url_for('credit_bancaire.detail', credit_id=credit.id) if credit else url_for('credit_bancaire.liste') }}" class="btn btn-outline-secondary">Annuler</a>
+    </div>
+</form>
+{% endblock %}

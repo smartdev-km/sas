@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Crédit Bancaire{% endblock %}
+{% block head %}
+<style>
+    @media print {
+        @page {
+            size: A4 landscape;
+            margin: 1.5cm;
+        }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 d-print-none">
+    <div>
+        <h1 class="h3 mb-0">Crédit Bancaire</h1>
+        <p class="text-muted mb-0">Suivi des financements bancaires et de leurs tranches versées</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('credit_bancaire.nouveau') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Ajouter une banque
+        </a>
+        <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
+            <i class="bi bi-printer"></i> Imprimer
+        </button>
+    </div>
+</div>
+
+<div class="text-center mb-4 d-none d-print-block sas-print-header">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Société de projet Village des jeux">
+    <p class="text-muted mb-0">Sommes versées par les banques</p>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Banque</th>
+                    <th class="text-end">Financement total</th>
+                    <th class="text-end">Total versé</th>
+                    <th class="text-end">% versé</th>
+                    <th class="text-end">Total frais préalables</th>
+                    <th class="text-end">Total net versé</th>
+                    <th class="text-end d-print-none">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for credit in credits %}
+                <tr>
+                    <td class="fw-semibold">
+                        <a href="{{ url_for('credit_bancaire.detail', credit_id=credit.id) }}" class="text-decoration-none">{{ credit.banque }}</a>
+                    </td>
+                    <td class="text-end">{{ credit.financement_total|kmf2 }}</td>
+                    <td class="text-end">{{ credit.total_tranches_versees()|kmf2 }}</td>
+                    <td class="text-end">{{ "%.1f"|format(credit.pourcentage_verse()) }} %</td>
+                    <td class="text-end">{{ credit.total_frais_prealables()|kmf2 }}</td>
+                    <td class="text-end fw-semibold text-success">{{ credit.total_net_verse()|kmf2 }}</td>
+                    <td class="text-end d-print-none">
+                        <a href="{{ url_for('credit_bancaire.detail', credit_id=credit.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{{ url_for('credit_bancaire.modifier', credit_id=credit.id) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="post" action="{{ url_for('credit_bancaire.supprimer', credit_id=credit.id) }}" class="d-inline" onsubmit="return confirm('Supprimer « {{ credit.banque }} » ainsi que toutes ses tranches ?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">Aucune banque enregistrée.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if credits %}
+            <tfoot>
+                <tr class="table-light fw-bold">
+                    <td>TOTAL</td>
+                    <td class="text-end">{{ total_financement|kmf2 }}</td>
+                    <td class="text-end">{{ total_verse|kmf2 }}</td>
+                    <td class="text-end">{{ "%.1f"|format(pourcentage_global) }} %</td>
+                    <td class="text-end">{{ total_frais|kmf2 }}</td>
+                    <td class="text-end text-success">{{ total_net|kmf2 }}</td>
+                    <td class="d-print-none"></td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+</div>
+
+<p class="text-muted small text-center mt-4 mb-0 d-none d-print-block">
+    Document généré le {{ now.strftime("%d/%m/%Y à %H:%M") }}
+    {% if current_user.is_authenticated %}par {{ current_user.nom }}{% endif %}.
+</p>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{{ credit.banque }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">{{ credit.banque }}</h1>
+        <p class="text-muted mb-0">
+            <a href="{{ url_for('credit_bancaire.liste') }}" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Retour à la liste</a>
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('credit_bancaire.modifier', credit_id=credit.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil"></i> Modifier
+        </a>
+        <a href="{{ url_for('credit_bancaire.tranche_nouvelle', credit_id=credit.id) }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Ajouter une tranche
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3 mb-3">
+            <div class="col-6 col-sm-3">
+                <div class="text-muted small">Financement total</div>
+                <div class="fw-semibold">{{ credit.financement_total|kmf2 }}</div>
+            </div>
+            <div class="col-6 col-sm-3">
+                <div class="text-muted small">Total versé ({{ "%.1f"|format(credit.pourcentage_verse()) }} %)</div>
+                <div class="fw-semibold">{{ credit.total_tranches_versees()|kmf2 }}</div>
+            </div>
+            <div class="col-6 col-sm-3">
+                <div class="text-muted small">Total frais préalables</div>
+                <div class="fw-semibold">{{ credit.total_frais_prealables()|kmf2 }}</div>
+            </div>
+            <div class="col-6 col-sm-3">
+                <div class="text-muted small">Total net versé</div>
+                <div class="fw-semibold text-success">{{ credit.total_net_verse()|kmf2 }}</div>
+            </div>
+        </div>
+        <div class="progress mb-3" style="height: 6px;">
+            <div class="progress-bar" role="progressbar" style="width: {{ credit.pourcentage_verse() if credit.pourcentage_verse() <= 100 else 100 }}%;"></div>
+        </div>
+        {% if credit.notes %}
+        <p class="text-muted small mb-0">{{ credit.notes }}</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th class="text-end">Tranche versée</th>
+                    <th class="text-end">% du financement</th>
+                    <th class="text-end">Frais préalable</th>
+                    <th class="text-end">Montant net versé</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in credit.tranches %}
+                <tr>
+                    <td>{{ t.date.strftime("%d/%m/%Y") }}</td>
+                    <td class="text-end">{{ t.montant_tranche|kmf2 }}</td>
+                    <td class="text-end">{{ "%.1f"|format(t.pourcentage()) }} %</td>
+                    <td class="text-end">{{ t.frais_prealable|kmf2 }}</td>
+                    <td class="text-end fw-semibold">{{ t.montant_net()|kmf2 }}</td>
+                    <td class="text-end">
+                        <a href="{{ url_for('credit_bancaire.tranche_modifier', tranche_id=t.id) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="post" action="{{ url_for('credit_bancaire.tranche_supprimer', tranche_id=t.id) }}" class="d-inline" onsubmit="return confirm('Supprimer cette tranche ?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">Aucune tranche versée pour le moment.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
