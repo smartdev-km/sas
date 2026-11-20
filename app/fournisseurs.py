@@ -38,9 +38,9 @@ def _parse_taux_garantie(form):
     return taux if taux is not None else 5.0
 
 
-@fournisseurs_bp.route("/")
-@role_required("fournisseurs")
-def liste():
+def situation_marches_fournisseurs():
+    """Données pour le rapport imprimé 'Coût des marchés et prestations' /
+    'Paiements déjà effectués / recensés', réutilisées par Fournisseurs et Crédit Bancaire."""
     fournisseurs = Fournisseur.query.order_by(Fournisseur.actif.desc(), Fournisseur.nom_societe).all()
 
     total_marche = sum(float(f.montant_marche) for f in fournisseurs if f.montant_marche is not None)
@@ -54,13 +54,21 @@ def liste():
         paiements.append({"entreprise": f.nom_societe, "nature": nature, "montant": montant_paye})
     total_paiements = sum(p["montant"] for p in paiements)
 
+    return {
+        "fournisseurs": fournisseurs,
+        "total_marche": total_marche,
+        "paiements": paiements,
+        "total_paiements": total_paiements,
+    }
+
+
+@fournisseurs_bp.route("/")
+@role_required("fournisseurs")
+def liste():
     return render_template(
         "fournisseurs/liste.html",
-        fournisseurs=fournisseurs,
-        total_marche=total_marche,
-        paiements=paiements,
-        total_paiements=total_paiements,
         now=datetime.now(),
+        **situation_marches_fournisseurs(),
     )
 
 

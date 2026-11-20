@@ -6,6 +6,7 @@ from app.decorators import admin_required
 
 from app import db
 from app.models import CreditBancaire, TrancheCreditBancaire
+from app.fournisseurs import situation_marches_fournisseurs
 
 credit_bancaire_bp = Blueprint("credit_bancaire", __name__, url_prefix="/credit-bancaire")
 
@@ -72,6 +73,7 @@ def liste():
         total_net=total_net,
         pourcentage_global=pourcentage_global,
         now=datetime.now(),
+        **situation_marches_fournisseurs(),
     )
 
 

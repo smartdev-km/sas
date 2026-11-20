@@ -28,9 +28,42 @@
 
 <div class="text-center mb-4 d-none d-print-block sas-print-header">
     <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Société de projet Village des jeux">
-    <p class="text-muted mb-0">Sommes versées par les banques</p>
+    <p class="text-muted mb-0">Situation financière</p>
 </div>
 
+<div class="d-none d-print-block">
+    <h2 class="h6 mb-2">Coût des marchés et prestations</h2>
+    <table class="table table-sm mb-4 align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Marché / prestation</th>
+                <th class="text-end">Montant (KMF)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in fournisseurs %}
+            <tr>
+                <td>{{ f.nom_societe }}</td>
+                <td class="text-end">{{ f.montant_marche|kmf2 if f.montant_marche is not none else "-" }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="2" class="text-center text-muted py-3">Aucun marché enregistré.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if fournisseurs %}
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td>TOTAL</td>
+                <td class="text-end">{{ total_marche|kmf2 }}</td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+
+<h2 class="h6 mb-2 d-none d-print-block">Sommes versées par les banques</h2>
 <div class="card">
     <div class="table-responsive">
         <table class="table table-hover mb-0 align-middle">
@@ -91,6 +124,40 @@
             {% endif %}
         </table>
     </div>
+</div>
+
+<div class="d-none d-print-block mt-4">
+    <h2 class="h6 mb-2">Paiements déjà effectués / recensés</h2>
+    <table class="table table-sm mb-0 align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Entreprise</th>
+                <th>Nature du paiement</th>
+                <th class="text-end">Montant (KMF)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in paiements %}
+            <tr>
+                <td>{{ p.entreprise }}</td>
+                <td>{{ p.nature }}</td>
+                <td class="text-end">{{ p.montant|kmf2 }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" class="text-center text-muted py-3">Aucun paiement enregistré.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if paiements %}
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td colspan="2">TOTAL</td>
+                <td class="text-end">{{ total_paiements|kmf2 }}</td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
 </div>
 
 <p class="text-muted small text-center mt-4 mb-0 d-none d-print-block">
