@@ -4,9 +4,32 @@
 <style>
     @media print {
         @page {
-            size: A4 landscape;
+            size: A4;
             margin: 1.5cm;
         }
+        table {
+            font-size: 11px;
+        }
+        table td, table th {
+            white-space: nowrap;
+        }
+    }
+    .sas-section-titre {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .sas-section-numero {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background-color: #0d6efd;
+        color: #fff;
+        font-size: 0.75rem;
     }
 </style>
 {% endblock %}
@@ -32,7 +55,7 @@
 </div>
 
 <div class="d-none d-print-block">
-    <h2 class="h6 mb-2">Coût des marchés et prestations</h2>
+    <h2 class="h6 mb-2 sas-section-titre"><span class="sas-section-numero">1</span> Coût des marchés et prestations</h2>
     <table class="table table-sm mb-4 align-middle">
         <thead class="table-light">
             <tr>
@@ -44,7 +67,7 @@
             {% for f in fournisseurs %}
             <tr>
                 <td>{{ f.nom_societe }}</td>
-                <td class="text-end">{{ f.montant_marche|kmf2 if f.montant_marche is not none else "-" }}</td>
+                <td class="text-end">{{ f.montant_marche|kmf if f.montant_marche is not none else "-" }}</td>
             </tr>
             {% else %}
             <tr>
@@ -55,15 +78,15 @@
         {% if fournisseurs %}
         <tfoot>
             <tr class="table-light fw-bold">
-                <td>TOTAL</td>
-                <td class="text-end">{{ total_marche|kmf2 }}</td>
+                <td>TOTAL DES MARCHÉS ET PRESTATIONS</td>
+                <td class="text-end">{{ total_marche|kmf }}</td>
             </tr>
         </tfoot>
         {% endif %}
     </table>
 </div>
 
-<h2 class="h6 mb-2 d-none d-print-block">Sommes versées par les banques</h2>
+<h2 class="h6 mb-2 d-none d-print-block sas-section-titre"><span class="sas-section-numero">2</span> Sommes versées par les banques</h2>
 <div class="card">
     <div class="table-responsive">
         <table class="table table-hover mb-0 align-middle">
@@ -84,11 +107,11 @@
                     <td class="fw-semibold">
                         <a href="{{ url_for('credit_bancaire.detail', credit_id=credit.id) }}" class="text-decoration-none">{{ credit.banque }}</a>
                     </td>
-                    <td class="text-end">{{ credit.financement_total|kmf2 }}</td>
-                    <td class="text-end">{{ credit.total_tranches_versees()|kmf2 }}</td>
+                    <td class="text-end">{{ credit.financement_total|kmf }}</td>
+                    <td class="text-end">{{ credit.total_tranches_versees()|kmf }}</td>
                     <td class="text-end">{{ "%.1f"|format(credit.pourcentage_verse()) }} %</td>
-                    <td class="text-end">{{ credit.total_frais_prealables()|kmf2 }}</td>
-                    <td class="text-end fw-semibold text-success">{{ credit.total_net_verse()|kmf2 }}</td>
+                    <td class="text-end">{{ credit.total_frais_prealables()|kmf }}</td>
+                    <td class="text-end fw-semibold text-success">{{ credit.total_net_verse()|kmf }}</td>
                     <td class="text-end d-print-none">
                         <a href="{{ url_for('credit_bancaire.detail', credit_id=credit.id) }}" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-eye"></i>
@@ -113,11 +136,11 @@
             <tfoot>
                 <tr class="table-light fw-bold">
                     <td>TOTAL</td>
-                    <td class="text-end">{{ total_financement|kmf2 }}</td>
-                    <td class="text-end">{{ total_verse|kmf2 }}</td>
+                    <td class="text-end">{{ total_financement|kmf }}</td>
+                    <td class="text-end">{{ total_verse|kmf }}</td>
                     <td class="text-end">{{ "%.1f"|format(pourcentage_global) }} %</td>
-                    <td class="text-end">{{ total_frais|kmf2 }}</td>
-                    <td class="text-end text-success">{{ total_net|kmf2 }}</td>
+                    <td class="text-end">{{ total_frais|kmf }}</td>
+                    <td class="text-end text-success">{{ total_net|kmf }}</td>
                     <td class="d-print-none"></td>
                 </tr>
             </tfoot>
@@ -127,7 +150,7 @@
 </div>
 
 <div class="d-none d-print-block mt-4">
-    <h2 class="h6 mb-2">Paiements déjà effectués / recensés</h2>
+    <h2 class="h6 mb-2 sas-section-titre"><span class="sas-section-numero">3</span> Paiements déjà effectués / recensés</h2>
     <table class="table table-sm mb-0 align-middle">
         <thead class="table-light">
             <tr>
@@ -141,7 +164,7 @@
             <tr>
                 <td>{{ p.entreprise }}</td>
                 <td>{{ p.nature }}</td>
-                <td class="text-end">{{ p.montant|kmf2 }}</td>
+                <td class="text-end">{{ p.montant|kmf }}</td>
             </tr>
             {% else %}
             <tr>
@@ -153,7 +176,7 @@
         <tfoot>
             <tr class="table-light fw-bold">
                 <td colspan="2">TOTAL</td>
-                <td class="text-end">{{ total_paiements|kmf2 }}</td>
+                <td class="text-end">{{ total_paiements|kmf }}</td>
             </tr>
         </tfoot>
         {% endif %}

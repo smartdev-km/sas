@@ -23,19 +23,19 @@
         <div class="row g-3 mb-3">
             <div class="col-6 col-sm-3">
                 <div class="text-muted small">Financement total</div>
-                <div class="fw-semibold">{{ credit.financement_total|kmf2 }}</div>
+                <div class="fw-semibold">{{ credit.financement_total|kmf }}</div>
             </div>
             <div class="col-6 col-sm-3">
                 <div class="text-muted small">Total versé ({{ "%.1f"|format(credit.pourcentage_verse()) }} %)</div>
-                <div class="fw-semibold">{{ credit.total_tranches_versees()|kmf2 }}</div>
+                <div class="fw-semibold">{{ credit.total_tranches_versees()|kmf }}</div>
             </div>
             <div class="col-6 col-sm-3">
                 <div class="text-muted small">Total frais préalables</div>
-                <div class="fw-semibold">{{ credit.total_frais_prealables()|kmf2 }}</div>
+                <div class="fw-semibold">{{ credit.total_frais_prealables()|kmf }}</div>
             </div>
             <div class="col-6 col-sm-3">
                 <div class="text-muted small">Total net versé</div>
-                <div class="fw-semibold text-success">{{ credit.total_net_verse()|kmf2 }}</div>
+                <div class="fw-semibold text-success">{{ credit.total_net_verse()|kmf }}</div>
             </div>
         </div>
         <div class="progress mb-3" style="height: 6px;">
@@ -64,10 +64,10 @@
                 {% for t in credit.tranches %}
                 <tr>
                     <td>{{ t.date.strftime("%d/%m/%Y") }}</td>
-                    <td class="text-end">{{ t.montant_tranche|kmf2 }}</td>
+                    <td class="text-end">{{ t.montant_tranche|kmf }}</td>
                     <td class="text-end">{{ "%.1f"|format(t.pourcentage()) }} %</td>
-                    <td class="text-end">{{ t.frais_prealable|kmf2 }}</td>
-                    <td class="text-end fw-semibold">{{ t.montant_net()|kmf2 }}</td>
+                    <td class="text-end">{{ t.frais_prealable|kmf }}</td>
+                    <td class="text-end fw-semibold">{{ t.montant_net()|kmf }}</td>
                     <td class="text-end">
                         <a href="{{ url_for('credit_bancaire.tranche_modifier', tranche_id=t.id) }}" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-pencil"></i>

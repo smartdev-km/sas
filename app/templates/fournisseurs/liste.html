@@ -17,6 +17,23 @@
             margin: 1.5cm;
         }
     }
+    .sas-section-titre {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .sas-section-numero {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background-color: #0d6efd;
+        color: #fff;
+        font-size: 0.75rem;
+    }
 </style>
 {% endblock %}
 {% block content %}
@@ -107,7 +124,7 @@
 </div>
 
 <div class="d-none d-print-block">
-    <h2 class="h6 mb-2">Coût des marchés et prestations</h2>
+    <h2 class="h6 mb-2 sas-section-titre"><span class="sas-section-numero">1</span> Coût des marchés et prestations</h2>
     <table class="table table-sm mb-4 align-middle">
         <thead class="table-light">
             <tr>
@@ -119,7 +136,7 @@
             {% for f in fournisseurs %}
             <tr>
                 <td>{{ f.nom_societe }}</td>
-                <td class="text-end">{{ f.montant_marche|kmf2 if f.montant_marche is not none else "-" }}</td>
+                <td class="text-end">{{ f.montant_marche|kmf if f.montant_marche is not none else "-" }}</td>
             </tr>
             {% else %}
             <tr>
@@ -131,13 +148,13 @@
         <tfoot>
             <tr class="table-light fw-bold">
                 <td>TOTAL</td>
-                <td class="text-end">{{ total_marche|kmf2 }}</td>
+                <td class="text-end">{{ total_marche|kmf }}</td>
             </tr>
         </tfoot>
         {% endif %}
     </table>
 
-    <h2 class="h6 mb-2">Paiements déjà effectués / recensés</h2>
+    <h2 class="h6 mb-2 sas-section-titre"><span class="sas-section-numero">2</span> Paiements déjà effectués / recensés</h2>
     <table class="table table-sm mb-0 align-middle">
         <thead class="table-light">
             <tr>
@@ -151,7 +168,7 @@
             <tr>
                 <td>{{ p.entreprise }}</td>
                 <td>{{ p.nature }}</td>
-                <td class="text-end">{{ p.montant|kmf2 }}</td>
+                <td class="text-end">{{ p.montant|kmf }}</td>
             </tr>
             {% else %}
             <tr>
@@ -163,7 +180,7 @@
         <tfoot>
             <tr class="table-light fw-bold">
                 <td colspan="2">TOTAL</td>
-                <td class="text-end">{{ total_paiements|kmf2 }}</td>
+                <td class="text-end">{{ total_paiements|kmf }}</td>
             </tr>
         </tfoot>
         {% endif %}
