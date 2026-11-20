@@ -47,13 +47,11 @@ def liste():
 
     paiements = []
     for f in fournisseurs:
-        montant_marche = float(f.montant_marche) if f.montant_marche else 0.0
-        for ligne in _calculer_mouvement(f):
-            nature = ligne["reference"] or "Facture"
-            if montant_marche:
-                pourcentage = ligne["montant_net"] / montant_marche * 100
-                nature = f"{nature} ({pourcentage:.1f} % du marché)"
-            paiements.append({"entreprise": f.nom_societe, "nature": nature, "montant": ligne["montant_net"]})
+        montant_paye = f.montant_acompte
+        if not montant_paye:
+            continue
+        nature = f"{f.taux_acompte:.1f} % du marché" if f.taux_acompte is not None else "-"
+        paiements.append({"entreprise": f.nom_societe, "nature": nature, "montant": montant_paye})
     total_paiements = sum(p["montant"] for p in paiements)
 
     return render_template(
