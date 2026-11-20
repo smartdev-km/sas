@@ -10,22 +10,39 @@
         text-overflow: ellipsis;
         vertical-align: bottom;
     }
+
+    @media print {
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+    }
 </style>
 {% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 d-print-none">
     <div>
         <h1 class="h3 mb-0">Fournisseurs</h1>
         <p class="text-muted mb-0">Suivi des marchés fournisseurs de l'entreprise</p>
     </div>
-    {% if current_user.role != 'admin' %}
-    <a href="{{ url_for('fournisseurs.nouveau') }}" class="btn btn-primary">
-        <i class="bi bi-plus-lg"></i> Nouveau fournisseur
-    </a>
-    {% endif %}
+    <div class="d-flex gap-2">
+        {% if current_user.role != 'admin' %}
+        <a href="{{ url_for('fournisseurs.nouveau') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Nouveau fournisseur
+        </a>
+        {% endif %}
+        <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
+            <i class="bi bi-printer"></i> Imprimer
+        </button>
+    </div>
 </div>
 
-<div class="card">
+<div class="text-center mb-4 d-none d-print-block sas-print-header">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Société de projet Village des jeux">
+    <p class="text-muted mb-0">Situation des marchés fournisseurs</p>
+</div>
+
+<div class="card d-print-none">
     <div class="table-responsive">
         <table class="table table-hover mb-0 align-middle">
             <thead class="table-light">
@@ -88,4 +105,73 @@
         </table>
     </div>
 </div>
+
+<div class="d-none d-print-block">
+    <h2 class="h6 mb-2">Coût des marchés et prestations</h2>
+    <table class="table table-sm mb-4 align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Marché / prestation</th>
+                <th class="text-end">Montant (KMF)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in fournisseurs %}
+            <tr>
+                <td>{{ f.nom_societe }}</td>
+                <td class="text-end">{{ f.montant_marche|kmf2 if f.montant_marche is not none else "-" }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="2" class="text-center text-muted py-3">Aucun marché enregistré.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if fournisseurs %}
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td>TOTAL</td>
+                <td class="text-end">{{ total_marche|kmf2 }}</td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+
+    <h2 class="h6 mb-2">Paiements déjà effectués / recensés</h2>
+    <table class="table table-sm mb-0 align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Entreprise</th>
+                <th>Nature du paiement</th>
+                <th class="text-end">Montant (KMF)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in paiements %}
+            <tr>
+                <td>{{ p.entreprise }}</td>
+                <td>{{ p.nature }}</td>
+                <td class="text-end">{{ p.montant|kmf2 }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" class="text-center text-muted py-3">Aucun paiement enregistré.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if paiements %}
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td colspan="2">TOTAL</td>
+                <td class="text-end">{{ total_paiements|kmf2 }}</td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+
+<p class="text-muted small text-center mt-4 mb-0 d-none d-print-block">
+    Document généré le {{ now.strftime("%d/%m/%Y à %H:%M") }}
+    {% if current_user.is_authenticated %}par {{ current_user.nom }}{% endif %}.
+</p>
 {% endblock %}

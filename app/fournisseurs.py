@@ -42,7 +42,28 @@ def _parse_taux_garantie(form):
 @role_required("fournisseurs")
 def liste():
     fournisseurs = Fournisseur.query.order_by(Fournisseur.actif.desc(), Fournisseur.nom_societe).all()
-    return render_template("fournisseurs/liste.html", fournisseurs=fournisseurs)
+
+    total_marche = sum(float(f.montant_marche) for f in fournisseurs if f.montant_marche is not None)
+
+    paiements = []
+    for f in fournisseurs:
+        montant_marche = float(f.montant_marche) if f.montant_marche else 0.0
+        for ligne in _calculer_mouvement(f):
+            nature = ligne["reference"] or "Facture"
+            if montant_marche:
+                pourcentage = ligne["montant_net"] / montant_marche * 100
+                nature = f"{nature} ({pourcentage:.1f} % du marché)"
+            paiements.append({"entreprise": f.nom_societe, "nature": nature, "montant": ligne["montant_net"]})
+    total_paiements = sum(p["montant"] for p in paiements)
+
+    return render_template(
+        "fournisseurs/liste.html",
+        fournisseurs=fournisseurs,
+        total_marche=total_marche,
+        paiements=paiements,
+        total_paiements=total_paiements,
+        now=datetime.now(),
+    )
 
 
 @fournisseurs_bp.route("/nouveau", methods=["GET", "POST"])
